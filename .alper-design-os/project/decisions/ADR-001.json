@@ -1,0 +1,38 @@
+{
+  "id": "ADR-001",
+  "title": "Modular Monolith Architecture for Game Deals Tracking",
+  "context": "Building a reliable price tracking system for 300-600 games with periodic sync and public web presentation.",
+  "decision": "Adopt a single-repository Modular Monolith built with Next.js App Router, TypeScript, Prisma ORM, and PostgreSQL.",
+  "alternatives": [
+    "Microservices with Redis queue",
+    "Separate frontend and backend repositories"
+  ],
+  "consequences": [
+    "Single codebase for web and background worker",
+    "Zero microservice orchestration overhead",
+    "Straightforward deployment and containerization"
+  ],
+  "risks": [
+    "Monolith components must maintain strict module isolation to avoid tight coupling."
+  ],
+  "evidence": [],
+  "requirements": [
+    "FR-01",
+    "FR-08",
+    "FR-12"
+  ],
+  "affectedComponents": [
+    "web",
+    "worker",
+    "sync",
+    "database"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:00:29.682Z",
+  "approvedBy": "User & Brief §17",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

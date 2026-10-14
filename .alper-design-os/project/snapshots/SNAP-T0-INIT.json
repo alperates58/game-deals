@@ -1,0 +1,15 @@
+{
+  "snapshotId": "SNAP-T0-INIT",
+  "commitSha": "UNVERIFIED_WORKING_TREE",
+  "timestamp": "2026-10-14T18:56:00.709Z",
+  "stack": "nextjs-typescript-postgresql-prisma-tailwind",
+  "architectureHash": "NOT_VERIFIED",
+  "requirementHash": "NOT_VERIFIED",
+  "routeInventory": [],
+  "apiInventory": [],
+  "databaseFingerprint": "NOT_VERIFIED",
+  "dependencyFingerprint": "NOT_VERIFIED",
+  "designSystemFingerprint": "NOT_VERIFIED",
+  "uiTokenFingerprint": "NOT_VERIFIED",
+  "verificationStatus": "NOT_VERIFIED"
+}

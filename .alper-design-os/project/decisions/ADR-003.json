@@ -1,0 +1,36 @@
+{
+  "id": "ADR-003",
+  "title": "Microsoft Display Catalog API as Authoritative TR Price Source",
+  "context": "Identifying the most accurate, authorized, and maintainable data source for Xbox Turkey prices.",
+  "decision": "Use Microsoft Display Catalog API (displaycatalog.mp.microsoft.com/v7.0/products) as authoritative price and metadata source for TR market.",
+  "alternatives": [
+    "HTML scraping xbox.com web pages",
+    "Private Xbox live partner APIs with credentials"
+  ],
+  "consequences": [
+    "High stability, structured JSON response, batch support up to 25+ IDs",
+    "Zero token or session refresh maintenance",
+    "Safe rate limiter ensures long term resilience"
+  ],
+  "risks": [
+    "Undocumented rate limits require defensive collector delays and backoff."
+  ],
+  "evidence": [],
+  "requirements": [
+    "FR-03",
+    "NFR-REL-01"
+  ],
+  "affectedComponents": [
+    "xbox-source",
+    "catalog",
+    "pricing"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:00:39.432Z",
+  "approvedBy": "Brief §9, §12 & Phase 0 Proof of Concept",
+  "confirmedByUser": true,
+  "authoritySource": "RESEARCH_FINDING",
+  "verificationStatus": "VERIFIED"
+}

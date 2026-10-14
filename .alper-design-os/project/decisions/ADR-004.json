@@ -1,0 +1,37 @@
+{
+  "id": "ADR-004",
+  "title": "Truthful UI and Observed Historical Low Semantics",
+  "context": "Ensuring truthful claims when displaying historical lows and discount authenticity.",
+  "decision": "Label historical low prices as 'Takip başladığından beri görülen en düşük fiyat' and track separate confidence levels based on tracking duration. No synthetic mock data.",
+  "alternatives": [
+    "Claiming 'All-time lowest price' without verification",
+    "Using mock historical lows for early launch"
+  ],
+  "consequences": [
+    "Protects users from deceptive marketing claims",
+    "Builds high trust with accurate data provenance labels",
+    "Explicit confidence scores clarify the depth of historical data"
+  ],
+  "risks": [
+    "Users might initially see identical current and lowest price for freshly tracked games. Clear UI explanation required."
+  ],
+  "evidence": [],
+  "requirements": [
+    "FR-05",
+    "FR-07",
+    "NFR-UX-01"
+  ],
+  "affectedComponents": [
+    "web",
+    "pricing",
+    "price-history"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:00:42.922Z",
+  "approvedBy": "Brief §5, §23",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

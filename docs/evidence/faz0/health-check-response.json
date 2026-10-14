@@ -1,0 +1,14 @@
+{
+  "status": "healthy",
+  "service": "game.alperates.com.tr",
+  "timestamp": "2026-10-14T19:10:02.154Z",
+  "latencyMs": 27,
+  "database": "connected",
+  "stats": {
+    "totalGames": 1051,
+    "activeDeals": 124,
+    "lastSyncAt": "2026-10-14T19:07:45.361Z",
+    "lastSyncChecked": 1760,
+    "lastSyncChanges": 0
+  }
+}

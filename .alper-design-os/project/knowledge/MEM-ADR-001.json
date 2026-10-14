@@ -1,0 +1,28 @@
+{
+  "id": "MEM-ADR-001",
+  "type": "TECHNICAL_DECISION",
+  "title": "Modular Monolith Architecture for Game Deals Tracking",
+  "summary": "Adopt a single-repository Modular Monolith built with Next.js App Router, TypeScript, Prisma ORM, and PostgreSQL.",
+  "details": "Building a reliable price tracking system for 300-600 games with periodic sync and public web presentation.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-001.json"
+  ],
+  "createdAt": "2026-10-14T19:00:29.683Z",
+  "updatedAt": "2026-10-14T19:00:29.683Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "web",
+    "worker",
+    "sync",
+    "database"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "ADR-002",
+  "title": "PostgreSQL Advisory Locks for Concurrency Control (No Redis in Phase 1)",
+  "context": "Need to prevent concurrent duplicate sync runs without introducing external cache/queue infrastructure.",
+  "decision": "Use PostgreSQL advisory locks (pg_try_advisory_lock) for scheduler idempotency and job locking. No Redis in Phase 1.",
+  "alternatives": [
+    "Redis distributed lock (Redlock)",
+    "File-based lock file"
+  ],
+  "consequences": [
+    "Eliminates the operational complexity of maintaining a Redis cluster in Phase 1",
+    "PostgreSQL native advisory lock provides atomic, crash-safe synchronization across sync runs"
+  ],
+  "risks": [
+    "Lock session must be cleanly released on process termination or unhandled crash."
+  ],
+  "evidence": [],
+  "requirements": [
+    "NFR-REL-04",
+    "FR-12"
+  ],
+  "affectedComponents": [
+    "sync",
+    "database",
+    "worker"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:00:34.718Z",
+  "approvedBy": "User & Brief §2, §25",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

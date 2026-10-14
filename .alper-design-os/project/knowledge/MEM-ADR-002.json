@@ -1,0 +1,27 @@
+{
+  "id": "MEM-ADR-002",
+  "type": "TECHNICAL_DECISION",
+  "title": "PostgreSQL Advisory Locks for Concurrency Control (No Redis in Phase 1)",
+  "summary": "Use PostgreSQL advisory locks (pg_try_advisory_lock) for scheduler idempotency and job locking. No Redis in Phase 1.",
+  "details": "Need to prevent concurrent duplicate sync runs without introducing external cache/queue infrastructure.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-002.json"
+  ],
+  "createdAt": "2026-10-14T19:00:34.719Z",
+  "updatedAt": "2026-10-14T19:00:34.719Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "sync",
+    "database",
+    "worker"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

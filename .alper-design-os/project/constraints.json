@@ -1,0 +1,9 @@
+[
+  {
+    "id": "CONST-001",
+    "type": "TECHNICAL",
+    "description": "Zero unvetted runtime dependencies. Strict type-checking enabled.",
+    "source": "Default Enterprise Governance Policy",
+    "impact": "All external packages must pass security vetting"
+  }
+]

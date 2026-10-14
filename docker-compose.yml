@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: game-deals-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: gamedeals
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gamedeals"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: game-deals-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/gamedeals?schema=public
+      - APP_URL=https://game.alperates.com.tr
+      - APP_TIMEZONE=Europe/Istanbul
+      - XBOX_MARKET=TR
+      - XBOX_LANGUAGE=tr-TR
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

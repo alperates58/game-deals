@@ -1,0 +1,36 @@
+{
+  "manifestVersion": "1.0.0",
+  "projectIdentity": {
+    "projectId": "game-deals",
+    "projectName": "Xbox Gerçek Fırsat Takip Sistemi",
+    "repositoryIdentity": "repo-xbox gerçek fırsat takip sistemi-8f05dfaf6ecf6f9d",
+    "projectMode": "NEW",
+    "createdAt": "2026-10-14T18:56:00.709Z",
+    "schemaVersion": "1.0.0",
+    "designOsVersion": "0.1.0",
+    "primaryStack": "nextjs-typescript-postgresql-prisma-tailwind",
+    "domains": [
+      "gaming",
+      "price-tracking",
+      "deal-analysis",
+      "xbox"
+    ],
+    "environments": [
+      "development",
+      "production"
+    ]
+  },
+  "initializedAt": "2026-10-14T18:56:00.709Z",
+  "lastUpdatedAt": "2026-10-14T18:56:00.709Z",
+  "activeProfileFile": "project-profile.json",
+  "activeArchitectureFile": "architecture.json",
+  "subdirectories": [
+    "requirements",
+    "decisions",
+    "knowledge",
+    "snapshots",
+    "evidence",
+    "lessons",
+    "indexes"
+  ]
+}

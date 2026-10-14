@@ -1,0 +1,61 @@
+{
+  "productKeys": [
+    "LastModifiedDate",
+    "LocalizedProperties",
+    "MarketProperties",
+    "ProductASchema",
+    "ProductBSchema",
+    "ProductId",
+    "Properties",
+    "AlternateIds",
+    "DomainDataVersion",
+    "IngestionSource",
+    "IsMicrosoftProduct",
+    "PreferredSkuId",
+    "ProductType",
+    "ValidationData",
+    "MerchandizingTags",
+    "SandboxId",
+    "ProductFamily",
+    "SchemaVersion",
+    "IsSandboxedProduct",
+    "ProductKind",
+    "ProductPolicies",
+    "DisplaySkuAvailabilities"
+  ],
+  "skuKeys": [
+    "LastModifiedDate",
+    "LocalizedProperties",
+    "MarketProperties",
+    "ProductId",
+    "Properties",
+    "SkuASchema",
+    "SkuBSchema",
+    "SkuId",
+    "SkuType",
+    "RecurrencePolicy",
+    "SubscriptionPolicyId"
+  ],
+  "availabilityKeys": [
+    "Actions",
+    "AvailabilityASchema",
+    "AvailabilityBSchema",
+    "AvailabilityId",
+    "Conditions",
+    "LastModifiedDate",
+    "Markets",
+    "OrderManagementData",
+    "Properties",
+    "SkuId",
+    "DisplayRank"
+  ],
+  "priceKeys": [
+    "CurrencyCode",
+    "IsPIRequired",
+    "ListPrice",
+    "MSRP",
+    "TaxType",
+    "WholesaleCurrencyCode",
+    "WholesalePrice"
+  ]
+}

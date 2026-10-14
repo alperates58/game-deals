@@ -1,0 +1,27 @@
+{
+  "id": "MEM-ADR-004",
+  "type": "TECHNICAL_DECISION",
+  "title": "Truthful UI and Observed Historical Low Semantics",
+  "summary": "Label historical low prices as 'Takip başladığından beri görülen en düşük fiyat' and track separate confidence levels based on tracking duration. No synthetic mock data.",
+  "details": "Ensuring truthful claims when displaying historical lows and discount authenticity.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-004.json"
+  ],
+  "createdAt": "2026-10-14T19:00:42.923Z",
+  "updatedAt": "2026-10-14T19:00:42.923Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "web",
+    "pricing",
+    "price-history"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

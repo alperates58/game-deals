@@ -1,0 +1,27 @@
+{
+  "id": "MEM-ADR-005",
+  "type": "TECHNICAL_DECISION",
+  "title": "Deal Score V1 Formulation and Deterministic Turkish Verdicts",
+  "summary": "Implement Deal Score V1 with 4 weighted factors totaling 100 points, mapped to 5 deterministic Turkish verdicts.",
+  "details": "Need an objective, transparent formula to judge whether an Xbox discount is actually a genuine deal.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-005.json"
+  ],
+  "createdAt": "2026-10-14T19:00:48.001Z",
+  "updatedAt": "2026-10-14T19:00:48.001Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "deal-analysis",
+    "web",
+    "pricing"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

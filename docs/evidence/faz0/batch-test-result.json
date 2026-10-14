@@ -1,0 +1,25 @@
+{
+  "status": 200,
+  "durationMs": 162,
+  "requestUrl": "https://displaycatalog.mp.microsoft.com/v7.0/products?bigIds=9NXFX68ZNKK0,BX3M8L83BBRW,9NNZSNHLR63L,9P7QDS4SVW0X,BT5P2X999VH2&market=TR&languages=tr-TR",
+  "productsCount": 5,
+  "headers": {
+    "cache-control": "no-store, no-cache",
+    "connection": "keep-alive",
+    "content-encoding": "br",
+    "content-type": "application/json; charset=utf-8",
+    "date": "Wed, 14 Oct 2026 18:58:57 GMT",
+    "ms-correlationid": "e44e8d63-e1be-4a46-9e83-86dfda84a3c4",
+    "ms-cv": "Zxbpt/Vx2ke408Ti.0",
+    "ms-documentversions": "9NXFX68ZNKK0|1067,BX3M8L83BBRW|4853,9NNZSNHLR63L|212,9P7QDS4SVW0X|1662,BT5P2X999VH2|8087",
+    "ms-requestid": "7ad53383-86fe-4c0e-ae58-354ea94fbad6",
+    "ms-serverid": "9",
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
+    "transfer-encoding": "chunked",
+    "vary": "Accept-Encoding",
+    "x-azure-ref": "20261014T185857Z-17fb9d989d6gqpmshC1ISTk18c0000000eh0000000002zdz",
+    "x-cache": "CONFIG_NOCACHE",
+    "x-content-type-options": "nosniff",
+    "x-envoy-upstream-service-time": "14"
+  }
+}

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "INV-SEC-01",
+    "description": "CSRF protection and HttpOnly secure cookies must remain enabled.",
+    "category": "SECURITY",
+    "scope": "API",
+    "severity": "CRITICAL",
+    "verificationMethod": "SECURITY_SCAN",
+    "relatedTests": [],
+    "source": "Default Security Baseline"
+  },
+  {
+    "id": "INV-DATA-01",
+    "description": "Foreign key integrity and audit timestamps must be maintained on all entity updates.",
+    "category": "DATA_INTEGRITY",
+    "scope": "DATABASE",
+    "severity": "HIGH",
+    "verificationMethod": "INTEGRATION_TEST",
+    "relatedTests": [],
+    "source": "Domain Data Integrity Standard"
+  },
+  {
+    "id": "NO_FAKE_PRICE_DATA",
+    "description": "Production UI and database must never contain synthetic, mocked or fake price data. If price is unknown or unverified, display empty/unverified state.",
+    "category": "DATA_INTEGRITY",
+    "scope": "database, ui, adapter",
+    "severity": "CRITICAL",
+    "verificationMethod": "Code review, DB inspection, audit_truthful_ui test",
+    "relatedTests": [],
+    "source": "brief section 5 & 6"
+  },
+  {
+    "id": "NO_MICROSOFT_AUTH_BYPASS",
+    "description": "No bypassing of Microsoft authentication or tokens. Only use public unauthenticated Display Catalog / discovery endpoints.",
+    "category": "SECURITY",
+    "scope": "xbox-source adapter",
+    "severity": "CRITICAL",
+    "verificationMethod": "Source audit and code inspection",
+    "relatedTests": [],
+    "source": "brief section 6 & 11"
+  },
+  {
+    "id": "NO_AGGRESSIVE_SCRAPING",
+    "description": "Strict rate-limiting, jitter backoff, max concurrency 2, batch size 25, no anti-bot bypass or proxy rotation.",
+    "category": "API_CONTRACT",
+    "scope": "collector, rate-limiter",
+    "severity": "HIGH",
+    "verificationMethod": "Rate limiter unit test and collector configuration inspection",
+    "relatedTests": [],
+    "source": "brief section 6 & 11"
+  },
+  {
+    "id": "TR_MARKET_ONLY_PHASE1",
+    "description": "Phase 1 focuses exclusively on the Xbox Microsoft Store Turkey market (market=TR, language=tr-TR, currency TRY).",
+    "category": "BUSINESS_LOGIC",
+    "scope": "catalog, adapter, pricing",
+    "severity": "HIGH",
+    "verificationMethod": "Catalog query parameters inspection",
+    "relatedTests": [],
+    "source": "brief section 1, 6 & 19"
+  },
+  {
+    "id": "POPULAR_PAID_GAMES_ONLY",
+    "description": "Track only 300-600 popular and important paid games. Exclude free games, DLCs, add-ons, skins, consumables, sound-tracks.",
+    "category": "BUSINESS_LOGIC",
+    "scope": "game-discovery, catalog-seed",
+    "severity": "HIGH",
+    "verificationMethod": "Free-game and product-type filter unit tests",
+    "relatedTests": [],
+    "source": "brief section 2 & 6"
+  },
+  {
+    "id": "FAZ0_RESEARCH_BEFORE_IMPLEMENTATION",
+    "description": "Do not write production implementation before validating Xbox Display Catalog endpoints, TR pricing paths, SKU handling, and batch behavior with real API evidence.",
+    "category": "API_CONTRACT",
+    "scope": "phase 0 research gate",
+    "severity": "CRITICAL",
+    "verificationMethod": "Docs and evidence files verification",
+    "relatedTests": [],
+    "source": "brief section 6 & 14"
+  },
+  {
+    "id": "FAZ1_SCOPE_GUARD",
+    "description": "Strictly stop at Phase 1 scope. Do not implement Phase 2 items like Telegram, Auth, Watchlists, Redis, microservices.",
+    "category": "BUSINESS_LOGIC",
+    "scope": "full project scope",
+    "severity": "CRITICAL",
+    "verificationMethod": "Scope audit and acceptance report review",
+    "relatedTests": [],
+    "source": "brief section 3, 6 & 41"
+  },
+  {
+    "id": "NO_REDIS_PHASE1",
+    "description": "Phase 1 uses only PostgreSQL for storage, sync locks, and cache if needed. Redis is strictly forbidden in Phase 1.",
+    "category": "BUSINESS_LOGIC",
+    "scope": "infrastructure, data storage",
+    "severity": "HIGH",
+    "verificationMethod": "Package.json and Docker Compose inspection",
+    "relatedTests": [],
+    "source": "brief section 2, 3 & 6"
+  },
+  {
+    "id": "NO_AUTH_PHASE1",
+    "description": "No user authentication, sessions, logins or user accounts in Phase 1. Open public data portal only.",
+    "category": "SECURITY",
+    "scope": "api, pages, auth",
+    "severity": "HIGH",
+    "verificationMethod": "Route audit and dependency inspection",
+    "relatedTests": [],
+    "source": "brief section 3 & 6"
+  },
+  {
+    "id": "NO_TELEGRAM_IMPLEMENTATION_PHASE1",
+    "description": "No Telegram bot token, message sender, bot webhook or subscription code in Phase 1. Only architecture readiness allowed.",
+    "category": "BUSINESS_LOGIC",
+    "scope": "notifications, bot",
+    "severity": "HIGH",
+    "verificationMethod": "Dependency and code scan",
+    "relatedTests": [],
+    "source": "brief section 3 & 6"
+  }
+]

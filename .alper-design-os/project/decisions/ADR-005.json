@@ -1,0 +1,35 @@
+{
+  "id": "ADR-005",
+  "title": "Deal Score V1 Formulation and Deterministic Turkish Verdicts",
+  "context": "Need an objective, transparent formula to judge whether an Xbox discount is actually a genuine deal.",
+  "decision": "Implement Deal Score V1 with 4 weighted factors totaling 100 points, mapped to 5 deterministic Turkish verdicts.",
+  "alternatives": [
+    "Black-box AI recommendation score",
+    "Simple discount percentage sorting"
+  ],
+  "consequences": [
+    "Deterministic, auditable deal calculations (55% low proximity, 20% discount, 15% rarity, 10% momentum)",
+    "Turkish verdict tiers (Kaçırma, Çok İyi, İyi, Bekle, Zayıf Fırsat) provide instant actionable insight"
+  ],
+  "risks": [
+    "In early days when price history is sparse, confidence score must be displayed alongside deal score."
+  ],
+  "evidence": [],
+  "requirements": [
+    "FR-06",
+    "FR-07"
+  ],
+  "affectedComponents": [
+    "deal-analysis",
+    "web",
+    "pricing"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:00:48.000Z",
+  "approvedBy": "Brief §24",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}
