@@ -4,7 +4,7 @@ import { Layers, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ProductClass } from "@prisma/client";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 interface AddonsPageProps {
   searchParams: Promise<{

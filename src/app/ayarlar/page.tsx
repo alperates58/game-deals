@@ -2,7 +2,8 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { getSystemSettings } from "@/lib/settings/system-settings";
+import { getSystemSettings, calculateScheduleInfo } from "@/lib/settings/system-settings";
+import { BackupService } from "@/lib/backup/backup-service";
 import { SettingsCenter } from "@/components/settings/settings-center";
 import { ShieldAlert, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -55,6 +56,7 @@ export default async function SettingsPage() {
     lastSyncRun,
     relationsByType,
     gamesByType,
+    initialBackups,
   ] = await Promise.all([
     getSystemSettings(),
     prisma.game.count(),
@@ -73,7 +75,18 @@ export default async function SettingsPage() {
       by: ["productType"],
       _count: { productType: true },
     }),
+    BackupService.listBackups(),
   ]);
+
+  const scheduleInfo = calculateScheduleInfo({
+    autoDiscoverSeriesCatalog: settings.autoDiscoverSeriesCatalog,
+    catalogDiscoveryIntervalHours: settings.catalogDiscoveryIntervalHours,
+    priceSyncIntervalHours: settings.priceSyncIntervalHours,
+    metadataRefreshIntervalHours: settings.metadataRefreshIntervalHours,
+    relationshipRefreshIntervalHours: settings.relationshipRefreshIntervalHours,
+    lastCatalogDiscoveryAt: settings.lastCatalogDiscoveryAt,
+    lastPriceSyncAt: settings.lastPriceSyncAt,
+  });
 
   const initialStats = {
     totalGames,
@@ -93,8 +106,8 @@ export default async function SettingsPage() {
           errorCount: lastSyncRun.errorCount,
         }
       : null,
-    relationsByType: relationsByType.map((r) => ({ type: r.relationType, count: r._count.relationType })),
-    gamesByType: gamesByType.map((g) => ({ type: g.productType, count: g._count.productType })),
+    relationsByType: relationsByType.map((r: any) => ({ type: r.relationType, count: r._count.relationType })),
+    gamesByType: gamesByType.map((g: any) => ({ type: g.productType, count: g._count.productType })),
   };
 
   return (
@@ -108,7 +121,7 @@ export default async function SettingsPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Ayarlar ve Kontrol Merkezi</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            Katalog takibi, otomatik keşif kuralları, senkronizasyon zamanlaması ve veritabanı telemetrisi.
+            Katalog takibi, otomatik keşif kuralları, senkronizasyon zamanlaması, veritabanı yedeği ve telemetrisi.
           </p>
         </div>
 
@@ -119,7 +132,12 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      <SettingsCenter initialSettings={settings} initialStats={initialStats} />
+      <SettingsCenter
+        initialSettings={settings}
+        initialStats={initialStats}
+        initialScheduleInfo={scheduleInfo}
+        initialBackups={initialBackups as any}
+      />
     </div>
   );
 }

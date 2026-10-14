@@ -2,15 +2,28 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { requireOwner } from "@/lib/auth/session";
-import { getSystemSettings, updateSystemSettings } from "@/lib/settings/system-settings";
+import {
+  getSystemSettings,
+  updateSystemSettings,
+  calculateScheduleInfo,
+} from "@/lib/settings/system-settings";
 
 const UpdateSettingsSchema = z.object({
   allowRegistration: z.boolean().optional(),
-  syncIntervalHours: z.number().int().min(1).max(72).optional(),
-  autoDiscoverPopular: z.boolean().optional(),
+
+  // Xbox Series X|S Scheduler Settings
+  autoDiscoverSeriesCatalog: z.boolean().optional(),
+  catalogDiscoveryIntervalHours: z.number().int().min(1).max(168).optional(),
+  priceSyncIntervalHours: z.number().int().min(1).max(72).optional(),
+  metadataRefreshIntervalHours: z.number().int().min(24).max(720).optional(),
+  relationshipRefreshIntervalHours: z.number().int().min(24).max(720).optional(),
+
+  // Related product rules
   autoDiscoverBundleChildren: z.boolean().optional(),
   autoDiscoverRelatedDlc: z.boolean().optional(),
   autoAddRelatedProducts: z.boolean().optional(),
+
+  // Product classes
   trackBaseGames: z.boolean().optional(),
   trackBundles: z.boolean().optional(),
   trackDlc: z.boolean().optional(),
@@ -32,6 +45,15 @@ export async function GET() {
 
   try {
     const settings = await getSystemSettings();
+    const scheduleInfo = calculateScheduleInfo({
+      autoDiscoverSeriesCatalog: settings.autoDiscoverSeriesCatalog,
+      catalogDiscoveryIntervalHours: settings.catalogDiscoveryIntervalHours,
+      priceSyncIntervalHours: settings.priceSyncIntervalHours,
+      metadataRefreshIntervalHours: settings.metadataRefreshIntervalHours,
+      relationshipRefreshIntervalHours: settings.relationshipRefreshIntervalHours,
+      lastCatalogDiscoveryAt: settings.lastCatalogDiscoveryAt,
+      lastPriceSyncAt: settings.lastPriceSyncAt,
+    });
 
     // Collect system stats
     const [
@@ -60,14 +82,15 @@ export async function GET() {
       _count: { relationType: true },
     });
 
-    // Breakdown of product types
-    const gamesByType = await prisma.game.groupBy({
-      by: ["productType"],
-      _count: { productType: true },
+    // Breakdown of product classes
+    const gamesByClass = await prisma.game.groupBy({
+      by: ["productClass"],
+      _count: { productClass: true },
     });
 
     return NextResponse.json({
       settings,
+      scheduleInfo,
       stats: {
         totalGames,
         totalHistories,
@@ -78,7 +101,7 @@ export async function GET() {
         pendingNotifications: totalPendingNotifications,
         lastSyncRun,
         relationsByType: relationsByType.map((r) => ({ type: r.relationType, count: r._count.relationType })),
-        gamesByType: gamesByType.map((g) => ({ type: g.productType, count: g._count.productType })),
+        gamesByClass: gamesByClass.map((g) => ({ class: g.productClass, count: g._count.productClass })),
       },
     });
   } catch (err: any) {
@@ -109,7 +132,17 @@ export async function PUT(req: Request) {
     }
 
     const updated = await updateSystemSettings(parsed.data);
-    return NextResponse.json({ success: true, settings: updated });
+    const scheduleInfo = calculateScheduleInfo({
+      autoDiscoverSeriesCatalog: updated.autoDiscoverSeriesCatalog,
+      catalogDiscoveryIntervalHours: updated.catalogDiscoveryIntervalHours,
+      priceSyncIntervalHours: updated.priceSyncIntervalHours,
+      metadataRefreshIntervalHours: updated.metadataRefreshIntervalHours,
+      relationshipRefreshIntervalHours: updated.relationshipRefreshIntervalHours,
+      lastCatalogDiscoveryAt: updated.lastCatalogDiscoveryAt,
+      lastPriceSyncAt: updated.lastPriceSyncAt,
+    });
+
+    return NextResponse.json({ success: true, settings: updated, scheduleInfo });
   } catch (err: any) {
     console.error("[Settings PUT Error]", err);
     return NextResponse.json({ error: "Ayarlar güncellenemedi." }, { status: 500 });

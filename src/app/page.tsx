@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { GameCard } from "@/components/game/game-card";
 import { Sparkles, TrendingDown, Clock, ShieldCheck, Flame, ChevronRight } from "lucide-react";
 
-export const revalidate = 60; // ISR cache 60s
+export const dynamic = "force-dynamic";
 
 async function getHomePageData() {
   const [

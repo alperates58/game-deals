@@ -298,26 +298,69 @@ model NotificationEvent {
 }
 
 model SystemSetting {
-  id                         String    @id @default("global")
-  allowRegistration          Boolean   @default(true)
-  syncIntervalHours          Int       @default(6) // 6, 12, 24
-  autoDiscoverPopular        Boolean   @default(true)
-  autoDiscoverBundleChildren Boolean   @default(true)
-  autoDiscoverRelatedDlc     Boolean   @default(true)
-  autoAddRelatedProducts     Boolean   @default(true)
+  id                               String    @id @default("global")
+  allowRegistration                Boolean   @default(true)
 
-  trackBaseGames             Boolean   @default(true)
-  trackBundles               Boolean   @default(true)
-  trackDlc                   Boolean   @default(true)
-  trackExpansions            Boolean   @default(true)
-  trackSeasonPasses          Boolean   @default(true)
-  trackAddons                Boolean   @default(true)
-  trackContentPacks          Boolean   @default(false)
+  // Xbox Series X|S Scheduler & Discovery Settings
+  autoDiscoverSeriesCatalog        Boolean   @default(true)
+  catalogDiscoveryIntervalHours    Int       @default(24) // 24h
+  priceSyncIntervalHours           Int       @default(6)  // 6h
+  metadataRefreshIntervalHours     Int       @default(168) // 168h (7 days)
+  relationshipRefreshIntervalHours Int       @default(168) // 168h (7 days)
 
-  lastSyncStartedAt          DateTime?
-  lastSyncFinishedAt         DateTime?
-  lastSyncStatus             String?
+  // Tracking timestamps
+  lastCatalogDiscoveryAt           DateTime?
+  lastPriceSyncAt                  DateTime?
+  lastMetadataRefreshAt            DateTime?
+  lastRelationshipRefreshAt        DateTime?
 
-  updatedAt                  DateTime  @updatedAt
+  // Legacy compatibility
+  syncIntervalHours                Int       @default(6)
+
+  autoDiscoverBundleChildren       Boolean   @default(true)
+  autoDiscoverRelatedDlc           Boolean   @default(true)
+  autoAddRelatedProducts           Boolean   @default(true)
+
+  trackBaseGames                   Boolean   @default(true)
+  trackBundles                     Boolean   @default(true)
+  trackDlc                         Boolean   @default(true)
+  trackExpansions                  Boolean   @default(true)
+  trackSeasonPasses                Boolean   @default(true)
+  trackAddons                      Boolean   @default(true)
+  trackContentPacks                Boolean   @default(false)
+
+  lastSyncStartedAt                DateTime?
+  lastSyncFinishedAt               DateTime?
+  lastSyncStatus                   String?
+
+  updatedAt                        DateTime  @updatedAt
+}
+
+enum BackupMode {
+  FULL
+  CATALOG
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RESTORING
+}
+
+model DatabaseBackup {
+  id                String       @id @default(cuid())
+  filename          String       @unique
+  mode              BackupMode   @default(FULL)
+  status            BackupStatus @default(IN_PROGRESS)
+  sizeBytes         BigInt       @default(0)
+  tablesIncluded    String[]     @default([])
+  rowCountEstimate  Int          @default(0)
+  initiatedByUserId String?
+  errorSummary      String?
+  startedAt         DateTime     @default(now())
+  completedAt       DateTime?
+
+  @@index([startedAt(sort: Desc)])
 }
 

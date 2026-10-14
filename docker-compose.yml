@@ -31,9 +31,13 @@ services:
       - APP_TIMEZONE=Europe/Istanbul
       - XBOX_MARKET=TR
       - XBOX_LANGUAGE=tr-TR
+      - BACKUP_DIR=/app/backups
+    volumes:
+      - backups_data:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   pgdata:
+  backups_data:

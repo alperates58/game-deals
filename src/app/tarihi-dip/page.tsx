@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { GameCard } from "@/components/game/game-card";
 import { Clock, Info } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HistoricalLowsPage() {
   const games = await prisma.game.findMany({

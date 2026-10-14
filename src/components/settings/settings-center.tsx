@@ -15,8 +15,15 @@ import {
   AlertTriangle,
   ExternalLink,
   Lock,
+  Download,
+  Trash2,
+  UploadCloud,
+  FileCheck,
+  Server,
+  Clock,
+  Sparkles,
 } from "lucide-react";
-import { SystemSettingsData } from "@/lib/settings/system-settings";
+import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
 import Link from "next/link";
 
 interface SystemStats {
@@ -39,31 +46,84 @@ interface SystemStats {
   gamesByType: { type: string; count: number }[];
 }
 
+export interface BackupItem {
+  id: string;
+  filename: string;
+  mode: "FULL" | "CATALOG";
+  status: string;
+  sizeBytes: number;
+  tablesIncluded: string[];
+  startedAt: string;
+  completedAt: string | null;
+  fileExists: boolean;
+  errorSummary?: string | null;
+}
+
 interface SettingsCenterProps {
   initialSettings: SystemSettingsData;
   initialStats: SystemStats;
+  initialScheduleInfo?: SchedulerScheduleInfo;
+  initialBackups?: BackupItem[];
 }
 
-export function SettingsCenter({ initialSettings, initialStats }: SettingsCenterProps) {
+export function SettingsCenter({
+  initialSettings,
+  initialStats,
+  initialScheduleInfo,
+  initialBackups = [],
+}: SettingsCenterProps) {
   const [settings, setSettings] = useState<SystemSettingsData>(initialSettings);
   const [stats, setStats] = useState<SystemStats>(initialStats);
+  const [scheduleInfo, setScheduleInfo] = useState<SchedulerScheduleInfo | undefined>(initialScheduleInfo);
+  const [backups, setBackups] = useState<BackupItem[]>(initialBackups);
+
+  const [activeTab, setActiveTab] = useState<"general" | "scheduler" | "catalog" | "backup" | "manual">("scheduler");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Sync Now state
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncLimit, setSyncLimit] = useState<number>(0);
-  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string } | null>(null);
+  // Sync / Discovery Actions
+  const [isTriggering, setIsTriggering] = useState(false);
+  const [triggerAction, setTriggerAction] = useState<string | null>(null);
+  const [triggerMessage, setTriggerMessage] = useState<{ success: boolean; message: string } | null>(null);
 
   // Manual Add state
   const [manualInput, setManualInput] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
-  const [addedGame, setAddedGame] = useState<any | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
+  const [isManualAdding, setIsManualAdding] = useState(false);
+  const [manualResult, setManualResult] = useState<{
+    success: boolean;
+    message: string;
+    products?: any[];
+  } | null>(null);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Backup states
+  const [backupMode, setBackupMode] = useState<"FULL" | "CATALOG">("FULL");
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<{ success: boolean; text: string } | null>(null);
+
+  // Restore states
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isValidatingArchive, setIsValidatingArchive] = useState(false);
+  const [validationData, setValidationData] = useState<{
+    valid: boolean;
+    stagedFilename: string;
+    originalFilename: string;
+    sizeBytes: number;
+    format: string;
+    entryCount: number;
+    tables: string[];
+  } | null>(null);
+  const [restoreConfirmation, setRestoreConfirmation] = useState("");
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreResult, setRestoreResult] = useState<{
+    success: boolean;
+    message: string;
+    counts?: any;
+    preRestoreBackup?: string;
+  } | null>(null);
+
+  // Save Settings handler
+  const handleSaveSettings = async () => {
     setIsSaving(true);
     setSaveSuccess(null);
     setSaveError(null);
@@ -80,8 +140,11 @@ export function SettingsCenter({ initialSettings, initialStats }: SettingsCenter
         throw new Error(data.error || "Ayarlar kaydedilemedi.");
       }
 
-      setSaveSuccess("Sistem ayarları başarıyla kaydedildi.");
-      setTimeout(() => setSaveSuccess(null), 4000);
+      setSettings(data.settings);
+      if (data.scheduleInfo) {
+        setScheduleInfo(data.scheduleInfo);
+      }
+      setSaveSuccess("Sistem ayarları ve zamanlayıcı başarıyla kaydedildi.");
     } catch (err: any) {
       setSaveError(err.message);
     } finally {
@@ -89,471 +152,923 @@ export function SettingsCenter({ initialSettings, initialStats }: SettingsCenter
     }
   };
 
-  const handleTriggerSync = async () => {
-    setIsSyncing(true);
-    setSyncResult(null);
+  // Trigger Action handler
+  const handleTriggerAction = async (action: "PRICE_SYNC" | "CATALOG_DISCOVERY") => {
+    setIsTriggering(true);
+    setTriggerAction(action);
+    setTriggerMessage(null);
 
     try {
       const res = await fetch("/api/settings/sync-now", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit: syncLimit > 0 ? syncLimit : undefined }),
+        body: JSON.stringify({ action }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Senkronizasyon başarısız oldu.");
+        throw new Error(data.error || "İşlem başlatılamadı.");
       }
 
-      setSyncResult({ success: true, message: data.message });
-      // Refresh stats
-      const statsRes = await fetch("/api/settings");
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        if (statsData.stats) setStats(statsData.stats);
+      setTriggerMessage({
+        success: true,
+        message: data.message || "İşlem başarıyla tamamlandı.",
+      });
+
+      // Refresh settings & stats
+      const sRes = await fetch("/api/settings");
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        setSettings(sData.settings);
+        setStats(sData.stats);
+        if (sData.scheduleInfo) setScheduleInfo(sData.scheduleInfo);
       }
     } catch (err: any) {
-      setSyncResult({ success: false, message: err.message });
+      setTriggerMessage({ success: false, message: err.message });
     } finally {
-      setIsSyncing(false);
+      setIsTriggering(false);
+      setTriggerAction(null);
     }
   };
 
-  const handleManualAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualInput.trim()) return;
-
-    setIsAdding(true);
-    setAddError(null);
-    setAddedGame(null);
+  // Create Backup handler
+  const handleCreateBackup = async () => {
+    setIsCreatingBackup(true);
+    setBackupMessage(null);
 
     try {
-      const res = await fetch("/api/settings/manual-add", {
+      const res = await fetch("/api/settings/backup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input: manualInput.trim() }),
+        body: JSON.stringify({ mode: backupMode }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Ürün eklenemedi.");
+        throw new Error(data.error || "Yedek oluşturulamadı.");
       }
 
-      setAddedGame(data.game);
-      setManualInput("");
-      // Refresh stats
-      const statsRes = await fetch("/api/settings");
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        if (statsData.stats) setStats(statsData.stats);
+      setBackupMessage({ success: true, text: data.message });
+
+      // Refresh backup list
+      const bRes = await fetch("/api/settings/backup");
+      if (bRes.ok) {
+        const bData = await bRes.json();
+        setBackups(bData.backups);
       }
     } catch (err: any) {
-      setAddError(err.message);
+      setBackupMessage({ success: false, text: err.message });
     } finally {
-      setIsAdding(false);
+      setIsCreatingBackup(false);
+    }
+  };
+
+  // Delete Backup handler
+  const handleDeleteBackup = async (id: string) => {
+    if (!confirm("Bu yedek dosyasını silmek istediğinize emin misiniz?")) return;
+
+    try {
+      const res = await fetch(`/api/settings/backup/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setBackups((prev) => prev.filter((b) => b.id !== id));
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  // Validate Archive Upload
+  const handleValidateUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) return;
+
+    setIsValidatingArchive(true);
+    setValidationData(null);
+    setRestoreResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+
+      const res = await fetch("/api/settings/backup/validate", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Yedek doğrulanamadı.");
+      }
+
+      setValidationData(data);
+    } catch (err: any) {
+      alert(`Arşiv doğrulama hatası: ${err.message}`);
+    } finally {
+      setIsValidatingArchive(false);
+    }
+  };
+
+  // Execute Restore
+  const handleExecuteRestore = async () => {
+    if (!validationData || restoreConfirmation !== "RESTORE") return;
+
+    setIsRestoring(true);
+    setRestoreResult(null);
+
+    try {
+      const res = await fetch("/api/settings/backup/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stagedFilename: validationData.stagedFilename,
+          confirmation: restoreConfirmation,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Geri yükleme başarısız.");
+      }
+
+      setRestoreResult({
+        success: true,
+        message: data.message,
+        counts: data.counts,
+        preRestoreBackup: data.preRestoreBackupFilename,
+      });
+
+      // Refresh all stats
+      const sRes = await fetch("/api/settings");
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        setSettings(sData.settings);
+        setStats(sData.stats);
+      }
+    } catch (err: any) {
+      setRestoreResult({ success: false, message: err.message });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  // Manual Add handler
+  const handleManualAdd = async () => {
+    if (!manualInput.trim()) return;
+    setIsManualAdding(true);
+    setManualResult(null);
+
+    try {
+      const productIds = manualInput
+        .split(/[\n, ]+/)
+        .map((id) => id.trim().toUpperCase())
+        .filter(Boolean);
+
+      if (productIds.length === 0) {
+        throw new Error("Lütfen en az bir geçerli BigId girin.");
+      }
+
+      const res = await fetch("/api/settings/manual-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Ürün ekleme başarısız.");
+      }
+
+      setManualResult({
+        success: true,
+        message: data.message,
+        products: data.products,
+      });
+      setManualInput("");
+    } catch (err: any) {
+      setManualResult({ success: false, message: err.message });
+    } finally {
+      setIsManualAdding(false);
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Alert Notices */}
-      {saveSuccess && (
-        <div className="flex items-center gap-3 rounded-lg border border-emerald-800/80 bg-emerald-950/40 p-4 text-emerald-300">
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-          <span className="text-sm font-medium">{saveSuccess}</span>
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-zinc-800 space-x-1 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("scheduler")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "scheduler"
+              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Clock className="h-4 w-4" />
+          <span>Zamanlayıcı & Katalog Keşfi</span>
+        </button>
 
-      {saveError && (
-        <div className="flex items-center gap-3 rounded-lg border border-red-800/80 bg-red-950/40 p-4 text-red-300">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
-          <span className="text-sm font-medium">{saveError}</span>
-        </div>
-      )}
+        <button
+          onClick={() => setActiveTab("backup")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "backup"
+              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Database className="h-4 w-4" />
+          <span>Veri Yönetimi (Yedekleme & Geri Yükleme)</span>
+        </button>
 
-      {/* Main Settings Form */}
-      <form onSubmit={handleSave} className="space-y-8">
-        {/* Section 1: Genel & Kayıt Kontrolü */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-          <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-            <ShieldAlert className="h-5 w-5 text-emerald-400" />
-            <div>
-              <h2 className="text-base font-semibold text-white">Genel & Kayıt Kontrolü</h2>
-              <p className="text-xs text-zinc-400">
-                Site kişisel kullanım ve kontrollü erişim odaklıdır. Kayıt politikasını buradan yönetebilirsiniz.
-              </p>
-            </div>
-          </div>
+        <button
+          onClick={() => setActiveTab("catalog")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "catalog"
+              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Layers className="h-4 w-4" />
+          <span>Katalog & Kapsam Kuralları</span>
+        </button>
 
-          <div className="flex items-center justify-between p-4 rounded-lg bg-zinc-950/50 border border-zinc-800/60">
-            <div>
-              <label htmlFor="allowRegistration" className="text-sm font-medium text-white block cursor-pointer">
-                Yeni Kullanıcı Kaydına İzin Ver (ALLOW_REGISTRATION)
-              </label>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Kapalı olduğunda /register sayfası yeni hesap oluşturulmasını engeller ve kullanıcılara bilgi verir.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              id="allowRegistration"
-              checked={settings.allowRegistration}
-              onChange={(e) => setSettings({ ...settings, allowRegistration: e.target.checked })}
-              className="h-5 w-5 rounded border-zinc-700 bg-zinc-900 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-            />
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab("general")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "general"
+              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <Settings className="h-4 w-4" />
+          <span>Genel Ayarlar</span>
+        </button>
 
-        {/* Section 2: Katalog & Takip Kapsamı */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-          <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-            <Layers className="h-5 w-5 text-blue-400" />
-            <div>
-              <h2 className="text-base font-semibold text-white">Katalog & Takip Kapsamı</h2>
-              <p className="text-xs text-zinc-400">
-                Hangi ürün sınıflarının senkronize edileceğini ve takip listesinde tutulacağını belirleyin.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { key: "trackBaseGames", label: "Ana Oyunlar (BASE_GAME)", desc: "Standart tam oyunlar" },
-              { key: "trackBundles", label: "Oyun Paketleri (BUNDLE)", desc: "Birden fazla oyun içeren paketler" },
-              { key: "trackDlc", label: "İndirilebilir İçerik (DLC)", desc: "Hikaye ve ek görev paketleri" },
-              { key: "trackExpansions", label: "Genişleme Paketleri (EXPANSION)", desc: "Büyük ek paketler" },
-              { key: "trackSeasonPasses", label: "Sezon Biletleri (SEASON_PASS)", desc: "Sezon geçişleri" },
-              { key: "trackAddons", label: "Eklentiler (ADD_ON)", desc: "Genel eklenti içerikleri" },
-              { key: "trackContentPacks", label: "İçerik Paketleri (CONTENT_PACK)", desc: "Kozmetik ve içerik paketleri" },
-            ].map(({ key, label, desc }) => (
-              <label
-                key={key}
-                className="flex items-start gap-3 p-3.5 rounded-lg bg-zinc-950/40 border border-zinc-800/60 cursor-pointer hover:border-zinc-700 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={(settings as any)[key]}
-                  onChange={(e) => setSettings({ ...settings, [key]: e.target.checked })}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-medium text-white block">{label}</span>
-                  <span className="text-[11px] text-zinc-500">{desc}</span>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 3: Keşif & İlişki Algılama */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-          <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-            <RefreshCw className="h-5 w-5 text-purple-400" />
-            <div>
-              <h2 className="text-base font-semibold text-white">Keşif & İlişki Algılama</h2>
-              <p className="text-xs text-zinc-400">
-                Microsoft Catalog üzerinden bundle içerikleri ve ilişkili DLC&apos;lerin otomatik keşfi.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              {
-                key: "autoDiscoverPopular",
-                label: "Popüler Oyunları Otomatik Keşfet",
-                desc: "Microsoft Store listelerindeki yeni popüler ücretli oyunları tarar.",
-              },
-              {
-                key: "autoDiscoverBundleChildren",
-                label: "Paket Alt Oyunlarını Otomatik Keşfet",
-                desc: "Eklenen paketlerin içindeki bağımsız oyunları authoritative olarak çözer.",
-              },
-              {
-                key: "autoDiscoverRelatedDlc",
-                label: "İlişkili DLC&apos;leri Otomatik Keşfet",
-                desc: "Takipteki ana oyunlara ait ek paketleri mağaza metadata&apos;sından bulur.",
-              },
-              {
-                key: "autoAddRelatedProducts",
-                label: "İlişkili Ürünleri Otomatik Veritabanına Ekle",
-                desc: "Keşfedilen alt ürünleri ve DLC&apos;leri doğrudan fiyat takibine alır.",
-              },
-            ].map(({ key, label, desc }) => (
-              <label
-                key={key}
-                className="flex items-start gap-3 p-3.5 rounded-lg bg-zinc-950/40 border border-zinc-800/60 cursor-pointer hover:border-zinc-700 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={(settings as any)[key]}
-                  onChange={(e) => setSettings({ ...settings, [key]: e.target.checked })}
-                  className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-                <div>
-                  <span className="text-xs font-medium text-white block">{label}</span>
-                  <span className="text-[11px] text-zinc-500">{desc}</span>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 4: Senkronizasyon Zamanlaması */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-          <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-            <Database className="h-5 w-5 text-amber-400" />
-            <div>
-              <h2 className="text-base font-semibold text-white">Senkronizasyon Zamanlaması</h2>
-              <p className="text-xs text-zinc-400">
-                Arka plan worker servisinin katalog fiyatlarını ne sıklıkla kontrol edeceğini belirleyin.
-              </p>
-            </div>
-          </div>
-
-          <div className="max-w-xs">
-            <label htmlFor="syncInterval" className="text-xs font-medium text-zinc-300 block mb-2">
-              Otomatik Senkronizasyon Aralığı
-            </label>
-            <select
-              id="syncInterval"
-              value={settings.syncIntervalHours}
-              onChange={(e) => setSettings({ ...settings, syncIntervalHours: parseInt(e.target.value, 10) })}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-            >
-              <option value={1}>Her 1 Saatte Bir</option>
-              <option value={3}>Her 3 Saatte Bir</option>
-              <option value={6}>Her 6 Saatte Bir (Önerilen)</option>
-              <option value={12}>Her 12 Saatte Bir</option>
-              <option value={24}>Her 24 Saatte Bir (Günde 1 Kez)</option>
-            </select>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-950/50 hover:bg-emerald-500 transition-colors disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}
-            </button>
-          </div>
-        </div>
-      </form>
-
-      {/* Section 5: Manuel Fiyat Senkronizasyonu */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-        <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-          <RefreshCw className="h-5 w-5 text-emerald-400" />
-          <div>
-            <h2 className="text-base font-semibold text-white">Şimdi Fiyatları Kontrol Et (Advisory Lock Korumalı)</h2>
-            <p className="text-xs text-zinc-400">
-              Katalogdaki aktif oyunların fiyatlarını Microsoft Catalog API üzerinden hemen günceller ve alarmları tetikler.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="w-48">
-            <label htmlFor="syncLimit" className="text-xs text-zinc-400 block mb-1">
-              Kontrol Edilecek Adet:
-            </label>
-            <select
-              id="syncLimit"
-              value={syncLimit}
-              onChange={(e) => setSyncLimit(parseInt(e.target.value, 10))}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-            >
-              <option value={0}>Tüm Katalog ({stats.totalGames} Ürün)</option>
-              <option value={25}>İlk 25 Ürün (Hızlı Test)</option>
-              <option value={50}>İlk 50 Ürün</option>
-              <option value={100}>İlk 100 Ürün</option>
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleTriggerSync}
-            disabled={isSyncing}
-            className="mt-5 flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 text-emerald-400 ${isSyncing ? "animate-spin" : ""}`} />
-            {isSyncing ? "Senkronize Ediliyor..." : "Senkronizasyonu Başlat"}
-          </button>
-        </div>
-
-        {syncResult && (
-          <div
-            className={`mt-4 rounded-lg p-3 text-xs font-medium border ${
-              syncResult.success
-                ? "border-emerald-800/80 bg-emerald-950/40 text-emerald-300"
-                : "border-red-800/80 bg-red-950/40 text-red-300"
-            }`}
-          >
-            {syncResult.message}
-          </div>
-        )}
+        <button
+          onClick={() => setActiveTab("manual")}
+          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+            activeTab === "manual"
+              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+          }`}
+        >
+          <PlusCircle className="h-4 w-4" />
+          <span>Manuel Ürün Ekle</span>
+        </button>
       </div>
 
-      {/* Section 6: Manuel Ürün Ekleme */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-        <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-          <PlusCircle className="h-5 w-5 text-emerald-400" />
-          <div>
-            <h2 className="text-base font-semibold text-white">Microsoft Store Ürünü Ekle</h2>
-            <p className="text-xs text-zinc-400">
-              Xbox Store URL&apos;si veya 12 haneli BigId girerek kataloğa yeni bir oyun veya paket ekleyin.
-            </p>
-          </div>
+      {/* Global Alerts */}
+      {saveSuccess && (
+        <div className="flex items-center gap-3 rounded-lg bg-emerald-950/40 border border-emerald-800/80 p-3.5 text-xs text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+          <span>{saveSuccess}</span>
         </div>
+      )}
+      {saveError && (
+        <div className="flex items-center gap-3 rounded-lg bg-red-950/40 border border-red-800/80 p-3.5 text-xs text-red-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+          <span>{saveError}</span>
+        </div>
+      )}
 
-        <form onSubmit={handleManualAdd} className="space-y-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Örn: 9NBLGGH42CFD veya https://www.xbox.com/tr-tr/games/store/.../9NBLGGH42CFD"
-              value={manualInput}
-              onChange={(e) => setManualInput(e.target.value)}
-              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3.5 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={isAdding || !manualInput.trim()}
-              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors disabled:opacity-50 shrink-0"
-            >
-              <PlusCircle className="h-4 w-4" />
-              {isAdding ? "Doğrulanıyor..." : "Ürünü Ekle"}
-            </button>
+      {/* TAB 1: SCHEDULER & DISCOVERY */}
+      {activeTab === "scheduler" && (
+        <div className="space-y-6">
+          {/* Action Trigger Banner */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+            <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-400" />
+              <span>Anlık Tetikleme & Senkronizasyon (PostgreSQL Advisory Lock Korumalı)</span>
+            </h3>
+            <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+              Zamanlayıcıyı beklemeden mağaza katalog taramasını veya mevcut oyunların fiyat geçmişi güncellemesini hemen çalıştırabilirsiniz.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => handleTriggerAction("CATALOG_DISCOVERY")}
+                disabled={isTriggering}
+                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
+                <span>Şimdi Yeni Oyunları Tara</span>
+              </button>
+
+              <button
+                onClick={() => handleTriggerAction("PRICE_SYNC")}
+                disabled={isTriggering}
+                className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+              >
+                <TrendingDown className={`h-3.5 w-3.5 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
+                <span>Şimdi Fiyatları Güncelle</span>
+              </button>
+            </div>
+
+            {triggerMessage && (
+              <div className={`mt-4 rounded-lg p-3 text-xs flex items-center gap-2 ${triggerMessage.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
+                {triggerMessage.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <span>{triggerMessage.message}</span>
+              </div>
+            )}
           </div>
 
-          {addError && (
-            <div className="rounded-lg border border-red-800/80 bg-red-950/40 p-3 text-xs text-red-300">
-              {addError}
+          {/* Schedule Status & Telemetry Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <span className="text-[11px] font-medium text-zinc-400">Son Katalog Taraması</span>
+              <p className="mt-1 text-sm font-semibold text-white">
+                {scheduleInfo?.lastCatalogDiscoveryAt ? new Date(scheduleInfo.lastCatalogDiscoveryAt).toLocaleString("tr-TR") : "Henüz yapılmadı"}
+              </p>
             </div>
-          )}
 
-          {addedGame && (
-            <div className="rounded-lg border border-emerald-800/80 bg-emerald-950/30 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">{addedGame.title}</h3>
-                    <p className="text-xs text-zinc-400">
-                      Tür: <span className="text-emerald-400 font-mono">{addedGame.productClass}</span> | Fiyat:{" "}
-                      <span className="text-white font-medium">₺{addedGame.currentPrice.toFixed(2)}</span>
-                      {addedGame.discoveredChildrenCount > 0 && (
-                        <span> | Keşfedilen Alt Ürün: {addedGame.discoveredChildrenCount}</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/oyun/${addedGame.slug}`}
-                  className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <span className="text-[11px] font-medium text-zinc-400">Sıradaki Katalog Taraması</span>
+              <p className="mt-1 text-sm font-semibold text-emerald-400">
+                {scheduleInfo?.nextCatalogDiscoveryAt ? new Date(scheduleInfo.nextCatalogDiscoveryAt).toLocaleString("tr-TR") : "Devre Dışı"}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <span className="text-[11px] font-medium text-zinc-400">Son Fiyat Senkronizasyonu</span>
+              <p className="mt-1 text-sm font-semibold text-white">
+                {scheduleInfo?.lastPriceSyncAt ? new Date(scheduleInfo.lastPriceSyncAt).toLocaleString("tr-TR") : "Henüz yapılmadı"}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+              <span className="text-[11px] font-medium text-zinc-400">Sıradaki Fiyat Senkronizasyonu</span>
+              <p className="mt-1 text-sm font-semibold text-emerald-400">
+                {scheduleInfo?.nextPriceSyncAt ? new Date(scheduleInfo.nextPriceSyncAt).toLocaleString("tr-TR") : "Devre Dışı"}
+              </p>
+            </div>
+          </div>
+
+          {/* Configuration Form */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-6">
+            <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
+              Xbox Series X|S Zamanlayıcı Yapılandırması
+            </h3>
+
+            {/* Switch: autoDiscoverSeriesCatalog */}
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <span className="text-sm font-medium text-white">Otomatik Xbox Series X|S Katalog Keşfi</span>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Türkiye Xbox Store&apos;daki yeni ve geri-katalog Series X|S oyunlarını periyodik olarak otomatik tarar.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.autoDiscoverSeriesCatalog}
+                  onChange={(e) => setSettings({ ...settings, autoDiscoverSeriesCatalog: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-zinc-800/80">
+              {/* Catalog Discovery Interval */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Katalog Keşif Aralığı (Saat)
+                </label>
+                <select
+                  value={settings.catalogDiscoveryIntervalHours}
+                  onChange={(e) => setSettings({ ...settings, catalogDiscoveryIntervalHours: parseInt(e.target.value, 10) })}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
                 >
-                  Sayfaya Git
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+                  <option value={12}>12 Saat (Günde 2 kez)</option>
+                  <option value={24}>24 Saat (Önerilen - Günde 1 kez)</option>
+                  <option value={48}>48 Saat (2 günde 1 kez)</option>
+                  <option value={72}>72 Saat (3 günde 1 kez)</option>
+                </select>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Series X|S mağaza kanalındaki yeni ürünleri tarama sıklığı.
+                </span>
+              </div>
+
+              {/* Price Sync Interval */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Fiyat Senkronizasyon Aralığı (Saat)
+                </label>
+                <select
+                  value={settings.priceSyncIntervalHours}
+                  onChange={(e) => setSettings({ ...settings, priceSyncIntervalHours: parseInt(e.target.value, 10) })}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value={2}>2 Saat (Sık takip)</option>
+                  <option value={6}>6 Saat (Önerilen)</option>
+                  <option value={12}>12 Saat</option>
+                  <option value={24}>24 Saat (Günde 1 kez)</option>
+                </select>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Mevcut kayıtlı oyunların anlık fiyat değişimlerini kontrol etme sıklığı.
+                </span>
+              </div>
+
+              {/* Metadata Refresh Interval */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Metaveri Yenileme Aralığı (Saat)
+                </label>
+                <select
+                  value={settings.metadataRefreshIntervalHours}
+                  onChange={(e) => setSettings({ ...settings, metadataRefreshIntervalHours: parseInt(e.target.value, 10) })}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value={72}>72 Saat (3 gün)</option>
+                  <option value={168}>168 Saat (Önerilen - Haftalık)</option>
+                  <option value={336}>336 Saat (2 haftalık)</option>
+                </select>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Açıklama, görseller ve tür bilgilerini ağır güncelleme sıklığı.
+                </span>
+              </div>
+
+              {/* Relationship Refresh Interval */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  İlişki (Paket/DLC) Yenileme Aralığı (Saat)
+                </label>
+                <select
+                  value={settings.relationshipRefreshIntervalHours}
+                  onChange={(e) => setSettings({ ...settings, relationshipRefreshIntervalHours: parseInt(e.target.value, 10) })}
+                  className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-xs text-zinc-200 focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value={72}>72 Saat (3 gün)</option>
+                  <option value={168}>168 Saat (Önerilen - Haftalık)</option>
+                  <option value={336}>336 Saat (2 haftalık)</option>
+                </select>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Paket içi oyunlar ve ana oyun DLC bağlantılarını yenileme sıklığı.
+                </span>
               </div>
             </div>
-          )}
-        </form>
-      </div>
 
-      {/* Section 7: Sistem Durumu & Metrikler */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">
-        <div className="flex items-center gap-3 border-b border-zinc-800 pb-4 mb-5">
-          <Database className="h-5 w-5 text-emerald-400" />
-          <div>
-            <h2 className="text-base font-semibold text-white">Sistem Durumu & Telemetri</h2>
-            <p className="text-xs text-zinc-400">
-              Veritabanı kayıtları, ilişki bağlantıları ve son senkronizasyon telemetrisi.
-            </p>
+            <div className="pt-4 border-t border-zinc-800 flex justify-end">
+              <button
+                onClick={handleSaveSettings}
+                disabled={isSaving}
+                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+              >
+                <Save className="h-4 w-4" />
+                <span>{isSaving ? "Kaydediliyor..." : "Zamanlayıcı Ayarlarını Kaydet"}</span>
+              </button>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">Katalogdaki Ürünler</span>
-            <span className="text-2xl font-bold text-white mt-1 block">{stats.totalGames}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">Fiyat Geçmişi Kayıtları</span>
-            <span className="text-2xl font-bold text-emerald-400 mt-1 block">{stats.totalHistories}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">Fırsat Analizleri</span>
-            <span className="text-2xl font-bold text-blue-400 mt-1 block">{stats.totalDeals}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">İlişki Bağlantıları</span>
-            <span className="text-2xl font-bold text-purple-400 mt-1 block">{stats.totalRelations}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">Aktif Fiyat Alarmları</span>
-            <span className="text-2xl font-bold text-amber-400 mt-1 block">{stats.activeAlerts}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4">
-            <span className="text-xs text-zinc-400 block">Kuyruktaki Bildirim Olayları</span>
-            <span className="text-2xl font-bold text-indigo-400 mt-1 block">{stats.pendingNotifications}</span>
-          </div>
-
-          <div className="rounded-lg bg-zinc-950/50 border border-zinc-800/60 p-4 col-span-2">
-            <span className="text-xs text-zinc-400 block">Son Senkronizasyon</span>
-            <div className="mt-1 flex items-center justify-between">
-              <span className="text-sm font-semibold text-white">
-                {stats.lastSyncRun
-                  ? `${new Date(stats.lastSyncRun.startedAt).toLocaleString("tr-TR")}`
-                  : "Henüz kayıt yok"}
-              </span>
-              {stats.lastSyncRun && (
-                <span
-                  className={`text-xs px-2 py-0.5 rounded font-mono ${
-                    stats.lastSyncRun.status === "COMPLETED"
-                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50"
-                      : "bg-amber-950 text-amber-400 border border-amber-800/50"
-                  }`}
-                >
-                  {stats.lastSyncRun.status}
-                </span>
-              )}
+      {/* TAB 2: BACKUP & RESTORE CENTER */}
+      {activeTab === "backup" && (
+        <div className="space-y-6">
+          {/* Backup Creator Card */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div>
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                  <Database className="h-4 w-4 text-emerald-400" />
+                  <span>PostgreSQL Veritabanı Yedeği Oluştur (pg_dump -Fc)</span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Veritabanını sıkıştırılmış PostgreSQL custom arşiv biçiminde sunucu tarafında güvenle yedekler.
+                </p>
+              </div>
             </div>
-            {stats.lastSyncRun && (
-              <p className="text-[11px] text-zinc-500 mt-1">
-                Kontrol: {stats.lastSyncRun.productsChecked} | Değişim: {stats.lastSyncRun.pricesChanged} | Hata:{" "}
-                {stats.lastSyncRun.errorCount}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <label
+                onClick={() => setBackupMode("FULL")}
+                className={`flex items-start gap-3 rounded-lg border p-3.5 cursor-pointer transition-all ${
+                  backupMode === "FULL"
+                    ? "border-emerald-500/80 bg-emerald-950/20"
+                    : "border-zinc-800 bg-zinc-950/40 hover:border-zinc-700"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="backupMode"
+                  checked={backupMode === "FULL"}
+                  onChange={() => setBackupMode("FULL")}
+                  className="mt-0.5 text-emerald-600"
+                />
+                <div>
+                  <span className="text-xs font-semibold text-white">Tam Yedek (FULL BACKUP)</span>
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    Oyunlar, fiyat geçmişi, analizler, ilişkiler, kullanıcılar, favoriler, istek listesi ve bildirimler dahil tüm veritabanı.
+                  </p>
+                </div>
+              </label>
+
+              <label
+                onClick={() => setBackupMode("CATALOG")}
+                className={`flex items-start gap-3 rounded-lg border p-3.5 cursor-pointer transition-all ${
+                  backupMode === "CATALOG"
+                    ? "border-emerald-500/80 bg-emerald-950/20"
+                    : "border-zinc-800 bg-zinc-950/40 hover:border-zinc-700"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="backupMode"
+                  checked={backupMode === "CATALOG"}
+                  onChange={() => setBackupMode("CATALOG")}
+                  className="mt-0.5 text-emerald-600"
+                />
+                <div>
+                  <span className="text-xs font-semibold text-white">Katalog Yedeği (CATALOG ONLY)</span>
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    Yalnızca oyun kataloğu, fiyat geçmişi ve paket ilişkileri (kişisel kullanıcı verileri ve şifreler hariç).
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-xs text-zinc-400">
+                Mevcut kayıt: <strong className="text-white">{stats.totalGames} Oyun</strong>,{" "}
+                <strong className="text-white">{stats.totalHistories} Fiyat Geçmişi</strong>,{" "}
+                <strong className="text-white">{stats.totalRelations} İlişki</strong>
+              </span>
+
+              <button
+                onClick={handleCreateBackup}
+                disabled={isCreatingBackup}
+                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+              >
+                <Download className={`h-4 w-4 ${isCreatingBackup ? "animate-bounce" : ""}`} />
+                <span>{isCreatingBackup ? "Yedek Alınıyor..." : "Veritabanı Yedeği Oluştur"}</span>
+              </button>
+            </div>
+
+            {backupMessage && (
+              <div className={`mt-3 rounded-lg p-3 text-xs flex items-center gap-2 ${backupMessage.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
+                {backupMessage.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <span>{backupMessage.text}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Backup History Table */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-4">
+            <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
+              Kayıtlı Yedek Dosyaları ({backups.length})
+            </h3>
+
+            {backups.length === 0 ? (
+              <div className="text-center py-8 text-xs text-zinc-500">
+                Henüz kayıtlı bir veritabanı yedeği bulunmuyor.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-zinc-400">
+                      <th className="pb-2">Dosya Adı</th>
+                      <th className="pb-2">Mod</th>
+                      <th className="pb-2">Boyut</th>
+                      <th className="pb-2">Oluşturulma</th>
+                      <th className="pb-2">Durum</th>
+                      <th className="pb-2 text-right">İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/60">
+                    {backups.map((b) => (
+                      <tr key={b.id} className="hover:bg-zinc-850/40">
+                        <td className="py-2.5 font-mono text-zinc-300 text-[11px]">{b.filename}</td>
+                        <td className="py-2.5">
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${b.mode === "FULL" ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50" : "bg-blue-950 text-blue-400 border border-blue-800/50"}`}>
+                            {b.mode}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-zinc-400">
+                          {(b.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+                        </td>
+                        <td className="py-2.5 text-zinc-400">
+                          {new Date(b.startedAt).toLocaleString("tr-TR")}
+                        </td>
+                        <td className="py-2.5">
+                          <span className={`text-[11px] font-medium ${b.status === "COMPLETED" ? "text-emerald-400" : "text-amber-400"}`}>
+                            {b.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-right space-x-2">
+                          <a
+                            href={`/api/settings/backup/download/${b.filename}`}
+                            download
+                            className="inline-flex items-center gap-1 rounded bg-zinc-800 px-2 py-1 text-[11px] font-medium text-zinc-200 hover:bg-zinc-700"
+                          >
+                            <Download className="h-3 w-3" />
+                            İndir
+                          </a>
+                          <button
+                            onClick={() => handleDeleteBackup(b.id)}
+                            className="inline-flex items-center gap-1 rounded bg-red-950/40 text-red-400 px-2 py-1 text-[11px] font-medium hover:bg-red-900/60 border border-red-900/50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Sil
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Restore / Import Card */}
+          <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-6 space-y-4">
+            <div className="border-b border-amber-900/30 pb-3">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <UploadCloud className="h-4 w-4 text-amber-400" />
+                <span>Yedekten Geri Yükle (pg_restore)</span>
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                PostgreSQL custom format (.dump veya .backup) arşivini yükleyip güvenle geri yükleyin.
               </p>
+            </div>
+
+            <div className="rounded-lg bg-amber-950/20 border border-amber-800/40 p-3 text-xs text-amber-300/90 leading-relaxed">
+              <strong>Önemli Güvenlik Kuralı:</strong> Geri yükleme işlemi mevcut veritabanı içeriğini değiştirecektir.
+              Sistem geri yükleme öncesinde otomatik olarak tam bir güvenlik yedeği (pre-restore backup) alacak ve işlem süresince advisory lock ile tüm senkronizasyonları askıya alacaktır.
+            </div>
+
+            {/* Step 1: File Upload & Validation */}
+            <form onSubmit={handleValidateUpload} className="space-y-3">
+              <label className="block text-xs font-medium text-zinc-300">
+                1. Yedek Dosyası Seç (.dump veya .backup):
+              </label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="file"
+                  accept=".dump,.backup"
+                  onChange={(e) => {
+                    setUploadFile(e.target.files?.[0] || null);
+                    setValidationData(null);
+                  }}
+                  className="block w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700 cursor-pointer"
+                />
+                <button
+                  type="submit"
+                  disabled={!uploadFile || isValidatingArchive}
+                  className="shrink-0 flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+                >
+                  <FileCheck className="h-4 w-4" />
+                  <span>{isValidatingArchive ? "Doğrulanıyor..." : "Arşivi İncele"}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Step 2: Archive Inspection Summary */}
+            {validationData && (
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
+                  <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Arşiv Doğrulandı ({validationData.format})
+                  </span>
+                  <span className="text-[11px] text-zinc-400 font-mono">
+                    {(validationData.sizeBytes / (1024 * 1024)).toFixed(2)} MB
+                  </span>
+                </div>
+
+                <div className="text-xs text-zinc-300">
+                  <span className="text-zinc-500">İçerilen Tablolar:</span>{" "}
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {validationData.tables.map((t) => (
+                      <span key={t} className="rounded bg-zinc-800 px-2 py-0.5 text-[11px] font-mono text-zinc-200">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Step 3: Explicit Confirmation */}
+                <div className="pt-3 border-t border-zinc-800/80 space-y-3">
+                  <label className="block text-xs font-medium text-amber-300">
+                    2. Geri Yüklemeyi Onaylamak İçin Aşağıya <strong className="underline font-mono">RESTORE</strong> Yazın:
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="RESTORE"
+                      value={restoreConfirmation}
+                      onChange={(e) => setRestoreConfirmation(e.target.value)}
+                      className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs text-white font-mono uppercase tracking-widest focus:border-amber-500 focus:outline-none w-48"
+                    />
+                    <button
+                      onClick={handleExecuteRestore}
+                      disabled={restoreConfirmation !== "RESTORE" || isRestoring}
+                      className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-40 transition-all shadow-sm"
+                    >
+                      <Database className={`h-4 w-4 ${isRestoring ? "animate-spin" : ""}`} />
+                      <span>{isRestoring ? "Geri Yükleniyor (Bekleyiniz)..." : "Geri Yüklemeyi Başlat"}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Restore Result Notice */}
+            {restoreResult && (
+              <div className={`rounded-lg p-4 text-xs space-y-2 ${restoreResult.success ? "bg-emerald-950/40 border border-emerald-800 text-emerald-300" : "bg-red-950/40 border border-red-800 text-red-300"}`}>
+                <div className="flex items-center gap-2 font-semibold">
+                  {restoreResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  <span>{restoreResult.message}</span>
+                </div>
+                {restoreResult.counts && (
+                  <p className="text-[11px] text-zinc-300">
+                    Doğrulanan Sayımlar: {restoreResult.counts.games} Oyun, {restoreResult.counts.priceHistories} Fiyat Geçmişi, {restoreResult.counts.gameRelations} İlişki.
+                  </p>
+                )}
+                {restoreResult.preRestoreBackup && (
+                  <p className="text-[11px] text-zinc-400 font-mono">
+                    Güvenlik Yedeği: {restoreResult.preRestoreBackup}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
+      )}
 
-        {/* Relations Breakdown */}
-        {stats.relationsByType.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-zinc-800">
-            <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-3">
-              İlişki Dağılımı (Authoritative Relationships)
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {stats.relationsByType.map((r) => (
-                <span
-                  key={r.type}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-zinc-950 px-2.5 py-1 text-xs text-zinc-300 border border-zinc-800"
-                >
-                  <span className="font-mono text-emerald-400">{r.type}:</span>
-                  <span className="font-bold text-white">{r.count}</span>
-                </span>
-              ))}
+      {/* TAB 3: CATALOG & SCOPE RULES */}
+      {activeTab === "catalog" && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-6">
+          <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
+            Katalog Kapsam & Takip Kuralları
+          </h3>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-2 border-b border-zinc-800/60">
+              <div>
+                <span className="text-xs font-medium text-white">Ana Oyunlar (BASE_GAME)</span>
+                <p className="text-[11px] text-zinc-400">Standart ve özel sürüm ana oyunlar.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackBaseGames}
+                onChange={(e) => setSettings({ ...settings, trackBaseGames: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-zinc-800/60">
+              <div>
+                <span className="text-xs font-medium text-white">Paketler & Koleksiyonlar (BUNDLE)</span>
+                <p className="text-[11px] text-zinc-400">Birden fazla oyun içeren paketler.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackBundles}
+                onChange={(e) => setSettings({ ...settings, trackBundles: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-zinc-800/60">
+              <div>
+                <span className="text-xs font-medium text-white">DLC & Eklentiler</span>
+                <p className="text-[11px] text-zinc-400">İndirilebilir içerikler ve genişletmeler.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackDlc}
+                onChange={(e) => setSettings({ ...settings, trackDlc: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-zinc-800/60">
+              <div>
+                <span className="text-xs font-medium text-white">Genişletme Paketleri (EXPANSION)</span>
+                <p className="text-[11px] text-zinc-400">Büyük ek haritalar ve hikaye içerikleri.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackExpansions}
+                onChange={(e) => setSettings({ ...settings, trackExpansions: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2 border-b border-zinc-800/60">
+              <div>
+                <span className="text-xs font-medium text-white">Sezon Biletleri (SEASON_PASS)</span>
+                <p className="text-[11px] text-zinc-400">Gelecek tüm DLC&apos;leri kapsayan sezon biletleri.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackSeasonPasses}
+                onChange={(e) => setSettings({ ...settings, trackSeasonPasses: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
+            </div>
+
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <span className="text-xs font-medium text-white">Kozmetik ve İçerik Paketleri (CONTENT_PACK)</span>
+                <p className="text-[11px] text-zinc-400">Kıyafet, silah ve skin paketleri.</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.trackContentPacks}
+                onChange={(e) => setSettings({ ...settings, trackContentPacks: e.target.checked })}
+                className="rounded border-zinc-700 text-emerald-600 focus:ring-0"
+              />
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="pt-4 border-t border-zinc-800 flex justify-end">
+            <button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+            >
+              <Save className="h-4 w-4" />
+              <span>{isSaving ? "Kaydediliyor..." : "Katalog Kurallarını Kaydet"}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: GENERAL SETTINGS */}
+      {activeTab === "general" && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-6">
+          <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
+            Genel Uygulama Ayarları
+          </h3>
+
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <span className="text-sm font-medium text-white">Kullanıcı Kaydına İzin Ver</span>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Yeni kullanıcıların /register sayfasından hesap oluşturmasına izin verilsin mi?
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={settings.allowRegistration}
+                onChange={(e) => setSettings({ ...settings, allowRegistration: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+            </label>
+          </div>
+
+          <div className="pt-4 border-t border-zinc-800 flex justify-end">
+            <button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+            >
+              <Save className="h-4 w-4" />
+              <span>{isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: MANUAL ADD */}
+      {activeTab === "manual" && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-4">
+          <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
+            Manuel Microsoft BigId İçe Aktarımı
+          </h3>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            Xbox veya Microsoft Store ürün BigId kodlarını (ör: 9NWQ1Q1FR0C9, 9N6N6K5H99R6) girerek Display Catalog üzerinden anında ekleyebilir ve paket ilişkilerini bağlayabilirsiniz.
+          </p>
+
+          <textarea
+            rows={4}
+            placeholder="9NWQ1Q1FR0C9, 9N6N6K5H99R6..."
+            value={manualInput}
+            onChange={(e) => setManualInput(e.target.value)}
+            className="w-full rounded-lg bg-zinc-950 border border-zinc-800 p-3 text-xs text-zinc-200 font-mono focus:border-emerald-500 focus:outline-none"
+          />
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleManualAdd}
+              disabled={isManualAdding || !manualInput.trim()}
+              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>{isManualAdding ? "İçe Aktarılıyor..." : "Ürünleri İçe Aktar"}</span>
+            </button>
+          </div>
+
+          {manualResult && (
+            <div className={`mt-3 rounded-lg p-3 text-xs ${manualResult.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
+              <span>{manualResult.message}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
