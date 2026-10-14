@@ -16,7 +16,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="postgresql://postgres:postgrespassword@localhost:5432/gamedeals?schema=public"
+ENV DATABASE_URL="postgresql://build_user:build_placeholder@127.0.0.1:5432/build_db?schema=public"
+ENV SESSION_SECRET="build_time_placeholder_secret_minimum_64_characters_long_for_nextjs_build_phase"
 RUN npx prisma generate
 RUN npm run build
 

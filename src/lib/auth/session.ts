@@ -2,11 +2,18 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { Role } from "@prisma/client";
 
+import { assertServerEnv } from "../config/env-validation";
+
 const SESSION_COOKIE_NAME = "game_deals_session";
-const SESSION_SECRET = new TextEncoder().encode(
-  process.env.SESSION_SECRET || "game-deals-super-secure-jwt-secret-minimum-32-chars-2026-prod"
-);
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+/**
+ * Returns the validated session secret key. Throws if missing or invalid.
+ */
+export function getSessionSecretKey(): Uint8Array {
+  assertServerEnv();
+  return new TextEncoder().encode(process.env.SESSION_SECRET!);
+}
 
 export interface SessionPayload {
   userId: string;
@@ -19,11 +26,12 @@ export interface SessionPayload {
  * Creates an encrypted/signed session JWT token.
  */
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
+  const secretKey = getSessionSecretKey();
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION_SECONDS}s`)
-    .sign(SESSION_SECRET);
+    .sign(secretKey);
 }
 
 /**
@@ -31,7 +39,8 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
  */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SESSION_SECRET);
+    const secretKey = getSessionSecretKey();
+    const { payload } = await jwtVerify(token, secretKey);
     if (!payload.userId || !payload.email || !payload.role) {
       return null;
     }

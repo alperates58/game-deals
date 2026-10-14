@@ -13,12 +13,16 @@ const catalogTables = [
 
 const targetFile = path.resolve(__dirname, "../prisma/seed.dump");
 
-// Extract DB credentials from DATABASE_URL or defaults
-const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@postgres:5432/gamedeals";
+// Extract DB credentials from DATABASE_URL
+const dbUrl = process.env.DATABASE_URL;
+if (!dbUrl) {
+  throw new Error("[create-seed-dump] DATABASE_URL environment variable is required.");
+}
+
 let host = "postgres";
 let port = "5432";
 let user = "postgres";
-let password = "postgrespassword";
+let password = "";
 let database = "gamedeals";
 
 try {
@@ -26,10 +30,10 @@ try {
   host = u.hostname || host;
   port = u.port || port;
   user = decodeURIComponent(u.username || user);
-  password = u.password ? decodeURIComponent(u.password) : password;
+  password = u.password ? decodeURIComponent(u.password) : "";
   database = u.pathname.replace(/^\//, "") || database;
 } catch (e) {
-  // use defaults
+  throw new Error(`[create-seed-dump] Failed to parse DATABASE_URL: ${e.message}`);
 }
 
 const args = [

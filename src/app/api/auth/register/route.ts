@@ -18,16 +18,10 @@ const RegisterSchema = z
     path: ["passwordConfirmation"],
   });
 
+const REGISTRATION_ADVISORY_LOCK_ID = 884848;
+
 export async function POST(req: Request) {
   try {
-    const allowed = await isRegistrationAllowed();
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Kullanıcı kaydı şu anda sistem yöneticisi tarafından durdurulmuştur." },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const parsed = RegisterSchema.safeParse(body);
 
@@ -39,53 +33,108 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password } = parsed.data;
+    const passwordHash = await hashPassword(password);
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    // Atomic transaction protected by PostgreSQL transaction-scoped advisory lock
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Acquire transaction advisory lock to prevent concurrent first-owner race condition
+      try {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${REGISTRATION_ADVISORY_LOCK_ID})`;
+      } catch {
+        // Fallback for non-postgres mock environments in unit tests
+      }
+
+      // 2. Validate registration policy
+      if (process.env.ALLOW_REGISTRATION === "false") {
+        throw new Error("REGISTRATION_DISABLED");
+      }
+
+      let settings = await tx.systemSetting.findUnique({
+        where: { id: "global" },
+      });
+
+      if (!settings) {
+        settings = await tx.systemSetting.create({
+          data: {
+            id: "global",
+            allowRegistration: true,
+          },
+        });
+      }
+
+      if (!settings.allowRegistration) {
+        throw new Error("REGISTRATION_DISABLED");
+      }
+
+      // 3. Check duplicate email inside lock
+      const existingUser = await tx.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        throw new Error("EMAIL_EXISTS");
+      }
+
+      // 4. Atomic check for first OWNER
+      const userCount = await tx.user.count();
+      const isFirstUser = userCount === 0;
+      const role: Role = isFirstUser ? Role.OWNER : Role.USER;
+
+      const newUser = await tx.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          role,
+          lastLoginAt: new Date(),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+
+      // 5. If this was the first user (now OWNER), automatically disable registration for safety.
+      // The OWNER can later re-enable registration in Settings (/ayarlar).
+      if (isFirstUser) {
+        await tx.systemSetting.update({
+          where: { id: "global" },
+          data: { allowRegistration: false },
+        });
+      }
+
+      return { user: newUser, isFirstUser };
     });
 
-    if (existingUser) {
+    await setSessionCookie({
+      userId: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      role: result.user.role,
+    });
+
+    return NextResponse.json({
+      success: true,
+      user: result.user,
+    });
+  } catch (error: any) {
+    if (error?.message === "REGISTRATION_DISABLED") {
+      return NextResponse.json(
+        { error: "Kullanıcı kaydı şu anda sistem yöneticisi tarafından durdurulmuştur." },
+        { status: 403 }
+      );
+    }
+
+    if (error?.message === "EMAIL_EXISTS") {
       return NextResponse.json(
         { error: "Bu e-posta adresi zaten kullanımda." },
         { status: 400 }
       );
     }
 
-    // First user is automatically assigned the OWNER role
-    const userCount = await prisma.user.count();
-    const role: Role = userCount === 0 ? Role.OWNER : Role.USER;
-
-    const passwordHash = await hashPassword(password);
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role,
-        lastLoginAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
-    });
-
-    await setSessionCookie({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
-
-    return NextResponse.json({
-      success: true,
-      user,
-    });
-  } catch (error: any) {
-    console.error("[Register Error]", error);
+    console.error("[Register Error]", error?.message || error);
     return NextResponse.json(
       { error: "Kayıt işlemi sırasında bir hata oluştu." },
       { status: 500 }

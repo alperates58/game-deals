@@ -26,6 +26,9 @@ export interface ParsedDbConfig {
 }
 
 export function parseDatabaseUrl(urlStr: string = process.env.DATABASE_URL || ""): ParsedDbConfig {
+  if (!urlStr) {
+    throw new Error("DATABASE_URL environment variable is missing.");
+  }
   try {
     const parsed = new URL(urlStr);
     return {
@@ -35,14 +38,8 @@ export function parseDatabaseUrl(urlStr: string = process.env.DATABASE_URL || ""
       port: parsed.port || "5432",
       database: parsed.pathname.replace(/^\//, "") || "gamedeals",
     };
-  } catch {
-    return {
-      user: "postgres",
-      password: "postgrespassword",
-      host: "localhost",
-      port: "5432",
-      database: "gamedeals",
-    };
+  } catch (err: any) {
+    throw new Error(`Invalid DATABASE_URL configuration: ${err.message}`);
   }
 }
 

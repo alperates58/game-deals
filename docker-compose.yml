@@ -4,14 +4,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-gamedeals}
     expose:
       - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d gamedeals"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-gamedeals}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -26,13 +26,13 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-gamedeals}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-gamedeals}?schema=public
       - APP_URL=${APP_URL:-https://game.alperates.com.tr}
       - APP_TIMEZONE=Europe/Istanbul
       - XBOX_MARKET=TR
       - XBOX_LANGUAGE=tr-TR
       - BACKUP_DIR=/app/backups
-      - SESSION_SECRET=${SESSION_SECRET:-game-deals-super-secure-jwt-secret-minimum-32-chars-2026-prod}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET is required}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-true}
     volumes:
       - backups_data:/app/backups

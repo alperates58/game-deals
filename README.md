@@ -49,38 +49,34 @@ Uygulama `http://localhost:3000` adresinde, PostgreSQL ise `localhost:5432` port
 
 ---
 
-### 3. COOLIFY DEPLOYMENT
+### 3. COOLIFY PRODUCTION DEPLOYMENT (DOCKER COMPOSE)
 
-Proje, Coolify üzerinde standart Dockerfile deployment yöntemi ile sorunsuz çalışacak şekilde yapılandırılmıştır.
+Coolify üzerinde harici veritabanı kaynağı açmadan, doğrudan Docker Compose ile tek tıkla kurulum yapılır.
 
-#### Adım 1: Yeni Servis Oluşturma
-- Coolify arayüzünde **"New Resource" -> "Application"** seçin.
-- Git repository adresini bağlayın (`game-deals`).
-- Build Pack olarak **"Dockerfile"** seçin.
-- Dockerfile Path: `./Dockerfile` (varsayılan).
+#### Adım 1: Yeni Kaynak Ekleme
+- Coolify'da **"New Resource" -> "Git Repository"** seçin.
+- Reponuzu bağlayın: `alperates58/game-deals` (dal: `main`).
+- Build Pack: **Docker Compose** (`docker-compose.yml` otomatik algılanır).
+- `web` servisine alan adınızı atayın: `https://game.alperates.com.tr`.
 
-#### Adım 2: Çevre Değişkenleri (Environment Variables)
-Coolify panelinde uygulamanın **Environment Variables** bölümüne aşağıdaki değişkenleri tanımlayın:
+#### Adım 2: Çevre Değişkenleri (Environment Variables / Secrets)
+Coolify panelindeki **Environment Variables** bölümüne aşağıdaki 2 zorunlu gizli anahtarı girin:
 
-| Değişken Adı | Zorunlu | Açıklama | Örnek Değer |
-|---|---|---|---|
-| `DATABASE_URL` | Evet | PostgreSQL bağlantı URI'si (Coolify PostgreSQL servisi veya harici) | `postgresql://user:password@postgres:5432/gamedeals?schema=public` |
-| `APP_URL` | Evet | Yayındaki production alan adı | `https://game.alperates.com.tr` |
-| `APP_TIMEZONE` | Evet | Uygulama zaman dilimi | `Europe/Istanbul` |
-| `XBOX_MARKET` | Evet | Hedef Microsoft Store pazarı | `TR` |
-| `XBOX_LANGUAGE` | Evet | Hedef Microsoft Store dili | `tr-TR` |
-| `PORT` | Hayır | Dinlenecek port (Varsayılan 3000) | `3000` |
-| `NODE_ENV` | Hayır | Çalışma ortamı | `production` |
+| Değişken Adı | Zorunlu | Açıklama |
+|---|---|---|
+| `POSTGRES_PASSWORD` | **EVET** | PostgreSQL için güçlü üretim şifresi. |
+| `SESSION_SECRET` | **EVET** | Kullanıcı oturumlarını şifrelemek için **en az 64 karakterli** yüksek entropili gizli anahtar. (`openssl rand -base64 48`) |
 
-#### Adım 3: Migration ve Veritabanı Güvenliği
-- Konteyner ayağa kalkarken Dockerfile giriş noktası (`CMD`) otomatik olarak **non-destructive** migration komutunu çalıştırır:
-  ```bash
-  npx prisma migrate deploy
-  ```
-- Üretim ortamında kesinlikle `prisma db push` veya `prisma migrate reset` gibi yıkıcı komutlar çalıştırılmaz; mevcut veriler ve fiyat geçmişi korunur.
+*Opsiyonel (Compose içinde güvenli varsayılanları mevcuttur):*
+- `POSTGRES_USER=postgres` (Varsayılan: `postgres`)
+- `POSTGRES_DB=gamedeals` (Varsayılan: `gamedeals`)
+- `APP_URL=https://game.alperates.com.tr`
+- `ALLOW_REGISTRATION=true`
 
-#### Adım 4: Dağıtımı Başlatın
-- Coolify'da **"Deploy"** butonuna basın. Dockerfile çok aşamalı (multi-stage non-root) derlemeyi tamamlayarak uygulamayı yayına alır.
+#### Adım 3: Dağıtımı Başlatın (Deploy)
+- **Deploy** butonuna basın.
+- PostgreSQL ve Web konteynerleri otomatik ayağa kalkar, Prisma migration'ları uygulanır ve veritabanı boşsa ilk 1.924 oyunluk katalog (`prisma/seed.dump`) otomatik içe aktarılır.
+- Yayına girdikten sonra `/register` adresinden ilk kaydınızı oluşturun; sistem sizi otomatik olarak **OWNER** yapar ve ardından güvenliğiniz için kayıtları otomatik olarak kapatır (dilediğinizde Ayarlar'dan tekrar açabilirsiniz).
 
 ---
 

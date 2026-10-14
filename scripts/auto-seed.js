@@ -20,11 +20,16 @@ async function main() {
 
     console.log("[Auto-Seed] Fresh database detected (0 games). Automatically loading initial Xbox catalog...");
 
-    const dbUrl = process.env.DATABASE_URL || "postgresql://postgres:postgrespassword@postgres:5432/gamedeals";
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      console.log("[Auto-Seed] DATABASE_URL is not set. Skipping initial seed.");
+      return;
+    }
+
     let host = "postgres";
     let port = "5432";
     let user = "postgres";
-    let password = "postgrespassword";
+    let password = "";
     let database = "gamedeals";
 
     try {
@@ -32,10 +37,10 @@ async function main() {
       host = u.hostname || host;
       port = u.port || port;
       user = decodeURIComponent(u.username || user);
-      password = u.password ? decodeURIComponent(u.password) : password;
+      password = u.password ? decodeURIComponent(u.password) : "";
       database = u.pathname.replace(/^\//, "") || database;
     } catch {
-      // fallback
+      // invalid URL format
     }
 
     // Execute pg_restore
