@@ -1,8 +1,22 @@
 import Link from "next/link";
-import { Gamepad2, Sparkles, TrendingDown, Clock, Layers } from "lucide-react";
+import {
+  Gamepad2,
+  Sparkles,
+  TrendingDown,
+  Clock,
+  Layers,
+  User,
+  Bell,
+  Settings,
+  LogIn,
+} from "lucide-react";
 import { LiveSearch } from "./live-search";
+import { getCurrentUser } from "@/lib/auth/session";
+import { Role } from "@prisma/client";
 
-export function Header() {
+export async function Header() {
+  const user = await getCurrentUser();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
@@ -59,29 +73,78 @@ export function Header() {
           <LiveSearch />
         </div>
 
-        {/* Mobile Nav Icons */}
-        <div className="flex lg:hidden items-center gap-1 shrink-0">
-          <Link
-            href="/firsatlar"
-            className="rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-            aria-label="Fırsatlar"
-          >
-            <TrendingDown className="h-5 w-5" />
-          </Link>
-          <Link
-            href="/eklentiler"
-            className="rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-            aria-label="Eklentiler"
-          >
-            <Layers className="h-5 w-5" />
-          </Link>
-          <Link
-            href="/tarihi-dip"
-            className="rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-            aria-label="Tarihi Dip"
-          >
-            <Clock className="h-5 w-5" />
-          </Link>
+        {/* User / Auth Navigation */}
+        <div className="flex items-center gap-2 shrink-0">
+          {user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/alarmlar"
+                className="hidden sm:flex items-center gap-1.5 rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                title="Fiyat Alarmları"
+              >
+                <Bell className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/kutuphane"
+                className="hidden sm:flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <Gamepad2 className="h-3.5 w-3.5 text-emerald-400" />
+                Kütüphanem
+              </Link>
+              {user.role === Role.OWNER && (
+                <Link
+                  href="/ayarlar"
+                  className="hidden md:flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-amber-400/90 hover:bg-zinc-800 transition-colors"
+                  title="Ayarlar & Kontrol Merkezi"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Link>
+              )}
+              <Link
+                href="/profil"
+                className="flex items-center gap-2 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-850 hover:border-zinc-700 transition-all"
+              >
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600/30 text-emerald-400 font-bold text-[10px]">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden md:inline max-w-[100px] truncate">{user.name}</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Giriş Yap</span>
+              </Link>
+              <Link
+                href="/register"
+                className="hidden sm:flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-emerald-500 transition-colors"
+              >
+                Kayıt Ol
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile Nav Menu Shortcuts */}
+          <div className="flex lg:hidden items-center gap-1">
+            <Link
+              href="/firsatlar"
+              className="rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              aria-label="Fırsatlar"
+            >
+              <TrendingDown className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/eklentiler"
+              className="rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              aria-label="Eklentiler"
+            >
+              <Layers className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
     </header>

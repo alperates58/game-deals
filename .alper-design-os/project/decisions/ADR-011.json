@@ -1,0 +1,24 @@
+{
+  "id": "ADR-011",
+  "title": "Deterministic Recommendation Engine V1",
+  "context": "Kullanıcıya özel oyun ve fırsat önerisi motoru gereksinimi.",
+  "decision": "AI/LLM yerine tür yatkınlığı (genre affinity), seri yatkınlığı (franchise affinity), yayıncı benzerliği, beğeni sinyalleri ve fırsat skorunu harmanlayan deterministik Personal Match Score (0-100) motoru kurulmasına karar verildi.",
+  "alternatives": [],
+  "consequences": [
+    "Yapay LLM çağrısı olmadan anında hızlı deterministik hesaplama sağlanır.",
+    "Önerilen her oyun için gerçek kullanıcı tercihlerinden türetilmiş açıklama sunulur.",
+    "Disliked oyunlar negatif ceza alırken sahip olunan oyunlar önerilerden çıkarılır."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:58:22.653Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

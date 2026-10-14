@@ -1,0 +1,24 @@
+{
+  "id": "ADR-012",
+  "title": "Price Alert & Notification Event Infrastructure",
+  "context": "Fiyat alarmları ve gelecekteki Telegram entegrasyonuna hazır bildirim sözleşmesi.",
+  "decision": "PriceAlert modeli ile 5 farklı alarm tipi (ANY_DISCOUNT, PRICE_BELOW, DISCOUNT_AT_LEAST, OBSERVED_LOW, DEAL_SCORE_AT_LEAST) tanımlandı. Fiyat senkronizasyonu sonrası çalışan alarm değerlendiricisi tetiklenen alarmları NotificationEvent kuyruğuna yazar. Telegram bu fazda devreye alınmaz.",
+  "alternatives": [],
+  "consequences": [
+    "Kullanıcılar fiyat, indirim oranı, dip fiyat ve fırsat skoru bazlı alarmlar kurabilir.",
+    "Tetiklenen alarmlar NotificationEvent tablosuna PENDING olarak yazılır ve mükerrerlik engellenir.",
+    "Telegram ve e-posta teslimatı için geleceğe hazır sözleşme oluşur."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:58:32.662Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

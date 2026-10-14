@@ -138,5 +138,75 @@
     "verificationMethod": "Relationship source audit and relation mapper unit tests",
     "relatedTests": [],
     "source": "Faz 1.1 brief section 5 & 11"
+  },
+  {
+    "id": "NO_PLAINTEXT_PASSWORDS",
+    "description": "Kullanıcı şifreleri veritabanında asla düz metin olarak saklanamaz; modern güçlü salt ve hash algoritması kullanılmalıdır.",
+    "category": "SECURITY",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Automated auth unit tests and code inspection",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "OWNER_SETTINGS_REQUIRE_SERVER_AUTHORIZATION",
+    "description": "Sistem ayarları ve katalog yönetim aksiyonları yalnızca sunucu tarafında doğrulanmış OWNER rolü tarafından yürütülebilir. İstemci taraflı rol kontrolü güvenlik kontrolü sayılamaz.",
+    "category": "SECURITY",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Automated unauthorized access tests",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "NO_FAKE_PERSONAL_PREFERENCE",
+    "description": "Kullanıcı tercihleri ve öneri açıklamaları yalnızca gerçek kullanıcı aksiyonlarından türetilmelidir; yapay veya sentetik ilgi alanı üretilemez.",
+    "category": "BUSINESS_LOGIC",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Recommendation unit tests verifying explanation provenance",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "NO_DUPLICATE_NOTIFICATION_EVENT",
+    "description": "Aynı fiyat durumu ve aynı alarm için mükerrer bildirim eventi üretilemez; her tetiklenme tekil ve kayıtlı olmalıdır.",
+    "category": "DATA_INTEGRITY",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Alert evaluation engine unit tests",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "NO_FAKE_ALERT_DELIVERY",
+    "description": "Bu fazda Telegram veya harici kanal entegrasyonu bulunmadığından sahte teslimat yapıldı bildirimi verilemez; eventler PENDING durumunda sözleşme olarak kaydedilir.",
+    "category": "UX_ERGONOMICS",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Truthful event status unit tests",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "REGISTRATION_CONFIGURABLE",
+    "description": "Kullanıcı kaydı ALLOW_REGISTRATION ortam değişkeni veya SystemSetting üzerinden kapatılabilmeli; kapalıyken /register sayfası açık kayıt kabul etmemelidir.",
+    "category": "SECURITY",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Registration toggle unit tests",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
+  },
+  {
+    "id": "NO_DESTRUCTIVE_USER_DATA_MIGRATION",
+    "description": "Yeni kullanıcı, alarm ve kişisel kütüphane tabloları eklenirken mevcut 1.619 oyun ve fiyat geçmişi verisi korunmalı; migration non-destructive olmalıdır.",
+    "category": "DATA_INTEGRITY",
+    "scope": "PROJECT",
+    "severity": "HIGH",
+    "verificationMethod": "Row count snapshot comparison",
+    "relatedTests": [],
+    "source": "FAZ 1.2 Brief"
   }
 ]

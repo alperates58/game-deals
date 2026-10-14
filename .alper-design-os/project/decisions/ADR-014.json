@@ -1,0 +1,24 @@
+{
+  "id": "ADR-014",
+  "title": "Premium Sidebar & Adaptive Navigation Architecture",
+  "context": "Kişisel oyun merkezi deneyimi için zenginleştirilmiş bilgi mimarisi ve gezinme gereksinimi.",
+  "decision": "Mevcut üst barın yanına masaüstünde daraltılabilir (collapsed tooltip destekli) premium sidebar; mobilde ise bottom navigation bar + drawer adaptive pattern'ı uygulanmasına karar verildi. Generic admin template görünümünden kaçınılarak Xbox dark-first görsel dili korundu.",
+  "alternatives": [],
+  "consequences": [
+    "Masaüstünde genişletilebilir/daraltılabilir premium sidebar ve klavye erişilebilirliği sunulur.",
+    "Mobilde altta sabit 4 ana sekme (Ana Sayfa, Fırsatlar, Kütüphane, Profil) ve drawer kullanılır.",
+    "Kişisel ve sistem sekmeleri kullanıcının rolüne ve giriş durumuna göre akıllıca uyarlanır."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:58:46.005Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

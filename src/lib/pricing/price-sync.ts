@@ -3,6 +3,7 @@ import { prisma } from "../db/prisma";
 import { NormalizedXboxProduct } from "../xbox/types";
 import { evaluateObservedLow } from "./observed-low";
 import { calculateDealScore } from "./deal-score";
+import { evaluateGamePriceAlerts } from "../alerts/alert-evaluator";
 
 export interface SyncStats {
   checked: number;
@@ -13,12 +14,32 @@ export interface SyncStats {
   errors: number;
 }
 
+export interface ProcessProductOptions {
+  franchise?: string;
+  isCore?: boolean;
+  discoverySource?: "FULL_CATALOG" | "RELATED" | "MANUAL";
+  platforms?: string[];
+  isSeriesXCompatible?: boolean;
+  now?: Date;
+}
+
 export async function processNormalizedProduct(
   product: NormalizedXboxProduct,
-  franchise?: string,
+  franchiseOrOptions?: string | ProcessProductOptions,
   isCore = false,
   now: Date = new Date()
 ): Promise<{ added: boolean; priceChanged: boolean; skipped: boolean }> {
+  const options: ProcessProductOptions =
+    typeof franchiseOrOptions === "object" && franchiseOrOptions !== null
+      ? franchiseOrOptions
+      : { franchise: franchiseOrOptions, isCore, now };
+
+  const effectiveFranchise = options.franchise;
+  const effectiveIsCore = options.isCore ?? isCore;
+  const effectiveNow = options.now ?? now;
+  const effectivePlatforms = options.platforms || product.platforms || [];
+  const effectiveSeriesX = options.isSeriesXCompatible ?? true;
+  const effectiveSource = options.discoverySource || "FULL_CATALOG";
   // Exclude free games or zero price items per scope rules
   if (product.isFree || (product.currentPrice === 0 && product.listPrice === 0)) {
     return { added: false, priceChanged: false, skipped: true };
@@ -74,7 +95,7 @@ export async function processNormalizedProduct(
         title: product.title,
         normalizedTitle: product.normalizedTitle,
         publisher: product.publisher,
-        franchise: franchise || null,
+        franchise: effectiveFranchise || null,
         productType: product.productType,
         productClass: product.productClass,
         developer: product.developer,
@@ -86,17 +107,20 @@ export async function processNormalizedProduct(
         screenshots: product.screenshots,
         imageUrl: product.imageUrl,
         storeUrl: product.storeUrl,
-        isCore,
+        isCore: effectiveIsCore,
         isActive: true,
         isFree: false,
+        platforms: effectivePlatforms,
+        isSeriesXCompatible: effectiveSeriesX,
+        discoverySource: effectiveSource,
         currentPrice: currentPriceDecimal,
         listPrice: listPriceDecimal,
         discountPercent: product.discountPercent,
         currency: product.currency,
         historicalLow: lowDecimal,
         historicalLowAt: lowResult.historicalLowAt,
-        firstSeenAt: now,
-        lastSeenAt: now,
+        firstSeenAt: effectiveNow,
+        lastSeenAt: effectiveNow,
         priceHistories: {
           create: {
             observedAt: now,
@@ -179,10 +203,12 @@ export async function processNormalizedProduct(
           discountPercent: product.discountPercent,
           historicalLow: lowDecimal,
           historicalLowAt: lowResult.historicalLowAt,
-          lastSeenAt: now,
+          lastSeenAt: effectiveNow,
           imageUrl: product.imageUrl || existing.imageUrl,
-          isCore: isCore || existing.isCore,
-          franchise: franchise || existing.franchise,
+          isCore: effectiveIsCore || existing.isCore,
+          franchise: effectiveFranchise || existing.franchise,
+          platforms: effectivePlatforms.length > 0 ? effectivePlatforms : existing.platforms,
+          isSeriesXCompatible: effectiveSeriesX,
         },
       }),
       prisma.dealAnalysis.upsert({
@@ -196,7 +222,7 @@ export async function processNormalizedProduct(
           daysSinceBetterPrice: analysis.daysSinceBetterPrice,
           verdict: analysis.verdict,
           reason: analysis.reason,
-          calculatedAt: now,
+          calculatedAt: effectiveNow,
         },
         update: {
           dealScore: analysis.dealScore,
@@ -206,10 +232,21 @@ export async function processNormalizedProduct(
           daysSinceBetterPrice: analysis.daysSinceBetterPrice,
           verdict: analysis.verdict,
           reason: analysis.reason,
-          calculatedAt: now,
+          calculatedAt: effectiveNow,
         },
       }),
     ]);
+
+    // Trigger NotificationEvents for matching price alerts
+    await evaluateGamePriceAlerts({
+      gameId: existing.id,
+      currentPrice: product.currentPrice,
+      listPrice: product.listPrice,
+      discountPercent: product.discountPercent,
+      historicalLow: lowResult.historicalLow,
+      dealScore: analysis.dealScore,
+      isNewLow: lowResult.isNewLow,
+    });
 
     return { added: false, priceChanged: true, skipped: false };
   } else {
@@ -218,8 +255,10 @@ export async function processNormalizedProduct(
       prisma.game.update({
         where: { id: existing.id },
         data: {
-          lastSeenAt: now,
+          lastSeenAt: effectiveNow,
           imageUrl: product.imageUrl || existing.imageUrl,
+          platforms: effectivePlatforms.length > 0 ? effectivePlatforms : existing.platforms,
+          isSeriesXCompatible: effectiveSeriesX,
         },
       }),
       prisma.dealAnalysis.upsert({
@@ -233,7 +272,7 @@ export async function processNormalizedProduct(
           daysSinceBetterPrice: analysis.daysSinceBetterPrice,
           verdict: analysis.verdict,
           reason: analysis.reason,
-          calculatedAt: now,
+          calculatedAt: effectiveNow,
         },
         update: {
           dealScore: analysis.dealScore,
@@ -242,7 +281,7 @@ export async function processNormalizedProduct(
           saleFrequency: analysis.saleFrequency,
           verdict: analysis.verdict,
           reason: analysis.reason,
-          calculatedAt: now,
+          calculatedAt: effectiveNow,
         },
       }),
     ]);

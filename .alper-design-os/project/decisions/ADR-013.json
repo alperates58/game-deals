@@ -1,0 +1,24 @@
+{
+  "id": "ADR-013",
+  "title": "Runtime Scheduler Strategy & Modular Worker",
+  "context": "Arka plan senkronizasyonu ve periyodik fiyat kontrolü mimarisi.",
+  "decision": "Redis veya harici kuyruk aracı eklemeden, aynı Dockerfile/image ile çalışan hafif bir worker süreci tasarlandı. Docker Compose ve Coolify üzerinde 3 servis (web, worker, postgres) tanımlandı. PostgreSQL advisory lock koruması sürdürüldü.",
+  "alternatives": [],
+  "consequences": [
+    "web, worker ve postgres tek docker compose up -d --build ile çalışır.",
+    "Worker veritabanındaki SystemSetting ayarlarını dinamik olarak okur.",
+    "PostgreSQL advisory lock ile eşzamanlı çakışmalar donanımsal olarak engellenir."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:58:39.375Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

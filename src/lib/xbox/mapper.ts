@@ -179,6 +179,17 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
       }
     }
   }
+
+  // Authoritative console generation flags from Display Catalog
+  const opt = (raw.Properties as any)?.XboxConsoleGenOptimized || [];
+  const comp = (raw.Properties as any)?.XboxConsoleGenCompatible || [];
+  if (Array.isArray(opt) && opt.includes("ConsoleGen9") || Array.isArray(comp) && comp.includes("ConsoleGen9")) {
+    if (!platforms.includes("XboxSeriesX")) platforms.push("XboxSeriesX");
+  }
+  if (Array.isArray(opt) && opt.includes("ConsoleGen8") || Array.isArray(comp) && comp.includes("ConsoleGen8")) {
+    if (!platforms.includes("XboxOne")) platforms.push("XboxOne");
+  }
+
   if (platforms.length === 0) {
     platforms.push("Xbox");
   }

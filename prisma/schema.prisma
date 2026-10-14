@@ -12,6 +12,14 @@ enum SyncType {
   CORE_SYNC
   DISCOVERY
   RECLASSIFICATION
+  METADATA_REFRESH
+  RELATIONSHIP_REFRESH
+}
+
+enum DiscoverySource {
+  FULL_CATALOG
+  RELATED
+  MANUAL
 }
 
 enum SyncStatus {
@@ -76,6 +84,9 @@ model Game {
   isActive          Boolean         @default(true)
   isFree            Boolean         @default(false)
   popularityScore   Float           @default(0)
+  discoverySource   DiscoverySource @default(FULL_CATALOG)
+  platforms         String[]        @default([])
+  isSeriesXCompatible Boolean       @default(true)
 
   // Enriched metadata fields
   shortDescription  String?
@@ -106,8 +117,15 @@ model Game {
   childRelations    GameRelation[]  @relation("ParentGame")
   parentRelations   GameRelation[]  @relation("ChildGame")
 
+  // Personal Game Hub relations
+  userGames          UserGame[]
+  priceAlerts        PriceAlert[]
+  notificationEvents NotificationEvent[]
+
   @@index([isCore, isActive])
   @@index([productClass, isActive])
+  @@index([isSeriesXCompatible, isActive])
+  @@index([discoverySource])
   @@index([discountPercent(sort: Desc)])
   @@index([historicalLow])
 }
@@ -170,3 +188,136 @@ model SyncRun {
   errorCount      Int          @default(0)
   errorSummary    String?
 }
+
+enum Role {
+  OWNER
+  USER
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  name               String
+  passwordHash       String
+  role               Role                @default(USER)
+  avatarUrl          String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  lastLoginAt        DateTime?
+
+  userGames          UserGame[]
+  priceAlerts        PriceAlert[]
+  notificationEvents NotificationEvent[]
+}
+
+model UserGame {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  owned     Boolean  @default(false)
+  favorite  Boolean  @default(false)
+  wishlist  Boolean  @default(false)
+
+  liked     Boolean  @default(false)
+  disliked  Boolean  @default(false)
+
+  completed Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, gameId])
+  @@index([userId, owned])
+  @@index([userId, favorite])
+  @@index([userId, wishlist])
+}
+
+enum PriceAlertType {
+  ANY_DISCOUNT
+  PRICE_BELOW
+  DISCOUNT_AT_LEAST
+  OBSERVED_LOW
+  DEAL_SCORE_AT_LEAST
+}
+
+model PriceAlert {
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId           String
+  game             Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  type             PriceAlertType @default(ANY_DISCOUNT)
+  targetPrice      Decimal?       @db.Decimal(10, 2)
+  targetDiscount   Int?
+  targetDealScore  Int?
+
+  isEnabled        Boolean        @default(true)
+  lastTriggeredAt  DateTime?
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([gameId, isEnabled])
+  @@index([userId])
+}
+
+enum NotificationEventType {
+  PRICE_DROP
+  ALERT_MATCHED
+  NEW_OBSERVED_LOW
+  DEAL_SCORE_THRESHOLD
+  OWNED_GAME_DLC_DEAL
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model NotificationEvent {
+  id          String                @id @default(cuid())
+  userId      String
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId      String?
+  game        Game?                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  type        NotificationEventType
+  payload     Json
+  status      NotificationStatus    @default(PENDING)
+
+  createdAt   DateTime              @default(now())
+  processedAt DateTime?
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id                         String    @id @default("global")
+  allowRegistration          Boolean   @default(true)
+  syncIntervalHours          Int       @default(6) // 6, 12, 24
+  autoDiscoverPopular        Boolean   @default(true)
+  autoDiscoverBundleChildren Boolean   @default(true)
+  autoDiscoverRelatedDlc     Boolean   @default(true)
+  autoAddRelatedProducts     Boolean   @default(true)
+
+  trackBaseGames             Boolean   @default(true)
+  trackBundles               Boolean   @default(true)
+  trackDlc                   Boolean   @default(true)
+  trackExpansions            Boolean   @default(true)
+  trackSeasonPasses          Boolean   @default(true)
+  trackAddons                Boolean   @default(true)
+  trackContentPacks          Boolean   @default(false)
+
+  lastSyncStartedAt          DateTime?
+  lastSyncFinishedAt         DateTime?
+  lastSyncStatus             String?
+
+  updatedAt                  DateTime  @updatedAt
+}
+

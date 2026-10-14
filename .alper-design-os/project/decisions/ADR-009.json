@@ -1,0 +1,24 @@
+{
+  "id": "ADR-009",
+  "title": "Authentication & Session Architecture",
+  "context": "Faz 1.2 kapsamında güvenli, hafif ve production-grade kimlik doğrulama modeli gereksinimi.",
+  "decision": "Kendi kriptografik mekanizmamızı yazmak yerine endüstri standardı bcrypt şifre hashleme ve jose imzalı JWT tabanlı httpOnly session çerezi kullanılmasına karar verildi. İlk kullanıcı OWNER, sonrakiler USER atanır.",
+  "alternatives": [],
+  "consequences": [
+    "Güvenli httpOnly/SameSite/secure çerezler ile oturum yönetimi sağlanır.",
+    "İlk kayıt olan kullanıcı otomatik OWNER rolünü alır.",
+    "Kayıt olma özelliği ALLOW_REGISTRATION ile anında durdurulabilir."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:57:47.317Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-011",
+  "type": "TECHNICAL_DECISION",
+  "title": "Deterministic Recommendation Engine V1",
+  "summary": "AI/LLM yerine tür yatkınlığı (genre affinity), seri yatkınlığı (franchise affinity), yayıncı benzerliği, beğeni sinyalleri ve fırsat skorunu harmanlayan deterministik Personal Match Score (0-100) motoru kurulmasına karar verildi.",
+  "details": "Kullanıcıya özel oyun ve fırsat önerisi motoru gereksinimi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-011.json"
+  ],
+  "createdAt": "2026-10-14T19:58:22.654Z",
+  "updatedAt": "2026-10-14T19:58:22.654Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

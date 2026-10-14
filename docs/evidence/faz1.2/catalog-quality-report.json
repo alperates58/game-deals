@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-10-14T20:38:53.860Z",
+  "durationMs": 35809,
+  "totalRawDiscovered": 500,
+  "totalSeriesXCompatible": 389,
+  "rejectedPcOnly": 11,
+  "rejectedXboxOneOnly": 0,
+  "rejectedFree": 100,
+  "rejectedOther": 0,
+  "totalSaved": 389,
+  "productClassCounts": {
+    "BASE_GAME": 496,
+    "BUNDLE": 524,
+    "DLC": 51,
+    "ADD_ON": 493,
+    "EXPANSION": 7,
+    "SEASON_PASS": 12,
+    "CONTENT_PACK": 336,
+    "CURRENCY": 5
+  },
+  "totalRelationsCreated": 232,
+  "totalMicrosoftRequests": 40,
+  "avgBatchSize": 25,
+  "http429Count": 0,
+  "http5xxCount": 0,
+  "sanityVerification": {
+    "blackMythWukongFound": true,
+    "blackMythWukongDetails": {
+      "id": "9NWQ1Q1FR0C9",
+      "title": "Black Myth: Wukong",
+      "price": 2499,
+      "class": "BASE_GAME",
+      "platforms": [
+        "Xbox",
+        "XboxSeriesX"
+      ]
+    },
+    "sampleMajorGames": [
+      {
+        "id": "9NWQ1Q1FR0C9",
+        "title": "Black Myth: Wukong",
+        "class": "BASE_GAME",
+        "price": 2499
+      }
+    ]
+  }
+}

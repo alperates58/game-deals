@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-013",
+  "type": "TECHNICAL_DECISION",
+  "title": "Runtime Scheduler Strategy & Modular Worker",
+  "summary": "Redis veya harici kuyruk aracı eklemeden, aynı Dockerfile/image ile çalışan hafif bir worker süreci tasarlandı. Docker Compose ve Coolify üzerinde 3 servis (web, worker, postgres) tanımlandı. PostgreSQL advisory lock koruması sürdürüldü.",
+  "details": "Arka plan senkronizasyonu ve periyodik fiyat kontrolü mimarisi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-013.json"
+  ],
+  "createdAt": "2026-10-14T19:58:39.376Z",
+  "updatedAt": "2026-10-14T19:58:39.376Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

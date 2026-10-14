@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-012",
+  "type": "TECHNICAL_DECISION",
+  "title": "Price Alert & Notification Event Infrastructure",
+  "summary": "PriceAlert modeli ile 5 farklı alarm tipi (ANY_DISCOUNT, PRICE_BELOW, DISCOUNT_AT_LEAST, OBSERVED_LOW, DEAL_SCORE_AT_LEAST) tanımlandı. Fiyat senkronizasyonu sonrası çalışan alarm değerlendiricisi tetiklenen alarmları NotificationEvent kuyruğuna yazar. Telegram bu fazda devreye alınmaz.",
+  "details": "Fiyat alarmları ve gelecekteki Telegram entegrasyonuna hazır bildirim sözleşmesi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-012.json"
+  ],
+  "createdAt": "2026-10-14T19:58:32.663Z",
+  "updatedAt": "2026-10-14T19:58:32.663Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

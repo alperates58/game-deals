@@ -1,0 +1,24 @@
+{
+  "id": "ADR-010",
+  "title": "User Game Personal State Model",
+  "context": "Kullanıcının kütüphane, favori, istek listesi ve beğeni durumlarının modellenmesi.",
+  "decision": "UserGame tablosunda owned, favorite, wishlist, liked, disliked ve completed boolean alanları ayrı ayrı modellenmiştir. Birbirine bağımlı kılınmamıştır.",
+  "alternatives": [],
+  "consequences": [
+    "owned, favorite, wishlist bağımsız sinyaller olarak takip edilir.",
+    "liked ve disliked sinyalleri karşılıklı dışlayıcı (exclusive) olarak yönetilir.",
+    "Tekil userId + gameId indeksi ile mükerrerlik önlenir."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:57:53.952Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

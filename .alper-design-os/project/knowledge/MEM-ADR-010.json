@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-010",
+  "type": "TECHNICAL_DECISION",
+  "title": "User Game Personal State Model",
+  "summary": "UserGame tablosunda owned, favorite, wishlist, liked, disliked ve completed boolean alanları ayrı ayrı modellenmiştir. Birbirine bağımlı kılınmamıştır.",
+  "details": "Kullanıcının kütüphane, favori, istek listesi ve beğeni durumlarının modellenmesi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-010.json"
+  ],
+  "createdAt": "2026-10-14T19:57:53.952Z",
+  "updatedAt": "2026-10-14T19:57:53.952Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

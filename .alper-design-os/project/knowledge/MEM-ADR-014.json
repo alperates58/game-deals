@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-014",
+  "type": "TECHNICAL_DECISION",
+  "title": "Premium Sidebar & Adaptive Navigation Architecture",
+  "summary": "Mevcut üst barın yanına masaüstünde daraltılabilir (collapsed tooltip destekli) premium sidebar; mobilde ise bottom navigation bar + drawer adaptive pattern'ı uygulanmasına karar verildi. Generic admin template görünümünden kaçınılarak Xbox dark-first görsel dili korundu.",
+  "details": "Kişisel oyun merkezi deneyimi için zenginleştirilmiş bilgi mimarisi ve gezinme gereksinimi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-014.json"
+  ],
+  "createdAt": "2026-10-14T19:58:46.005Z",
+  "updatedAt": "2026-10-14T19:58:46.005Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

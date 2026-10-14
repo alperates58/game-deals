@@ -1,0 +1,23 @@
+{
+  "id": "MEM-ADR-009",
+  "type": "TECHNICAL_DECISION",
+  "title": "Authentication & Session Architecture",
+  "summary": "Kendi kriptografik mekanizmamızı yazmak yerine endüstri standardı bcrypt şifre hashleme ve jose imzalı JWT tabanlı httpOnly session çerezi kullanılmasına karar verildi. İlk kullanıcı OWNER, sonrakiler USER atanır.",
+  "details": "Faz 1.2 kapsamında güvenli, hafif ve production-grade kimlik doğrulama modeli gereksinimi.",
+  "source": "SYSTEM_RECOMMENDATION",
+  "sourceRefs": [
+    "decisions/ADR-009.json"
+  ],
+  "createdAt": "2026-10-14T19:57:47.318Z",
+  "updatedAt": "2026-10-14T19:57:47.318Z",
+  "status": "ACTIVE",
+  "confidence": 0.75,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "SYSTEM_RECOMMENDATION"
+  ]
+}

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { getCurrentUser } from "@/lib/auth/session";
+import { GameActions } from "@/components/game/game-actions";
 import { RelationType, ProductClass } from "@prisma/client";
 import { DealBadge, ConfidenceBadge } from "@/components/game/deal-badge";
 import { PriceHistoryChart } from "@/components/game/price-history-chart";
@@ -116,6 +118,18 @@ export default async function GameDetailPage({ params }: GamePageProps) {
     include: { childGame: true },
     orderBy: { childGame: { discountPercent: "desc" } },
   });
+
+  const currentUser = await getCurrentUser();
+  const [userGame, alert] = currentUser
+    ? await Promise.all([
+        prisma.userGame.findUnique({
+          where: { userId_gameId: { userId: currentUser.userId, gameId: game.id } },
+        }),
+        prisma.priceAlert.findFirst({
+          where: { userId: currentUser.userId, gameId: game.id },
+        }),
+      ])
+    : [null, null];
 
   const currentPrice = game.currentPrice.toNumber();
   const listPrice = game.listPrice.toNumber();
@@ -322,6 +336,28 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   <span>Xbox Mağazasında Aç</span>
                   <ExternalLink className="h-4 w-4" />
                 </a>
+              </div>
+
+              {/* Personal Actions */}
+              <div className="pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <span className="text-xs text-zinc-400 font-medium">Kişisel İşlemler:</span>
+                <GameActions
+                  gameId={game.id}
+                  gameTitle={game.title}
+                  currentPrice={currentPrice}
+                  initialUserGame={userGame}
+                  initialAlert={
+                    alert
+                      ? {
+                          type: alert.type,
+                          isEnabled: alert.isEnabled,
+                          targetPrice: alert.targetPrice ? alert.targetPrice.toNumber() : null,
+                          targetDiscount: alert.targetDiscount,
+                          targetDealScore: alert.targetDealScore,
+                        }
+                      : null
+                  }
+                />
               </div>
 
               {/* Observed Low Row */}

@@ -1,0 +1,72 @@
+{
+  "verifiedAt": "2026-10-14T20:02:20.885Z",
+  "totalGames": 1619,
+  "totalPrices": 1619,
+  "totalAnalyses": 1619,
+  "totalRelations": 1969,
+  "productClassDistribution": {
+    "BASE_GAME": 287,
+    "BUNDLE": 443,
+    "DLC": 48,
+    "ADD_ON": 493,
+    "EXPANSION": 6,
+    "SEASON_PASS": 12,
+    "CONTENT_PACK": 325,
+    "CURRENCY": 5
+  },
+  "relationTypeDistribution": {
+    "DLC_OF": 18,
+    "BUNDLE_CONTAINS": 1577,
+    "SEASON_PASS_OF": 6,
+    "ADDON_OF": 368
+  },
+  "isCoreDistribution": {
+    "nonCore": 1598,
+    "core": 21
+  },
+  "recentSyncRuns": [
+    {
+      "type": "RECLASSIFICATION",
+      "status": "COMPLETED",
+      "startedAt": "2026-10-14T19:28:30.555Z",
+      "finishedAt": "2026-10-14T19:30:18.834Z",
+      "productsChecked": 1051,
+      "productsAdded": 1100,
+      "pricesChanged": 0
+    },
+    {
+      "type": "DISCOVERY",
+      "status": "COMPLETED",
+      "startedAt": "2026-10-14T19:05:33.310Z",
+      "finishedAt": "2026-10-14T19:07:45.361Z",
+      "productsChecked": 1760,
+      "productsAdded": 1030,
+      "pricesChanged": 0
+    },
+    {
+      "type": "PRICE_SYNC",
+      "status": "COMPLETED",
+      "startedAt": "2026-10-14T19:05:27.665Z",
+      "finishedAt": "2026-10-14T19:05:28.811Z",
+      "productsChecked": 21,
+      "productsAdded": 0,
+      "pricesChanged": 0
+    },
+    {
+      "type": "CORE_SYNC",
+      "status": "COMPLETED",
+      "startedAt": "2026-10-14T19:05:20.698Z",
+      "finishedAt": "2026-10-14T19:05:23.485Z",
+      "productsChecked": 27,
+      "productsAdded": 21,
+      "pricesChanged": 21
+    }
+  ],
+  "growthVerification": {
+    "initialTarget": 1051,
+    "relatedDiscovered": 568,
+    "calculatedTotal": 1619,
+    "actualTotalInDb": 1619,
+    "isVerifiedExact": true
+  }
+}
