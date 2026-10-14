@@ -118,5 +118,25 @@
     "verificationMethod": "Dependency and code scan",
     "relatedTests": [],
     "source": "brief section 3 & 6"
+  },
+  {
+    "id": "NO_ADDON_AS_BASE_GAME",
+    "description": "DLC, add-on, expansion, currency, or consumable products must never be classified or displayed as base games in the default deals catalog.",
+    "category": "DATA_INTEGRITY",
+    "scope": "catalog, deals page, search, mapper",
+    "severity": "CRITICAL",
+    "verificationMethod": "Product classification unit test and deals query inspection",
+    "relatedTests": [],
+    "source": "Faz 1.1 brief section 1 & 2"
+  },
+  {
+    "id": "NO_UNVERIFIED_GAME_ADDON_RELATION",
+    "description": "No guessing or fuzzy title parsing for game-addon or bundle-child relationships. Relationships must be strictly grounded in Microsoft Display Catalog metadata.",
+    "category": "DATA_INTEGRITY",
+    "scope": "relation-mapper, database, detail page",
+    "severity": "CRITICAL",
+    "verificationMethod": "Relationship source audit and relation mapper unit tests",
+    "relatedTests": [],
+    "source": "Faz 1.1 brief section 5 & 11"
   }
 ]

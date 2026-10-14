@@ -11,6 +11,7 @@ enum SyncType {
   PRICE_SYNC
   CORE_SYNC
   DISCOVERY
+  RECLASSIFICATION
 }
 
 enum SyncStatus {
@@ -35,6 +36,27 @@ enum DealVerdict {
   POOR        // 🔴 Zayıf Fırsat (0-44)
 }
 
+enum ProductClass {
+  BASE_GAME
+  BUNDLE
+  DLC
+  ADD_ON
+  EXPANSION
+  SEASON_PASS
+  CONTENT_PACK
+  CURRENCY
+  CONSUMABLE
+  UNKNOWN
+}
+
+enum RelationType {
+  BUNDLE_CONTAINS
+  DLC_OF
+  EXPANSION_OF
+  ADDON_OF
+  SEASON_PASS_OF
+}
+
 model Game {
   id                String          @id @default(cuid())
   xboxProductId     String          @unique
@@ -42,9 +64,11 @@ model Game {
   title             String
   normalizedTitle   String
   publisher         String?
+  developer         String?
   franchise         String?
   edition           String?
   productType       String          @default("Game")
+  productClass      ProductClass    @default(UNKNOWN)
   releaseDate       DateTime?
   imageUrl          String?
   storeUrl          String
@@ -52,6 +76,13 @@ model Game {
   isActive          Boolean         @default(true)
   isFree            Boolean         @default(false)
   popularityScore   Float           @default(0)
+
+  // Enriched metadata fields
+  shortDescription  String?
+  longDescription   String?
+  genres            String[]        @default([])
+  capabilities      String[]        @default([])
+  screenshots       String[]        @default([])
 
   // Current pricing snapshot
   currentPrice      Decimal         @db.Decimal(10, 2)
@@ -71,9 +102,30 @@ model Game {
   priceHistories    PriceHistory[]
   dealAnalysis      DealAnalysis?
 
+  // Relationships (Bundle contains children, Base game has DLCs)
+  childRelations    GameRelation[]  @relation("ParentGame")
+  parentRelations   GameRelation[]  @relation("ChildGame")
+
   @@index([isCore, isActive])
+  @@index([productClass, isActive])
   @@index([discountPercent(sort: Desc)])
   @@index([historicalLow])
+}
+
+model GameRelation {
+  id           String       @id @default(cuid())
+  parentGameId String
+  parentGame   Game         @relation("ParentGame", fields: [parentGameId], references: [id], onDelete: Cascade)
+  childGameId  String
+  childGame    Game         @relation("ChildGame", fields: [childGameId], references: [id], onDelete: Cascade)
+  relationType RelationType @default(BUNDLE_CONTAINS)
+  position     Int          @default(0)
+  source       String       @default("MICROSOFT_DISPLAY_CATALOG")
+  observedAt   DateTime     @default(now())
+
+  @@unique([parentGameId, childGameId, relationType])
+  @@index([parentGameId])
+  @@index([childGameId])
 }
 
 model PriceHistory {

@@ -1,0 +1,29 @@
+{
+  "id": "MEM-ADR-006",
+  "type": "TECHNICAL_DECISION",
+  "title": "Product Classification and Game/Add-on Relationship Model",
+  "summary": "Introduce ProductClass enum and GameRelation table to model authoritative bundle-child and game-addon relationships based on Display Catalog metadata.",
+  "details": "Users need clean separation between full games and DLCs, while retaining the ability to track DLC discounts and view them on the parent game detail page.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-006.json"
+  ],
+  "createdAt": "2026-10-14T19:23:43.184Z",
+  "updatedAt": "2026-10-14T19:23:43.184Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "catalog",
+    "data-model",
+    "web",
+    "search",
+    "pricing"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

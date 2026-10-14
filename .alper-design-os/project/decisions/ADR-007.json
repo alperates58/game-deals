@@ -1,0 +1,35 @@
+{
+  "id": "ADR-007",
+  "title": "Local Docker and Coolify Deployment Parity",
+  "context": "Ensure seamless deployment parity between local development container and remote Coolify instance.",
+  "decision": "Use single multi-stage Dockerfile and consistent environment variables contract for both local Docker and Coolify deployment with non-destructive prisma migrate deploy.",
+  "alternatives": [
+    "Separate Dockerfiles for local dev and Coolify",
+    "Manual database migration scripts"
+  ],
+  "consequences": [
+    "Single multi-stage Dockerfile works seamlessly locally and on Coolify",
+    "Identical environment contract across environments",
+    "Non-destructive migration during container startup ensures zero data loss"
+  ],
+  "risks": [
+    "Production migrations must never use destructive commands like db push --force-reset."
+  ],
+  "evidence": [],
+  "requirements": [
+    "NFR-OPS-03"
+  ],
+  "affectedComponents": [
+    "docker",
+    "deployment",
+    "database"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:23:48.307Z",
+  "approvedBy": "Faz 1.1 Brief & Architecture Review",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

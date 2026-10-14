@@ -16,7 +16,8 @@
     "prisma:push": "prisma db push",
     "xbox:sync-prices": "tsx src/scripts/sync-prices.ts",
     "xbox:sync-core": "tsx src/scripts/sync-core.ts",
-    "xbox:discover": "tsx src/scripts/discover.ts"
+    "xbox:discover": "tsx src/scripts/discover.ts",
+    "xbox:classify-products": "tsx src/scripts/classify-products.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

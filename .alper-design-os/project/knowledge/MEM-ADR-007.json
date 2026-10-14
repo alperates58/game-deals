@@ -1,0 +1,27 @@
+{
+  "id": "MEM-ADR-007",
+  "type": "TECHNICAL_DECISION",
+  "title": "Local Docker and Coolify Deployment Parity",
+  "summary": "Use single multi-stage Dockerfile and consistent environment variables contract for both local Docker and Coolify deployment with non-destructive prisma migrate deploy.",
+  "details": "Ensure seamless deployment parity between local development container and remote Coolify instance.",
+  "source": "USER_DECISION",
+  "sourceRefs": [
+    "decisions/ADR-007.json"
+  ],
+  "createdAt": "2026-10-14T19:23:48.307Z",
+  "updatedAt": "2026-10-14T19:23:48.307Z",
+  "status": "ACTIVE",
+  "confidence": 1,
+  "freshness": "CURRENT",
+  "scope": "PROJECT",
+  "relatedEntities": [
+    "docker",
+    "deployment",
+    "database"
+  ],
+  "tags": [
+    "ADR",
+    "ACCEPTED",
+    "USER_DECISION"
+  ]
+}

@@ -1,25 +1,40 @@
 import { prisma } from "@/lib/db/prisma";
 import { GameCard } from "@/components/game/game-card";
-import { TrendingDown, Filter } from "lucide-react";
+import { TrendingDown, Gamepad2, Package, Layers } from "lucide-react";
 import Link from "next/link";
+import { ProductClass } from "@prisma/client";
 
 export const revalidate = 60;
 
 interface DealsPageProps {
   searchParams: Promise<{
     q?: string;
+    type?: string;
     sort?: string;
     minDiscount?: string;
   }>;
 }
 
 export default async function DealsPage({ searchParams }: DealsPageProps) {
-  const { q, sort = "dealScore", minDiscount = "0" } = await searchParams;
+  const { q, type = "all", sort = "dealScore", minDiscount = "0" } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
 
+  // By default in Phase 1.1: Only BASE_GAME and BUNDLE are shown in the main deals view
+  let productClassCondition: any = { in: ["BASE_GAME", "BUNDLE"] as ProductClass[] };
+  if (type === "game") {
+    productClassCondition = "BASE_GAME";
+  } else if (type === "bundle") {
+    productClassCondition = "BUNDLE";
+  } else if (type === "addon") {
+    productClassCondition = {
+      in: ["DLC", "ADD_ON", "EXPANSION", "SEASON_PASS", "CONTENT_PACK"] as ProductClass[],
+    };
+  }
+
   const whereClause: any = {
     isActive: true,
+    productClass: productClassCondition,
     discountPercent: { gte: Math.max(1, minDiscNum) },
   };
 
@@ -59,62 +74,81 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
             Xbox İndirim Kataloğu
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Tüm Aktif Fırsatlar
+            {type === "game"
+              ? "Oyun İndirimleri"
+              : type === "bundle"
+              ? "Paket ve Koleksiyon İndirimleri"
+              : type === "addon"
+              ? "DLC ve Eklenti İndirimleri"
+              : "Tüm Aktif Fırsatlar"}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            {deals.length} oyun listeleniyor — Geçmiş fiyat analizlerine göre derecelendirilmiştir
+            {deals.length} içerik listeleniyor — Geçmiş fiyat analizlerine göre derecelendirilmiştir
           </p>
         </div>
 
         {/* Filter / Sort bar */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Main Category Tabs */}
+          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
+            <Link
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type: "all", sort, minDiscount: String(minDiscNum) })}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${type === "all" ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
+            >
+              <span>Tümü</span>
+            </Link>
+            <Link
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type: "game", sort, minDiscount: String(minDiscNum) })}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${type === "game" ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" />
+              <span>Oyunlar</span>
+            </Link>
+            <Link
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type: "bundle", sort, minDiscount: String(minDiscNum) })}`}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${type === "bundle" ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
+            >
+              <Package className="h-3.5 w-3.5" />
+              <span>Paketler</span>
+            </Link>
+            <Link
+              href="/eklentiler"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors text-blue-400 hover:text-blue-300 hover:bg-zinc-800/60"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>DLC&apos;ler</span>
+            </Link>
+          </div>
+
           {/* Quick Discount Filters */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
             <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: "0" })}`}
-              className={`px-2.5 py-1 rounded-md transition-colors ${minDiscNum === 0 ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type, sort, minDiscount: "0" })}`}
+              className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 0 ? "bg-zinc-800 text-emerald-400 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Tümü
             </Link>
             <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: "25" })}`}
-              className={`px-2.5 py-1 rounded-md transition-colors ${minDiscNum === 25 ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
-            >
-              %25+
-            </Link>
-            <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: "50" })}`}
-              className={`px-2.5 py-1 rounded-md transition-colors ${minDiscNum === 50 ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type, sort, minDiscount: "50" })}`}
+              className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 50 ? "bg-zinc-800 text-emerald-400 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               %50+
-            </Link>
-            <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: "75" })}`}
-              className={`px-2.5 py-1 rounded-md transition-colors ${minDiscNum === 75 ? "bg-emerald-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
-            >
-              %75+
             </Link>
           </div>
 
           {/* Sort Selector Links */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
             <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), minDiscount: String(minDiscNum), sort: "dealScore" })}`}
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type, minDiscount: String(minDiscNum), sort: "dealScore" })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${sort === "dealScore" ? "bg-zinc-800 text-emerald-400 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               En İyi Fırsat
             </Link>
             <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), minDiscount: String(minDiscNum), sort: "discount" })}`}
+              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), type, minDiscount: String(minDiscNum), sort: "discount" })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${sort === "discount" ? "bg-zinc-800 text-emerald-400 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               En Yüksek İndirim
-            </Link>
-            <Link
-              href={`/firsatlar?${new URLSearchParams({ ...(q ? { q } : {}), minDiscount: String(minDiscNum), sort: "priceAsc" })}`}
-              className={`px-2.5 py-1 rounded-md transition-colors ${sort === "priceAsc" ? "bg-zinc-800 text-emerald-400 font-medium" : "text-zinc-400 hover:text-white"}`}
-            >
-              Fiyat: Artan
             </Link>
           </div>
         </div>

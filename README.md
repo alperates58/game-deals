@@ -30,38 +30,73 @@ Xbox ve Microsoft Store Türkiye pazarındaki popüler ücretli oyunların gerç
 - Node.js >= 20
 - Docker & Docker Compose
 
-### 2. Kurulum
+### 2. LOCAL DOCKER QUICK START
+
+Uygulamayı ve PostgreSQL veritabanını Docker ile tek komutta çalıştırmak için:
+
+```bash
+# Ortam değişkenlerini hazırlayın
+cp .env.example .env
+
+# Web ve PostgreSQL servislerini ayağa kaldırın
+docker compose up -d --build
+
+# Konteyner durumunu kontrol edin
+docker compose ps
+```
+
+Uygulama `http://localhost:3000` adresinde, PostgreSQL ise `localhost:5432` portunda çalışacaktır.
+
+---
+
+### 3. COOLIFY DEPLOYMENT
+
+Proje, Coolify üzerinde standart Dockerfile deployment yöntemi ile sorunsuz çalışacak şekilde yapılandırılmıştır.
+
+#### Adım 1: Yeni Servis Oluşturma
+- Coolify arayüzünde **"New Resource" -> "Application"** seçin.
+- Git repository adresini bağlayın (`game-deals`).
+- Build Pack olarak **"Dockerfile"** seçin.
+- Dockerfile Path: `./Dockerfile` (varsayılan).
+
+#### Adım 2: Çevre Değişkenleri (Environment Variables)
+Coolify panelinde uygulamanın **Environment Variables** bölümüne aşağıdaki değişkenleri tanımlayın:
+
+| Değişken Adı | Zorunlu | Açıklama | Örnek Değer |
+|---|---|---|---|
+| `DATABASE_URL` | Evet | PostgreSQL bağlantı URI'si (Coolify PostgreSQL servisi veya harici) | `postgresql://user:password@postgres:5432/gamedeals?schema=public` |
+| `APP_URL` | Evet | Yayındaki production alan adı | `https://game.alperates.com.tr` |
+| `APP_TIMEZONE` | Evet | Uygulama zaman dilimi | `Europe/Istanbul` |
+| `XBOX_MARKET` | Evet | Hedef Microsoft Store pazarı | `TR` |
+| `XBOX_LANGUAGE` | Evet | Hedef Microsoft Store dili | `tr-TR` |
+| `PORT` | Hayır | Dinlenecek port (Varsayılan 3000) | `3000` |
+| `NODE_ENV` | Hayır | Çalışma ortamı | `production` |
+
+#### Adım 3: Migration ve Veritabanı Güvenliği
+- Konteyner ayağa kalkarken Dockerfile giriş noktası (`CMD`) otomatik olarak **non-destructive** migration komutunu çalıştırır:
+  ```bash
+  npx prisma migrate deploy
+  ```
+- Üretim ortamında kesinlikle `prisma db push` veya `prisma migrate reset` gibi yıkıcı komutlar çalıştırılmaz; mevcut veriler ve fiyat geçmişi korunur.
+
+#### Adım 4: Dağıtımı Başlatın
+- Coolify'da **"Deploy"** butonuna basın. Dockerfile çok aşamalı (multi-stage non-root) derlemeyi tamamlayarak uygulamayı yayına alır.
+
+---
+
+### 4. Yerel Geliştirme (Local Development)
 ```bash
 # Bağımlılıkları yükleyin
 npm install
 
-# Ortam değişkenlerini kopyalayın
-cp .env.example .env
-
-# PostgreSQL veritabanını Docker ile başlatın
+# PostgreSQL'i başlatın
 docker compose up -d postgres
 
-# Veritabanı şemasını senkronize edin
-npx prisma db push
-```
+# Veritabanı şemasını uygulayın
+npx prisma migrate deploy
 
-### 3. Çekirdek Oyunları Senkronize Edin
-```bash
-# 32 CORE franchise ve popüler oyunları veritabanına tohumlayın
-npm run xbox:sync-core
-
-# Yeni oyunları keşfedip kataloğa ekleyin (1000+ oyun)
-npm run xbox:discover
-```
-
-### 4. Geliştirme veya Production Sunucusunu Başlatın
-```bash
-# Geliştirme modu
+# Geliştirme sunucusunu başlatın
 npm run dev
-
-# veya Production derlemesi ve çalıştırma
-npm run build
-npm start
 ```
 Tarayıcınızda `http://localhost:3000` adresine gidin.
 

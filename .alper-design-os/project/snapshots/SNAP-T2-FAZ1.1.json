@@ -1,0 +1,15 @@
+{
+  "snapshotId": "SNAP-T2-FAZ1.1",
+  "commitSha": "UNVERIFIED_WORKING_TREE",
+  "timestamp": "2026-10-14T19:50:08.481Z",
+  "stack": "REACT_TYPESCRIPT",
+  "architectureHash": "NOT_VERIFIED",
+  "requirementHash": "NOT_VERIFIED",
+  "routeInventory": [],
+  "apiInventory": [],
+  "databaseFingerprint": "fp-db-07844689a5fd1bce",
+  "dependencyFingerprint": "fp-dep-d1ef9d6a5dd7821d",
+  "designSystemFingerprint": "fp-ds-f4007a321f5eb977",
+  "uiTokenFingerprint": "fp-ds-f4007a321f5eb977",
+  "verificationStatus": "PARTIALLY_VERIFIED"
+}

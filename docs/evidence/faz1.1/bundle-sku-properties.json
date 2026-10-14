@@ -1,0 +1,1642 @@
+[
+  {
+    "productId": "9NXFX68ZNKK0",
+    "title": "Grand Theft Auto V Enhanced (PC)",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "9MSRG7MN6SP6",
+        "DisplayRank": 0,
+        "IsPrimary": true,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "9N9RSV4F7ZR0",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Desktop"
+          }
+        ]
+      },
+      "EndDate": "2026-10-22T09:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T00:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "BX3M8L83BBRW",
+    "title": "Cyberpunk 2077",
+    "skuId": "0001",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [],
+    "packages": [
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [],
+        "MaxDownloadSizeInBytes": 72637018112,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 50000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0001",
+          "Content": null,
+          "PackageFeatures": null
+        }
+      },
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us",
+          "ru-ru",
+          "pl-pl",
+          "cs-cz",
+          "ar-ae",
+          "hu-hu",
+          "tr-tr",
+          "pt-br",
+          "uk-ua"
+        ],
+        "MaxDownloadSizeInBytes": 85232197632,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 51000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0001",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": true,
+            "SupportsInstallFeatures": true,
+            "SupportsInstallRecipes": true
+          }
+        }
+      }
+    ],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "2026-10-18T23:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-09-16T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Fulfill",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "BX3M8L83BBRW",
+    "title": "Cyberpunk 2077",
+    "skuId": "0003",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [],
+    "packages": [
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [],
+        "MaxDownloadSizeInBytes": 72637018112,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 50000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0003",
+          "Content": null,
+          "PackageFeatures": null
+        }
+      },
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us",
+          "ru-ru",
+          "pl-pl",
+          "cs-cz",
+          "ar-ae",
+          "hu-hu",
+          "tr-tr",
+          "pt-br",
+          "uk-ua"
+        ],
+        "MaxDownloadSizeInBytes": 85232197632,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 51000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0003",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": true,
+            "SupportsInstallFeatures": true,
+            "SupportsInstallRecipes": true
+          }
+        }
+      }
+    ],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2020-12-09T21:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "BX3M8L83BBRW",
+    "title": "Cyberpunk 2077",
+    "skuId": "0004",
+    "skuType": "trial",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [],
+    "packages": [
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [],
+        "MaxDownloadSizeInBytes": 72637018112,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 50000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0004",
+          "Content": null,
+          "PackageFeatures": null
+        }
+      },
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us",
+          "ru-ru",
+          "pl-pl",
+          "cs-cz",
+          "ar-ae",
+          "hu-hu",
+          "tr-tr",
+          "pt-br",
+          "uk-ua"
+        ],
+        "MaxDownloadSizeInBytes": 85232197632,
+        "MaxInstallSizeInBytes": 0,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": null,
+        "PackageFullName": "",
+        "PackageId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "ContentId": "06a926fb-7a52-441e-a762-140e26b67dcf",
+        "KeyId": "bd26b579-ffbd-4b75-81f6-5d13fd9929d4",
+        "PackageRank": 51000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "BX3M8L83BBRW",
+          "WuBundleId": "f61f86ee-aec9-4476-a89f-e43107ea8057",
+          "WuCategoryId": "ce711361-2069-44e3-ac79-1ec95d48c1e8",
+          "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+          "SkuId": "0004",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": true,
+            "SupportsInstallFeatures": true,
+            "SupportsInstallRecipes": true
+          }
+        }
+      }
+    ],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2024-04-01T07:00:00.0000000Z"
+    },
+    "availActions": [
+      "License"
+    ]
+  },
+  {
+    "productId": "BV4F07T1WH5T",
+    "title": "FAR CRY 4 + FAR CRY PRIMAL PAKETİ",
+    "skuId": "0001",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "C0KJ40T9QD86",
+        "DisplayRank": 0,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "BV6BRSLFJW3W",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9MXMJFNZMVWD",
+    "title": "Grand Theft Auto: The Trilogy – The Definitive Edition",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "9NF3HCF7MWB4",
+        "DisplayRank": 0,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "9P7RSGG6Z699",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "9PC16M34CB91",
+        "DisplayRank": 2,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "2026-10-22T09:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T00:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9MXMJFNZMVWD",
+    "title": "Grand Theft Auto: The Trilogy – The Definitive Edition",
+    "skuId": "0017",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "9NF3HCF7MWB4",
+        "DisplayRank": 0,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "9P7RSGG6Z699",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "9PC16M34CB91",
+        "DisplayRank": 2,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2021-11-11T15:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9PN0XVQXR2R6",
+    "title": "Far Cry® 5 Gold Edition + Far Cry® New Dawn Deluxe Edition Paketi",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "EarlyAdopterEnrollmentUrl",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "HasThirdPartyIAPs",
+      "LastUpdateDate",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "InstallationTerms",
+      "Packages",
+      "VersionString",
+      "SkuDisplayGroupIds",
+      "XboxXPA",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "9NSRHJ8DJT2M",
+        "DisplayRank": 0,
+        "IsPrimary": true,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Desktop"
+          }
+        ]
+      },
+      "EndDate": "2028-01-01T09:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9NPV7L06K0BB",
+    "title": "Far Cry® 6 DLC 2 Pagan: Control",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": null,
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Desktop"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-07-21T14:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9NSXB5QB1L3T",
+    "title": "Far Cry 6 DLC Bölüm 1 Insanity",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": null,
+    "packages": [
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us"
+        ],
+        "MaxDownloadSizeInBytes": 10604544,
+        "MaxInstallSizeInBytes": null,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": "Ubisoft.FarCryTetra_ngz4m417e0mpw",
+        "PackageFullName": "",
+        "PackageId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "ContentId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "KeyId": "3c68744a-532d-5fff-ed7b-13f1c85a1bc0",
+        "PackageRank": 50000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "9NSXB5QB1L3T",
+          "WuBundleId": "2ab9e82c-d11c-4ab1-98e0-a4ca6428da3d",
+          "WuCategoryId": "f5ca7b92-6b11-4811-9650-3906494fa673",
+          "PackageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+          "SkuId": "0010",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": false,
+            "SupportsInstallFeatures": false,
+            "SupportsInstallRecipes": false
+          }
+        }
+      },
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us"
+        ],
+        "MaxDownloadSizeInBytes": 10604544,
+        "MaxInstallSizeInBytes": null,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": "Ubisoft.FarCryTetra_ngz4m417e0mpw",
+        "PackageFullName": "",
+        "PackageId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "ContentId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "KeyId": "3c68744a-532d-5fff-ed7b-13f1c85a1bc0",
+        "PackageRank": 51000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "9NSXB5QB1L3T",
+          "WuBundleId": "2ab9e82c-d11c-4ab1-98e0-a4ca6428da3d",
+          "WuCategoryId": "f5ca7b92-6b11-4811-9650-3906494fa673",
+          "PackageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+          "SkuId": "0010",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": false,
+            "SupportsInstallFeatures": false,
+            "SupportsInstallRecipes": false
+          }
+        }
+      }
+    ],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "2099-04-25T23:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Fulfill",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9NSXB5QB1L3T",
+    "title": "Far Cry 6 DLC Bölüm 1 Insanity",
+    "skuId": "0017",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": null,
+    "packages": [
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us"
+        ],
+        "MaxDownloadSizeInBytes": 10604544,
+        "MaxInstallSizeInBytes": null,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": "Ubisoft.FarCryTetra_ngz4m417e0mpw",
+        "PackageFullName": "",
+        "PackageId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "ContentId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "KeyId": "3c68744a-532d-5fff-ed7b-13f1c85a1bc0",
+        "PackageRank": 50000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "9NSXB5QB1L3T",
+          "WuBundleId": "2ab9e82c-d11c-4ab1-98e0-a4ca6428da3d",
+          "WuCategoryId": "f5ca7b92-6b11-4811-9650-3906494fa673",
+          "PackageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+          "SkuId": "0017",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": false,
+            "SupportsInstallFeatures": false,
+            "SupportsInstallRecipes": false
+          }
+        }
+      },
+      {
+        "Applications": [],
+        "Architectures": [
+          "x64"
+        ],
+        "Capabilities": [],
+        "DeviceCapabilities": [],
+        "ExperienceIds": [],
+        "FrameworkDependencies": [],
+        "HardwareDependencies": [],
+        "HardwareRequirements": [],
+        "Hash": "",
+        "HashAlgorithm": "",
+        "IsStreamingApp": false,
+        "Languages": [
+          "en-us"
+        ],
+        "MaxDownloadSizeInBytes": 10604544,
+        "MaxInstallSizeInBytes": null,
+        "PackageFormat": "XVC",
+        "PackageFamilyName": null,
+        "MainPackageFamilyNameForDlc": "Ubisoft.FarCryTetra_ngz4m417e0mpw",
+        "PackageFullName": "",
+        "PackageId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "ContentId": "5d4a95a6-362b-451b-aa8f-d5d79a50791a",
+        "KeyId": "3c68744a-532d-5fff-ed7b-13f1c85a1bc0",
+        "PackageRank": 51000,
+        "PackageUri": "https://productingestionbin1.blob.core.windows.net",
+        "PlatformDependencies": [
+          {
+            "MaxTested": 0,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ],
+        "PlatformDependencyXmlBlob": "",
+        "ResourceId": "",
+        "Version": "0",
+        "PackageDownloadUris": [
+          {
+            "Rank": 0,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          },
+          {
+            "Rank": 1,
+            "Uri": "https://productingestionbin1.blob.core.windows.net"
+          }
+        ],
+        "DriverDependencies": [],
+        "FulfillmentData": {
+          "ProductId": "9NSXB5QB1L3T",
+          "WuBundleId": "2ab9e82c-d11c-4ab1-98e0-a4ca6428da3d",
+          "WuCategoryId": "f5ca7b92-6b11-4811-9650-3906494fa673",
+          "PackageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+          "SkuId": "0017",
+          "Content": null,
+          "PackageFeatures": {
+            "SupportsIntelligentDelivery": false,
+            "SupportsInstallFeatures": false,
+            "SupportsInstallRecipes": false
+          }
+        }
+      }
+    ],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "1753-01-01T00:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "C4JQP2HXZFGD",
+    "title": "FAR CRY 4 SEASON PASS",
+    "skuId": "0001",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "C2HR3W9XS2C0",
+        "DisplayRank": 0,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C2WR89HHVDRN",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C393XFLFQ9TG",
+        "DisplayRank": 2,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C2VCN39MJ882",
+        "DisplayRank": 3,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "BXVTQ6J2J1SW",
+        "DisplayRank": 4,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "BSRWGZP6SXDR",
+        "DisplayRank": 5,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": null,
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "2099-04-25T23:59:59.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-10-08T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "C4JQP2HXZFGD",
+    "title": "FAR CRY 4 SEASON PASS",
+    "skuId": "0003",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": [
+      {
+        "BigId": "C2HR3W9XS2C0",
+        "DisplayRank": 0,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C2WR89HHVDRN",
+        "DisplayRank": 1,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C393XFLFQ9TG",
+        "DisplayRank": 2,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "C2VCN39MJ882",
+        "DisplayRank": 3,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "BXVTQ6J2J1SW",
+        "DisplayRank": 4,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      },
+      {
+        "BigId": "BSRWGZP6SXDR",
+        "DisplayRank": 5,
+        "IsPrimary": false,
+        "FulfillmentType": null
+      }
+    ],
+    "packages": null,
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "1753-01-01T00:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9MWHGB7HR6TT",
+    "title": "Forza Horizon 5 Hoş Geldin Paketi",
+    "skuId": "0010",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": null,
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Desktop"
+          },
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2026-06-18T10:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Purchase",
+      "Browse",
+      "Curate",
+      "Redeem"
+    ]
+  },
+  {
+    "productId": "9MWHGB7HR6TT",
+    "title": "Forza Horizon 5 Hoş Geldin Paketi",
+    "skuId": "0017",
+    "skuType": "full",
+    "skuPropertiesKeys": [
+      "ApplicableLegacyPlatforms",
+      "CustomDeveloperData",
+      "MagazineIssueData",
+      "Packages",
+      "FulfillmentData",
+      "FulfillmentType",
+      "FulfillmentPluginId",
+      "XboxXPA",
+      "HardwareProperties",
+      "HardwareRequirements",
+      "HardwareWarningList",
+      "SkuDisplayGroupIds",
+      "EarlyAdopterEnrollmentUrl",
+      "HasThirdPartyIAPs",
+      "InstallationTerms",
+      "LastUpdateDate",
+      "VersionString",
+      "BundledSkus",
+      "IsRepurchasable",
+      "SkuDisplayRank",
+      "DisplayPhysicalStoreInventory",
+      "VisibleToB2BServiceIds",
+      "AdditionalIdentifiers",
+      "IsTrial",
+      "IsPreOrder",
+      "IsBundle"
+    ],
+    "bundledSkus": null,
+    "packages": [],
+    "availConditions": {
+      "ClientConditions": {
+        "AllowedPlatforms": [
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Desktop"
+          },
+          {
+            "MaxVersion": 2147483647,
+            "MinVersion": 0,
+            "PlatformName": "Windows.Xbox"
+          }
+        ]
+      },
+      "EndDate": "9998-12-30T00:00:00.0000000Z",
+      "ResourceSetIds": [
+        "1"
+      ],
+      "StartDate": "2021-11-08T21:00:00.0000000Z"
+    },
+    "availActions": [
+      "Details",
+      "Redeem"
+    ]
+  }
+]

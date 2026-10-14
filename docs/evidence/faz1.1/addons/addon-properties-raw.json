@@ -1,0 +1,1006 @@
+[
+  {
+    "productId": "9NXFX68ZNKK0",
+    "title": "Grand Theft Auto V Enhanced (PC)",
+    "productType": "Game",
+    "productFamily": "Games",
+    "productGroupId": "29d3673e-f21c-43ed-8ca6-e703000663a0",
+    "productGroupName": "Grand Theft Auto V (Xbox PC)",
+    "packageFamilyName": "",
+    "merchandizingTags": [],
+    "alternateIds": [],
+    "allowedPlatforms": [
+      {
+        "Name": "BroadcastSupport",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XboxLive",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Attributes": [
+        {
+          "Name": "BroadcastSupport",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XboxLive",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "CanInstallToSDCard": true,
+      "Category": "Action & adventure",
+      "Categories": null,
+      "Subcategory": null,
+      "IsAccessible": false,
+      "IsDemo": false,
+      "IsLineOfBusinessApp": false,
+      "IsPublishedToLegacyWindowsPhoneStore": false,
+      "IsPublishedToLegacyWindowsStore": false,
+      "PackageFamilyName": "",
+      "PackageIdentityName": "",
+      "PublisherCertificateName": "",
+      "PublisherId": "31881420",
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxLiveTier": "Full",
+      "XboxXPA": null,
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": null,
+      "XboxConsoleGenCompatible": null,
+      "XboxLiveGoldRequired": false,
+      "ExtendedMetadata": "9NXFX68ZNKK0_905f6626-ab7e-414c-8ebe-6222c86a66ab",
+      "XBOX": {
+        "XboxProperties": "d3df620d-57b8-41c7-930e-e59685f43c66",
+        "SubmissionId": "1152921505699957572",
+        "XboxGamingMetadata": "9NXFX68ZNKK0_905f6626-ab7e-414c-8ebe-6222c86a66ab"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": true,
+      "RevisionId": "2026-10-05T09:10:28.8819938Z",
+      "ProductGroupId": "29d3673e-f21c-43ed-8ca6-e703000663a0",
+      "ProductGroupName": "Grand Theft Auto V (Xbox PC)",
+      "IsPrivateBeforeDateHint": "2025-04-15T14:00:00.0000000Z"
+    }
+  },
+  {
+    "productId": "BX3M8L83BBRW",
+    "title": "Cyberpunk 2077",
+    "productType": "Game",
+    "productFamily": "Games",
+    "productGroupId": "e8649acf-b3af-4be8-97c6-5859655e8611",
+    "productGroupName": "Cyberpunk 2077",
+    "packageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyWindowsStoreProductId",
+        "Value": "3c713414-e84e-4a6d-b263-2b89c63ab5fc"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneProductId",
+        "Value": "59a26c3d-8142-473a-a159-bad2bf808220"
+      },
+      {
+        "IdType": "XboxTitleId",
+        "Value": "222473492"
+      },
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "00e3d74b-b3db-4c30-8dfb-280bacac7c6f"
+      }
+    ],
+    "allowedPlatforms": [
+      {
+        "Name": "BroadcastSupport",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "Capability4k",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "CapabilityHDR",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "SinglePlayer",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "RayTracing",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "60fps",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "DolbyAtmos",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "ConsoleGen9Optimized",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "ConsoleCrossGen",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "CapabilityXboxEnhanced",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XblAchievements",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XboxLive",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Attributes": [
+        {
+          "Name": "BroadcastSupport",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "Capability4k",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "CapabilityHDR",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "SinglePlayer",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "RayTracing",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "60fps",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "DolbyAtmos",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "ConsoleGen9Optimized",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "ConsoleCrossGen",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "CapabilityXboxEnhanced",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XblAchievements",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XboxLive",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "CanInstallToSDCard": true,
+      "Category": "Role playing",
+      "Categories": [
+        "Role playing"
+      ],
+      "Subcategory": null,
+      "IsAccessible": false,
+      "IsDemo": false,
+      "IsLineOfBusinessApp": false,
+      "IsPublishedToLegacyWindowsPhoneStore": false,
+      "IsPublishedToLegacyWindowsStore": false,
+      "PackageFamilyName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac_0xkrdv0gjmk28",
+      "PackageIdentityName": "CDPROJEKTSA.4d0e9834-20b1-4580-9bdc-4501ef2ffaac",
+      "PublisherCertificateName": "CN=A4A8B188-456E-484C-9B55-2ADF8E9A4B12",
+      "PublisherId": "29289100",
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxLiveTier": "Full",
+      "XboxXPA": null,
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxConsoleGenCompatible": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxLiveGoldRequired": false,
+      "ExtendedMetadata": "BX3M8L83BBRW_57a46f7e-db3b-45cc-83f2-12df73d12dd8",
+      "XBOX": {
+        "XboxProperties": "10d99d21-6b1b-4fcb-8cd2-2cd2f4a7f701",
+        "SubmissionId": "1152921505701468733",
+        "XboxGamingMetadata": "BX3M8L83BBRW_57a46f7e-db3b-45cc-83f2-12df73d12dd8"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": true,
+      "RevisionId": "2026-10-07T11:51:18.2939178Z",
+      "ProductGroupId": "e8649acf-b3af-4be8-97c6-5859655e8611",
+      "ProductGroupName": "Cyberpunk 2077"
+    }
+  },
+  {
+    "productId": "BV4F07T1WH5T",
+    "title": "FAR CRY 4 + FAR CRY PRIMAL PAKETİ",
+    "productType": "Game",
+    "productFamily": "Games",
+    "productGroupId": "9f7797e5-e467-48f0-86bb-c1e7370365d7",
+    "productGroupName": "Far Cry Primal",
+    "packageFamilyName": "",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "494d400b-48f2-4aab-8df3-b9497b959e8c"
+      }
+    ],
+    "allowedPlatforms": [
+      {
+        "Name": "BroadcastSupport",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XboxLive",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Attributes": [
+        {
+          "Name": "BroadcastSupport",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XboxLive",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "CanInstallToSDCard": true,
+      "Category": "Shooter",
+      "Categories": null,
+      "Subcategory": null,
+      "IsAccessible": false,
+      "IsDemo": false,
+      "IsLineOfBusinessApp": false,
+      "IsPublishedToLegacyWindowsPhoneStore": false,
+      "IsPublishedToLegacyWindowsStore": false,
+      "PackageFamilyName": "",
+      "PackageIdentityName": "",
+      "PublisherCertificateName": "",
+      "PublisherId": "10111770",
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxLiveTier": "Full",
+      "XboxXPA": null,
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": [
+        "ConsoleGen8"
+      ],
+      "XboxConsoleGenCompatible": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxLiveGoldRequired": false,
+      "ExtendedMetadata": null,
+      "XBOX": {},
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": true,
+      "RevisionId": "2026-09-10T12:22:45.5310232Z",
+      "ProductGroupId": "9f7797e5-e467-48f0-86bb-c1e7370365d7",
+      "ProductGroupName": "Far Cry Primal"
+    }
+  },
+  {
+    "productId": "9MXMJFNZMVWD",
+    "title": "Grand Theft Auto: The Trilogy – The Definitive Edition",
+    "productType": "Game",
+    "productFamily": "Games",
+    "productGroupId": "2b8e6e86-d021-4503-a81d-c2c06db6ac5e",
+    "productGroupName": "Trilogy",
+    "packageFamilyName": "",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "4d584d39-464a-304e-c05a-4d565744a100"
+      }
+    ],
+    "allowedPlatforms": [
+      {
+        "Name": "Capability4k",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "CapabilityHDR",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "SinglePlayer",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": [
+          "Xbox"
+        ],
+        "Group": null
+      },
+      {
+        "Name": "ConsoleGen9Optimized",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "ConsoleCrossGen",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XboxLive",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Attributes": [
+        {
+          "Name": "Capability4k",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "CapabilityHDR",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "SinglePlayer",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": [
+            "Xbox"
+          ],
+          "Group": null
+        },
+        {
+          "Name": "ConsoleGen9Optimized",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "ConsoleCrossGen",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XboxLive",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "CanInstallToSDCard": true,
+      "Category": "Action & adventure",
+      "Categories": null,
+      "Subcategory": null,
+      "IsAccessible": false,
+      "IsDemo": false,
+      "IsLineOfBusinessApp": false,
+      "IsPublishedToLegacyWindowsPhoneStore": false,
+      "IsPublishedToLegacyWindowsStore": false,
+      "PackageFamilyName": "",
+      "PackageIdentityName": "",
+      "PublisherCertificateName": "",
+      "PublisherId": "31881420",
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxLiveTier": "Full",
+      "XboxXPA": null,
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxConsoleGenCompatible": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxLiveGoldRequired": false,
+      "ExtendedMetadata": "9MXMJFNZMVWD_46309bd0-42ce-4e0d-bf86-83f5e89774a1",
+      "XBOX": {
+        "XboxGamingMetadata": "9MXMJFNZMVWD_46309bd0-42ce-4e0d-bf86-83f5e89774a1"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": false,
+      "RevisionId": "2026-09-24T14:15:28.5799819Z",
+      "ProductGroupId": "2b8e6e86-d021-4503-a81d-c2c06db6ac5e",
+      "ProductGroupName": "Trilogy",
+      "IsPrivateBeforeDateHint": "2021-10-22T12:00:00.0000000Z"
+    }
+  },
+  {
+    "productId": "9PN0XVQXR2R6",
+    "title": "Far Cry® 5 Gold Edition + Far Cry® New Dawn Deluxe Edition Paketi",
+    "productType": "Game",
+    "productFamily": "Games",
+    "productGroupId": "311614c8-9d05-4818-9215-5dd14648780d",
+    "productGroupName": "Far Cry New Dawn",
+    "packageFamilyName": "",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "304e5039-5658-3051-c058-523252366a00"
+      }
+    ],
+    "allowedPlatforms": [
+      {
+        "Name": "BroadcastSupport",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      },
+      {
+        "Name": "XboxLive",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Attributes": [
+        {
+          "Name": "BroadcastSupport",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        },
+        {
+          "Name": "XboxLive",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "CanInstallToSDCard": true,
+      "Category": "Action & adventure",
+      "Categories": null,
+      "Subcategory": null,
+      "IsAccessible": false,
+      "IsDemo": false,
+      "IsLineOfBusinessApp": false,
+      "IsPublishedToLegacyWindowsPhoneStore": false,
+      "IsPublishedToLegacyWindowsStore": false,
+      "PackageFamilyName": "",
+      "PackageIdentityName": "",
+      "PublisherCertificateName": "",
+      "PublisherId": "10111770",
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxLiveTier": "Full",
+      "XboxXPA": null,
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": null,
+      "XboxConsoleGenCompatible": null,
+      "XboxLiveGoldRequired": false,
+      "ExtendedMetadata": "9PN0XVQXR2R6_00945333-33ae-40bd-8918-5d6ef8b1a3ed",
+      "XBOX": {
+        "XboxProperties": "28ee5854-ad9e-4f83-a254-3423641f4a62",
+        "SubmissionId": "1152921505701426510",
+        "XboxGamingMetadata": "9PN0XVQXR2R6_00945333-33ae-40bd-8918-5d6ef8b1a3ed"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": true,
+      "RevisionId": "2026-09-11T10:30:22.9150838Z",
+      "ProductGroupId": "311614c8-9d05-4818-9215-5dd14648780d",
+      "ProductGroupName": "Far Cry New Dawn"
+    }
+  },
+  {
+    "productId": "9NPV7L06K0BB",
+    "title": "Far Cry® 6 DLC 2 Pagan: Control",
+    "productType": "Durable",
+    "productFamily": "Games",
+    "productGroupId": "3fca1cb0-0cbc-44d6-8353-074d28c438c0",
+    "productGroupName": "Far Cry Tetra",
+    "packageFamilyName": "Ubisoft.FarCry6DLC2PaganControl_ngz4m417e0mpw",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyWindowsStoreProductId",
+        "Value": "f8471963-d838-494f-804e-64d5ab2ba9b6"
+      },
+      {
+        "IdType": "LegacyWindowsStoreParentProductId",
+        "Value": "f8471963-d838-494f-804e-64d5ab2ba9b6"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneProductId",
+        "Value": "598cddfa-0ac9-4dd0-ad41-bc56948cc315"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneParentProductId",
+        "Value": "598cddfa-0ac9-4dd0-ad41-bc56948cc315"
+      },
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "56504e39-4c37-3030-c036-4b3042421500"
+      },
+      {
+        "IdType": "InAppOfferToken",
+        "Value": "[PC][FC6][DLC] Control"
+      }
+    ],
+    "allowedPlatforms": [
+      {
+        "Name": "BroadcastSupport",
+        "Minimum": null,
+        "Maximum": null,
+        "ApplicablePlatforms": null,
+        "Group": null
+      }
+    ],
+    "properties": {
+      "Category": "Action & adventure",
+      "Categories": [
+        "Action & adventure"
+      ],
+      "IsOmexProduct": false,
+      "PackageFamilyName": "Ubisoft.FarCry6DLC2PaganControl_ngz4m417e0mpw",
+      "PackageIdentityName": "Ubisoft.FarCry6DLC2PaganControl",
+      "PrimaryCategory": "Game",
+      "PublisherCertificateName": "CN=C3139357-8858-4D2E-A18E-8ADEAB85C66A",
+      "PublisherId": "10111770",
+      "Subcategory": "",
+      "XboxXPA": null,
+      "Attributes": [
+        {
+          "Name": "BroadcastSupport",
+          "Minimum": null,
+          "Maximum": null,
+          "ApplicablePlatforms": null,
+          "Group": null
+        }
+      ],
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": null,
+      "XboxConsoleGenCompatible": null,
+      "XboxLiveGoldRequired": false,
+      "XBOX": {
+        "XboxProperties": "b216a374-cdbf-4c00-a6f3-377a853c18cb",
+        "SubmissionId": "1152921505701453996"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": null,
+      "HasAddOns": null,
+      "RevisionId": "2026-07-20T15:03:53.4653213Z",
+      "EntitlementProperties": [],
+      "ProductGroupId": "3fca1cb0-0cbc-44d6-8353-074d28c438c0",
+      "ProductGroupName": "Far Cry Tetra",
+      "InAppOfferToken": "[PC][FC6][DLC] Control"
+    }
+  },
+  {
+    "productId": "9NSXB5QB1L3T",
+    "title": "Far Cry 6 DLC Bölüm 1 Insanity",
+    "productType": "Durable",
+    "productFamily": "Games",
+    "productGroupId": "3fca1cb0-0cbc-44d6-8353-074d28c438c0",
+    "productGroupName": "Far Cry Tetra",
+    "packageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyWindowsStoreProductId",
+        "Value": "0dbb5111-36fb-4108-86ba-83498d0437b8"
+      },
+      {
+        "IdType": "LegacyWindowsStoreParentProductId",
+        "Value": "0dbb5111-36fb-4108-86ba-83498d0437b8"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneProductId",
+        "Value": "163b67db-5164-45bb-b567-a791bfacb840"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneParentProductId",
+        "Value": "163b67db-5164-45bb-b567-a791bfacb840"
+      },
+      {
+        "IdType": "PackageFamilyName",
+        "Value": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw"
+      },
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "58534e39-3542-3051-c042-314c33544000"
+      },
+      {
+        "IdType": "InAppOfferToken",
+        "Value": "FCT - DLC 01"
+      }
+    ],
+    "allowedPlatforms": null,
+    "properties": {
+      "Category": "Action & adventure",
+      "Categories": [
+        "Action & adventure"
+      ],
+      "IsOmexProduct": false,
+      "PackageFamilyName": "Ubisoft.FarCry6DLC01_ngz4m417e0mpw",
+      "PackageIdentityName": "Ubisoft.FarCry6DLC01",
+      "PrimaryCategory": "Game",
+      "PublisherCertificateName": "CN=C3139357-8858-4D2E-A18E-8ADEAB85C66A",
+      "PublisherId": "10111770",
+      "Subcategory": "",
+      "XboxXPA": null,
+      "Attributes": null,
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxConsoleGenCompatible": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxLiveGoldRequired": false,
+      "XBOX": {
+        "XboxProperties": "b29006f1-aaad-448c-81af-861242a118f6",
+        "SubmissionId": "1152921505697663291"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": null,
+      "HasAddOns": null,
+      "RevisionId": "2026-10-07T19:44:06.7235995Z",
+      "EntitlementProperties": [],
+      "ProductGroupId": "3fca1cb0-0cbc-44d6-8353-074d28c438c0",
+      "ProductGroupName": "Far Cry Tetra",
+      "InAppOfferToken": "FCT - DLC 01"
+    }
+  },
+  {
+    "productId": "C4JQP2HXZFGD",
+    "title": "FAR CRY 4 SEASON PASS",
+    "productType": "Durable",
+    "productFamily": "Games",
+    "packageFamilyName": "",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "ab9e3a8d-8010-4110-acd2-40ef87ae07a6"
+      }
+    ],
+    "allowedPlatforms": null,
+    "properties": {
+      "Category": "Action & adventure",
+      "Categories": [
+        "Action & adventure",
+        "Shooter"
+      ],
+      "IsOmexProduct": false,
+      "PackageFamilyName": "",
+      "PackageIdentityName": "",
+      "PrimaryCategory": "Game",
+      "PublisherCertificateName": "",
+      "PublisherId": "10111770",
+      "Subcategory": null,
+      "XboxXPA": null,
+      "Attributes": null,
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": [
+        "ConsoleGen8"
+      ],
+      "XboxConsoleGenCompatible": [
+        "ConsoleGen8",
+        "ConsoleGen9"
+      ],
+      "XboxLiveGoldRequired": false,
+      "XBOX": {
+        "XboxProperties": "6acc4c7a-a91e-447c-8b27-9037c5169627",
+        "SubmissionId": "1152921505697662878"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": "#FFFFFF",
+      "HasAddOns": false,
+      "RevisionId": "2026-09-10T12:44:22.8597799Z",
+      "EntitlementProperties": [
+        "Durable"
+      ]
+    }
+  },
+  {
+    "productId": "9MWHGB7HR6TT",
+    "title": "Forza Horizon 5 Hoş Geldin Paketi",
+    "productType": "Durable",
+    "productFamily": "Games",
+    "productGroupId": "7a7d0507-419e-4939-9267-4aee85d26920",
+    "productGroupName": "Forza Horizon 5",
+    "packageFamilyName": "Microsoft.ForzaHorizon5WelcomePack_8wekyb3d8bbwe",
+    "merchandizingTags": [],
+    "alternateIds": [
+      {
+        "IdType": "LegacyWindowsStoreProductId",
+        "Value": "9452d2b9-f9e3-4e66-818f-d4289fc1e187"
+      },
+      {
+        "IdType": "LegacyWindowsStoreParentProductId",
+        "Value": "9452d2b9-f9e3-4e66-818f-d4289fc1e187"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneProductId",
+        "Value": "0da04378-7246-4218-a458-66b373426101"
+      },
+      {
+        "IdType": "LegacyWindowsPhoneParentProductId",
+        "Value": "0da04378-7246-4218-a458-66b373426101"
+      },
+      {
+        "IdType": "LegacyXboxProductId",
+        "Value": "48574d39-4247-3037-c048-523654545d00"
+      },
+      {
+        "IdType": "InAppOfferToken",
+        "Value": "Welcome_Pack_FH5"
+      }
+    ],
+    "allowedPlatforms": null,
+    "properties": {
+      "Category": "Other",
+      "Categories": [
+        "Other"
+      ],
+      "IsOmexProduct": false,
+      "PackageFamilyName": "Microsoft.ForzaHorizon5WelcomePack_8wekyb3d8bbwe",
+      "PackageIdentityName": "Microsoft.ForzaHorizon5WelcomePack",
+      "PrimaryCategory": "Game",
+      "PublisherCertificateName": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+      "PublisherId": "10101150",
+      "Subcategory": "",
+      "XboxXPA": null,
+      "Attributes": null,
+      "SkuDisplayGroups": [
+        {
+          "Id": "01",
+          "Treatment": "MergeAvailabilities"
+        }
+      ],
+      "XboxCrossGenSetId": null,
+      "XboxConsoleGenOptimized": null,
+      "XboxConsoleGenCompatible": null,
+      "XboxLiveGoldRequired": false,
+      "XBOX": {
+        "XboxProperties": "d431d30d-fec6-430c-9e90-ce77893f23b6",
+        "SubmissionId": "1152921505697208189"
+      },
+      "ExtendedClientMetadata": {},
+      "OwnershipType": null,
+      "PdpBackgroundColor": null,
+      "HasAddOns": null,
+      "RevisionId": "2026-09-29T11:01:08.7129084Z",
+      "EntitlementProperties": [],
+      "ProductGroupId": "7a7d0507-419e-4939-9267-4aee85d26920",
+      "ProductGroupName": "Forza Horizon 5",
+      "IsPrivateBeforeDateHint": "2021-06-13T19:00:00.0000000Z",
+      "InAppOfferToken": "Welcome_Pack_FH5"
+    }
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "id": "ADR-008",
+  "title": "Faz 1.1 Detail Experience, Live Search, Bundle Intelligence & Add-on Classification",
+  "context": "Faz 1.1 + Ek Kapsam: DLC/Addon sınıflandırması, bundle ekonomisi, canlı veritabanı araması ve Coolify dağıtım eşliği tamamlandı.",
+  "decision": "Microsoft Store Display Catalog üzerinden doğrulanmış ilişkilerle oyun ve DLC ayrıştırması, paket ekonomi motoru ve 3 durumlu dürüst fiyat geçmişi grafiği devreye alındı.",
+  "alternatives": [],
+  "consequences": [
+    "Katalog net şekilde ana oyun, paket ve eklenti olarak ayrıldı.",
+    "Bundle tasarruf analizi gerçek zamanlı çocuk fiyatlarına göre hesaplandı.",
+    "Tekil gözlemlerde yapay grafik çizimi önlenerek doğruluk ilkesi korundu."
+  ],
+  "risks": [],
+  "evidence": [],
+  "requirements": [],
+  "affectedComponents": [],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:49:56.662Z",
+  "approvedBy": "Alper Design OS",
+  "confirmedByUser": false,
+  "authoritySource": "SYSTEM_RECOMMENDATION",
+  "verificationStatus": "NOT_VERIFIED"
+}

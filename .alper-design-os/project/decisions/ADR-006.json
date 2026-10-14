@@ -1,0 +1,40 @@
+{
+  "id": "ADR-006",
+  "title": "Product Classification and Game/Add-on Relationship Model",
+  "context": "Users need clean separation between full games and DLCs, while retaining the ability to track DLC discounts and view them on the parent game detail page.",
+  "decision": "Introduce ProductClass enum and GameRelation table to model authoritative bundle-child and game-addon relationships based on Display Catalog metadata.",
+  "alternatives": [
+    "Keep all products flat in one list",
+    "Delete DLCs and addons entirely from database"
+  ],
+  "consequences": [
+    "Base games and bundles separated from DLCs/Addons in default deals view",
+    "Dedicated /eklentiler route for browsing addon discounts",
+    "Authoritative GameRelation model connects base games with their verified addons and bundles with their children"
+  ],
+  "risks": [
+    "Unmatched orphan DLCs must cleanly display truthful fallback state without speculative parent linking."
+  ],
+  "evidence": [],
+  "requirements": [
+    "FR-13",
+    "FR-14",
+    "FR-15",
+    "FR-16"
+  ],
+  "affectedComponents": [
+    "catalog",
+    "data-model",
+    "web",
+    "search",
+    "pricing"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-14T19:23:43.183Z",
+  "approvedBy": "Faz 1.1 Brief & Architecture Review",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

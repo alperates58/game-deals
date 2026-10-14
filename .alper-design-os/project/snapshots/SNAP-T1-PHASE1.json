@@ -1,0 +1,22 @@
+{
+  "snapshotId": "SNAP-T1-PHASE1",
+  "commitSha": "969f076",
+  "timestamp": "2026-10-14T19:11:20.507Z",
+  "stack": "Next.js 15 + TypeScript Strict + PostgreSQL + Prisma ORM + Tailwind CSS",
+  "architectureHash": "NOT_VERIFIED",
+  "requirementHash": "NOT_VERIFIED",
+  "routeInventory": [
+    "/",
+    "/firsatlar",
+    "/tarihi-dip",
+    "/oyun/[slug]"
+  ],
+  "apiInventory": [
+    "/api/health"
+  ],
+  "databaseFingerprint": "fp-db-6b6ee8f9d0ac885f",
+  "dependencyFingerprint": "fp-dep-75696ba64f39eb48",
+  "designSystemFingerprint": "fp-ds-f4007a321f5eb977",
+  "uiTokenFingerprint": "fp-ds-f4007a321f5eb977",
+  "verificationStatus": "PARTIALLY_VERIFIED"
+}

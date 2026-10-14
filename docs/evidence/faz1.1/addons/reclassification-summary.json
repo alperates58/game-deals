@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-10-14T19:30:18.833Z",
+  "totalProductsChecked": 1051,
+  "classifications": {
+    "BUNDLE": 418,
+    "DLC": 22,
+    "ADD_ON": 211,
+    "BASE_GAME": 153,
+    "CONTENT_PACK": 228,
+    "CURRENCY": 5,
+    "EXPANSION": 2,
+    "SEASON_PASS": 12
+  },
+  "relationsCreated": 1969
+}
