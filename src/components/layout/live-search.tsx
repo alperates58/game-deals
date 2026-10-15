@@ -134,9 +134,9 @@ export function LiveSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-xs sm:max-w-sm lg:max-w-md">
+    <div ref={containerRef} className="relative w-full min-w-0 max-w-xs sm:max-w-sm lg:max-w-md">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+        <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 sm:h-4 w-3.5 sm:w-4 text-zinc-400 pointer-events-none" />
         <input
           type="text"
           value={query}
@@ -148,17 +148,17 @@ export function LiveSearch() {
             if (results.length > 0) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Oyun, paket veya DLC ara..."
-          className="h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/90 pl-9 pr-9 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+          placeholder="Oyun veya DLC ara..."
+          className="h-9 sm:h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/90 pl-8 sm:pl-9 pr-8 sm:pr-9 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
         />
         {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-emerald-400" />
+          <Loader2 className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-emerald-400 pointer-events-none" />
         )}
       </div>
 
       {/* Dropdown Menu */}
       {isOpen && query.trim().length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-2 z-50 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/95 shadow-2xl backdrop-blur-md">
+        <div className="absolute top-full right-0 sm:left-0 sm:right-0 mt-2 z-50 w-[min(340px,calc(100vw-32px))] sm:w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/95 shadow-2xl backdrop-blur-md">
           {results.length > 0 ? (
             <div className="divide-y divide-zinc-800/60 max-h-[420px] overflow-y-auto">
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50 flex items-center justify-between">

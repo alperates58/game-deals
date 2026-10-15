@@ -115,12 +115,12 @@ export function GameCard({
         <div className="mt-3 pt-2.5 border-t border-zinc-800/80">
           {/* Prices */}
           <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold text-white tracking-tight">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {currentNum.toLocaleString("tr-TR")} {currency}
               </span>
               {discountPercent > 0 && (
-                <span className="text-xs text-zinc-400 line-through">
+                <span className="text-[11px] sm:text-xs text-zinc-400 line-through">
                   {listNum.toLocaleString("tr-TR")} {currency}
                 </span>
               )}

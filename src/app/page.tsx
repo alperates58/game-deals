@@ -102,7 +102,7 @@ export default async function HomePage() {
   }));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12 overflow-x-hidden">
       {/* Hero Section: Compact Brand Value + Featured Deals Slider */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Compact Brand Card */}

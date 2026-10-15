@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -14,31 +14,33 @@ import {
   Bookmark,
   Bell,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
   LogIn,
   UserPlus,
-  ShieldAlert,
-  Lock,
+  X,
+  Search,
+  ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { Role } from "@prisma/client";
 
-interface SidebarProps {
+export interface SidebarProps {
   user: {
     userId: string;
     email: string;
     role: Role;
     name: string;
   } | null;
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 interface NavItem {
   href: string;
   label: string;
   icon: any;
+  badge?: string;
+  badgeColor?: string;
   authRequired?: boolean;
   isOwner?: boolean;
 }
@@ -48,13 +50,45 @@ interface NavGroup {
   items: NavItem[];
 }
 
-export function Sidebar({ user, isCollapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const touchStartX = useRef<number | null>(null);
+  const touchCurrentX = useRef<number | null>(null);
+
+  // Close on route change
+  useEffect(() => {
+    onClose();
+  }, [pathname]);
+
+  // Handle ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Prevent background scroll when sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+      onClose();
       router.push("/login");
       router.refresh();
     } catch (e) {
@@ -62,188 +96,272 @@ export function Sidebar({ user, isCollapsed, onToggleCollapse }: SidebarProps) {
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim().length > 0) {
+      onClose();
+      router.push(`/firsatlar?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
+
+  // Touch swipe-to-close handler on drawer
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchCurrentX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current !== null && touchCurrentX.current !== null) {
+      const diff = touchCurrentX.current - touchStartX.current;
+      // If swiped left by more than 50px, close sidebar
+      if (diff < -50) {
+        onClose();
+      }
+    }
+    touchStartX.current = null;
+    touchCurrentX.current = null;
+  };
+
   const navGroups: NavGroup[] = [
     {
-      title: "GENEL",
+      title: "FIRSATLAR & KATALOG",
       items: [
         { href: "/", label: "Ana Sayfa", icon: Sparkles },
         { href: "/firsatlar", label: "Tüm Fırsatlar", icon: TrendingDown },
-        { href: "/tarihi-dip", label: "Tarihi Dip Fırsatları", icon: Clock },
-        { href: "/eklentiler", label: "DLC & Eklentiler", icon: Layers },
+        {
+          href: "/tarihi-dip",
+          label: "Tarihi Dip Fırsatları",
+          icon: Clock,
+          badge: "Dip",
+          badgeColor: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+        },
+        {
+          href: "/eklentiler",
+          label: "DLC & Eklentiler",
+          icon: Layers,
+          badge: "DLC",
+          badgeColor: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+        },
       ],
     },
     {
-      title: "KİŞİSEL",
+      title: "KİŞİSEL ALAN",
       items: [
         { href: "/profil", label: "Profil & Dashboard", icon: User, authRequired: true },
         { href: "/kutuphane", label: "Kütüphanem", icon: Gamepad2, authRequired: true },
-        { href: "/favoriler", label: "Favoriler", icon: Heart, authRequired: true },
+        { href: "/favoriler", label: "Favorilerim", icon: Heart, authRequired: true },
         { href: "/istek-listem", label: "İstek Listesi", icon: Bookmark, authRequired: true },
         { href: "/alarmlar", label: "Fiyat Alarmları", icon: Bell, authRequired: true },
         { href: "/sana-ozel", label: "Sana Özel", icon: Sparkles, authRequired: true },
       ],
     },
-    {
-      title: "SİSTEM",
-      items: [
-        ...(user?.role === Role.OWNER
-          ? [{ href: "/ayarlar", label: "Ayarlar & Kontrol", icon: Settings, isOwner: true }]
-          : []),
-      ],
-    },
+    ...(user?.role === Role.OWNER
+      ? [
+          {
+            title: "SİSTEM YÖNETİMİ",
+            items: [
+              {
+                href: "/ayarlar",
+                label: "Ayarlar & Kontrol Merkezi",
+                icon: Settings,
+                badge: "Yönetici",
+                badgeColor: "bg-red-500/20 text-red-300 border border-red-500/30",
+                isOwner: true,
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
-    <aside
-      className={`fixed inset-y-0 left-0 z-40 hidden md:flex flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300 ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-      aria-label="Ana Gezinti"
-    >
-      {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800 shrink-0">
-        <Link href="/" className="flex items-center gap-3 overflow-hidden group">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md shadow-emerald-950/50 group-hover:bg-emerald-500 transition-colors">
-            <Gamepad2 className="h-5 w-5" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-base font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors whitespace-nowrap">
-                Xbox Fırsat
-              </span>
-              <span className="text-[10px] font-medium text-emerald-400 uppercase tracking-widest">
-                Türkiye
-              </span>
+    <>
+      {/* Backdrop overlay */}
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-50 bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        aria-hidden={!isOpen}
+      />
+
+      {/* Sliding Sidebar Drawer */}
+      <aside
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] flex flex-col bg-zinc-950/98 border-r border-zinc-800/90 shadow-2xl backdrop-blur-xl transform transition-transform duration-300 ease-out select-none ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-label="Mobil Menü"
+      >
+        {/* Header / Brand */}
+        <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800/80 shrink-0">
+          <Link
+            href="/"
+            onClick={onClose}
+            className="flex items-center gap-2.5 group"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md shadow-emerald-950/50 group-hover:bg-emerald-500 transition-colors">
+              <Gamepad2 className="h-5 w-5" />
             </div>
-          )}
-        </Link>
-      </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+                  Xbox Fırsat
+                </span>
+                <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400">
+                  TR
+                </span>
+              </div>
+              <p className="text-[10px] text-zinc-500 font-medium">Gerçek İndirim Takip</p>
+            </div>
+          </Link>
 
-      {/* Navigation Groups */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3 space-y-6">
-        {navGroups.map((group) => {
-          if (group.items.length === 0) return null;
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Menüyü Kapat"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-          return (
+        {/* Quick Search inside Sidebar */}
+        <div className="p-3 border-b border-zinc-800/60 bg-zinc-900/40">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Oyun veya DLC ara..."
+              className="h-9 w-full rounded-lg border border-zinc-800 bg-zinc-900/90 pl-8 pr-3 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
+            />
+          </form>
+        </div>
+
+        {/* Navigation Content (Scrollable) */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-3 space-y-5">
+          {navGroups.map((group) => (
             <div key={group.title}>
-              {!isCollapsed ? (
-                <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                  {group.title}
-                </div>
-              ) : (
-                <div className="h-px bg-zinc-850 my-2 mx-2" />
-              )}
+              <div className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                {group.title}
+              </div>
 
-              <nav className="space-y-1">
+              <nav className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
-
-                  // Target destination: if authRequired and not logged in, redirect to login
-                  const targetHref = item.authRequired && !user ? `/login?redirect=${item.href}` : item.href;
+                  const targetHref =
+                    item.authRequired && !user
+                      ? `/login?redirect=${encodeURIComponent(item.href)}`
+                      : item.href;
 
                   return (
                     <Link
                       key={item.href}
                       href={targetHref}
-                      title={isCollapsed ? item.label : undefined}
-                      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+                      onClick={onClose}
+                      className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-xs font-medium transition-all ${
                         isActive
-                          ? "bg-emerald-600/15 text-emerald-400 font-semibold border border-emerald-500/20"
-                          : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-                      } ${isCollapsed ? "justify-center px-0 py-2.5" : ""}`}
+                          ? "bg-emerald-600/15 text-emerald-400 font-semibold border border-emerald-500/25 shadow-sm"
+                          : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                      }`}
                     >
-                      <Icon
-                        className={`h-4 w-4 shrink-0 transition-colors ${
-                          isActive ? "text-emerald-400" : "text-zinc-400 group-hover:text-zinc-200"
-                        }`}
-                      />
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Icon
+                          className={`h-4 w-4 shrink-0 transition-colors ${
+                            isActive
+                              ? "text-emerald-400"
+                              : "text-zinc-400 group-hover:text-emerald-400"
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </div>
 
-                      {!isCollapsed && <span className="truncate">{item.label}</span>}
-
-                      {/* Mini mode tooltip */}
-                      {isCollapsed && (
-                        <div className="absolute left-full ml-2 hidden rounded-md bg-zinc-900 px-2 py-1 text-xs text-white shadow-lg border border-zinc-800 whitespace-nowrap group-hover:block z-50">
-                          {item.label}
-                        </div>
+                      {item.badge ? (
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0 ${
+                            item.badgeColor || "bg-zinc-800 text-zinc-400"
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       )}
                     </Link>
                   );
                 })}
               </nav>
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* Footer / User Profile & Collapse Toggle */}
-      <div className="border-t border-zinc-800 p-3 shrink-0 space-y-2">
-        {user ? (
-          <div
-            className={`flex items-center gap-3 rounded-lg bg-zinc-900/60 p-2 border border-zinc-850 ${
-              isCollapsed ? "justify-center p-2" : ""
-            }`}
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 text-xs font-bold">
-              {user.name.charAt(0).toUpperCase()}
+        {/* Account / User Footer Card */}
+        <div className="border-t border-zinc-800/90 p-3 bg-zinc-950 shrink-0 space-y-2">
+          {user ? (
+            <div className="flex items-center justify-between gap-2.5 rounded-xl bg-zinc-900/80 p-2.5 border border-zinc-800">
+              <Link
+                href="/profil"
+                onClick={onClose}
+                className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold shadow-sm">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+                  <p className="text-[10px] text-zinc-400 truncate">{user.email}</p>
+                </div>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-lg p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors shrink-0"
+                title="Çıkış Yap"
+                aria-label="Çıkış Yap"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/login"
+                onClick={onClose}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Giriş Yap</span>
+              </Link>
 
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-                <p className="text-[10px] text-zinc-400 truncate">{user.email}</p>
-              </div>
-            )}
-
-            <button
-              onClick={handleLogout}
-              className="rounded p-1 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-              title="Çıkış Yap"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <Link
-              href="/login"
-              className={`flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500 transition-colors ${
-                isCollapsed ? "justify-center px-0" : ""
-              }`}
-              title={isCollapsed ? "Giriş Yap" : undefined}
-            >
-              <LogIn className="h-4 w-4 shrink-0" />
-              {!isCollapsed && <span>Giriş Yap</span>}
-            </Link>
-
-            {!isCollapsed && (
               <Link
                 href="/register"
-                className="flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-850 hover:text-white border border-zinc-800 transition-colors"
+                onClick={onClose}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-2 text-xs font-medium text-zinc-300 hover:text-white transition-colors"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 <span>Kayıt Ol</span>
               </Link>
-            )}
-          </div>
-        )}
-
-        {/* Collapse Toggle Button */}
-        <button
-          onClick={onToggleCollapse}
-          className="flex w-full items-center justify-center gap-2 rounded-lg py-1.5 text-xs text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300 transition-colors"
-          title={isCollapsed ? "Sidebar'ı Genişlet" : "Sidebar'ı Daralt"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <>
-              <ChevronLeft className="h-4 w-4" />
-              <span className="text-[11px]">Daralt</span>
-            </>
+            </div>
           )}
-        </button>
-      </div>
-    </aside>
+
+          <div className="pt-1 text-center">
+            <p className="text-[10px] text-zinc-600 flex items-center justify-center gap-1">
+              <ShieldCheck className="h-3 w-3 text-emerald-600" />
+              <span>Dürüst Fırsat Takip Sistemi</span>
+            </p>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }

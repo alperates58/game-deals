@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
@@ -10,6 +10,13 @@ const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#09090b",
+};
 
 export const metadata: Metadata = {
   title: "Xbox Gerçek Fırsat Takip Sistemi | game.alperates.com.tr",
@@ -24,9 +31,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className="dark">
-      <body className={`${inter.variable} min-h-screen bg-zinc-950 text-zinc-100 antialiased flex flex-col font-sans`}>
+      <body
+        className={`${inter.variable} min-h-screen bg-zinc-950 text-zinc-100 antialiased flex flex-col font-sans overflow-x-hidden w-full max-w-full relative`}
+      >
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
         <Footer />
       </body>
     </html>

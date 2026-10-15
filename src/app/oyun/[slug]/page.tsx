@@ -168,7 +168,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const classBadge = CLASS_LABELS[game.productClass] || CLASS_LABELS.UNKNOWN;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-zinc-400">
         <Link href="/" className="hover:text-emerald-400">Ana Sayfa</Link>
