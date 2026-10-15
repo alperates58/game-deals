@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { Bookmark, Sparkles, Gamepad2, ArrowRight, TrendingDown, Bell, Clock } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export const metadata: Metadata = {
   title: "İstek Listem | Xbox Gerçek Fırsat Takip Sistemi",
@@ -108,7 +109,7 @@ export default async function WishlistPage() {
                   <Link href={`/oyun/${game.slug}`} className="relative h-16 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950">
                     {game.imageUrl ? (
                       <Image
-                        src={game.imageUrl}
+                        src={getOptimizedImageUrl(game.imageUrl, "thumb")}
                         alt={game.title}
                         fill
                         className="object-cover"

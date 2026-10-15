@@ -14,6 +14,7 @@ import {
   Play,
   Sparkles,
 } from "lucide-react";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export interface FeaturedDealItem {
   id: string;
@@ -149,10 +150,11 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
     current.currentPrice <= current.historicalLow && current.discountPercent > 0;
 
   // Background image priority: first screenshot, fallback to cover imageUrl
-  const backdropImage =
+  const rawBackdrop =
     current.screenshots && current.screenshots.length > 0
       ? current.screenshots[0]
       : current.imageUrl;
+  const backdropImage = getOptimizedImageUrl(rawBackdrop, "backdrop");
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("tr-TR", {
@@ -261,7 +263,7 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
             >
               {current.imageUrl ? (
                 <Image
-                  src={current.imageUrl}
+                  src={getOptimizedImageUrl(current.imageUrl, "card")}
                   alt={current.title}
                   fill
                   sizes="(max-width: 640px) 130px, 160px"

@@ -16,6 +16,7 @@ import {
   Info,
 } from "lucide-react";
 import { RecommendedGameItem, OwnedDlcOpportunityItem } from "@/lib/recommendations/recommendation-engine";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 interface RecommendationsViewProps {
   initialRecommendations: RecommendedGameItem[];
@@ -118,7 +119,7 @@ export function RecommendationsView({
                       >
                         {game.imageUrl ? (
                           <Image
-                            src={game.imageUrl}
+                            src={getOptimizedImageUrl(game.imageUrl, "thumb")}
                             alt={game.title}
                             fill
                             sizes="100px"
@@ -256,7 +257,7 @@ export function RecommendationsView({
                       className="relative h-18 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950"
                     >
                       {dlc.imageUrl ? (
-                        <Image src={dlc.imageUrl} alt={dlc.title} fill className="object-cover" />
+                        <Image src={getOptimizedImageUrl(dlc.imageUrl, "thumb")} alt={dlc.title} fill className="object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-zinc-700">
                           <Layers className="h-6 w-6" />

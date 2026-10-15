@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { Heart, Sparkles, Gamepad2, ArrowRight } from "lucide-react";
 import { GameActions } from "@/components/game/game-actions";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export const metadata: Metadata = {
   title: "Favorilerim | Xbox Gerçek Fırsat Takip Sistemi",
@@ -82,7 +83,7 @@ export default async function FavoritesPage() {
                   <Link href={`/oyun/${game.slug}`} className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-zinc-950">
                     {game.imageUrl ? (
                       <Image
-                        src={game.imageUrl}
+                        src={getOptimizedImageUrl(game.imageUrl, "thumb")}
                         alt={game.title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform"

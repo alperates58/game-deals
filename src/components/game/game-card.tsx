@@ -3,6 +3,7 @@ import Image from "next/image";
 import { DealBadge } from "./deal-badge";
 import { TrendingDown, Award } from "lucide-react";
 import { Prisma } from "@prisma/client";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export interface GameCardProps {
   id: string;
@@ -50,7 +51,7 @@ export function GameCard({
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-950">
         {imageUrl ? (
           <Image
-            src={imageUrl}
+            src={getOptimizedImageUrl(imageUrl, "card")}
             alt={title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

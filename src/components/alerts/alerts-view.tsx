@@ -16,6 +16,7 @@ import {
   Info,
 } from "lucide-react";
 import { PriceAlertType } from "@prisma/client";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export interface AlertItem {
   id: string;
@@ -158,7 +159,7 @@ export function AlertsView({ initialAlerts, recentEvents }: AlertsViewProps) {
                       className="relative h-18 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950"
                     >
                       {game.imageUrl ? (
-                        <Image src={game.imageUrl} alt={game.title} fill className="object-cover" />
+                        <Image src={getOptimizedImageUrl(game.imageUrl, "thumb")} alt={game.title} fill className="object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-zinc-700">
                           <Gamepad2 className="h-6 w-6" />

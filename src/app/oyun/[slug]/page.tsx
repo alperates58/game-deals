@@ -7,6 +7,8 @@ import { GameActions } from "@/components/game/game-actions";
 import { RelationType, ProductClass } from "@prisma/client";
 import { DealBadge, ConfidenceBadge } from "@/components/game/deal-badge";
 import { PriceHistoryChart } from "@/components/game/price-history-chart";
+import { XboxStoreActions } from "@/components/game/xbox-store-button";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 import {
   ExternalLink,
   ShieldCheck,
@@ -216,7 +218,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
           <div className="relative aspect-[3/4] w-full max-w-xs mx-auto md:mx-0 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl">
             {game.imageUrl ? (
               <Image
-                src={game.imageUrl}
+                src={getOptimizedImageUrl(game.imageUrl, "detail")}
                 alt={game.title}
                 fill
                 priority
@@ -327,15 +329,11 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   </div>
                 </div>
 
-                <a
-                  href={game.storeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-950/50 hover:bg-emerald-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span>Xbox Mağazasında Aç</span>
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                <XboxStoreActions
+                  storeUrl={game.storeUrl}
+                  xboxProductId={game.xboxProductId}
+                  gameTitle={game.title}
+                />
               </div>
 
               {/* Personal Actions */}
@@ -504,7 +502,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                     <div className="relative h-16 w-12 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0">
                       {child.imageUrl ? (
                         <Image
-                          src={child.imageUrl}
+                          src={getOptimizedImageUrl(child.imageUrl, "thumb")}
                           alt={child.title}
                           fill
                           sizes="48px"
@@ -586,7 +584,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   <div className="relative h-16 w-12 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0">
                     {dlc.imageUrl ? (
                       <Image
-                        src={dlc.imageUrl}
+                        src={getOptimizedImageUrl(dlc.imageUrl, "thumb")}
                         alt={dlc.title}
                         fill
                         sizes="48px"
@@ -663,7 +661,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                 className="relative aspect-video rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-md group"
               >
                 <Image
-                  src={shotUrl}
+                  src={getOptimizedImageUrl(shotUrl, "screenshot")}
                   alt={`${game.title} Ekran Görüntüsü ${idx + 1}`}
                   fill
                   sizes="(max-width: 768px) 100vw, 33vw"

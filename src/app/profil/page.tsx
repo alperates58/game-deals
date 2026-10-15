@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { getPersonalRecommendations, getOwnedDlcOpportunities } from "@/lib/recommendations/recommendation-engine";
 import { DealBadge } from "@/components/game/deal-badge";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 import {
   Gamepad2,
   Heart,
@@ -192,7 +193,7 @@ export default async function ProfilePage() {
               >
                 <div className="relative h-14 w-11 rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 shrink-0">
                   {item.dlc.imageUrl ? (
-                    <Image src={item.dlc.imageUrl} alt={item.dlc.title} fill sizes="44px" className="object-cover" />
+                    <Image src={getOptimizedImageUrl(item.dlc.imageUrl, "thumb")} alt={item.dlc.title} fill sizes="44px" className="object-cover" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-[9px] text-zinc-600">Resim Yok</div>
                   )}

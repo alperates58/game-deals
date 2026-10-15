@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, Loader2, Sparkles, Tag, ArrowRight } from "lucide-react";
 import { ProductClass } from "@prisma/client";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 interface SearchResultItem {
   id: string;
@@ -184,7 +185,7 @@ export function LiveSearch() {
                     <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded bg-zinc-950 border border-zinc-800">
                       {item.imageUrl ? (
                         <Image
-                          src={item.imageUrl}
+                          src={getOptimizedImageUrl(item.imageUrl, "thumb")}
                           alt={item.title}
                           fill
                           sizes="36px"

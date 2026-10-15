@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { GameActions } from "@/components/game/game-actions";
+import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 
 export interface LibraryGameItem {
   id: string;
@@ -217,7 +218,7 @@ export function LibraryView({ initialItems }: LibraryViewProps) {
                 <Link href={`/oyun/${item.game.slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-zinc-950">
                   {item.game.imageUrl ? (
                     <Image
-                      src={item.game.imageUrl}
+                      src={getOptimizedImageUrl(item.game.imageUrl, "card")}
                       alt={item.game.title}
                       fill
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
