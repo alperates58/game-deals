@@ -31,6 +31,8 @@ import {
   History,
   Activity,
   Check,
+  Square,
+  Zap,
 } from "lucide-react";
 import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
 import type { SyncProgressState } from "@/lib/xbox/sync-progress-tracker";
@@ -130,6 +132,16 @@ export function SettingsCenter({
   const [isLoadingSyncRuns, setIsLoadingSyncRuns] = useState(false);
   const [syncRunFilter, setSyncRunFilter] = useState<"ALL" | "CHANGES_ONLY" | "ERRORS_ONLY">("ALL");
   const [expandedRunIds, setExpandedRunIds] = useState<Set<string>>(new Set());
+
+  const filteredSyncRuns = (syncRuns || []).filter((run) => {
+    if (syncRunFilter === "CHANGES_ONLY") {
+      return (run.productsAdded || 0) > 0 || (run.pricesChanged || 0) > 0;
+    }
+    if (syncRunFilter === "ERRORS_ONLY") {
+      return run.status === "FAILED" || (run.errorCount || 0) > 0;
+    }
+    return true;
+  });
 
   const toggleExpandRun = (runId: string) => {
     setExpandedRunIds((prev) => {
@@ -257,8 +269,31 @@ export function SettingsCenter({
     };
   }, []);
 
+  const [isStopping, setIsStopping] = useState(false);
+
+  // Stop Sync handler
+  const handleStopSync = async () => {
+    setIsStopping(true);
+    try {
+      const res = await fetch("/api/settings/sync-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "STOP" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTriggerMessage({ success: true, message: data.message || "Durdurma talebi iletildi." });
+        await pollProgress();
+      }
+    } catch (err: any) {
+      setTriggerMessage({ success: false, message: err.message });
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
   // Trigger Action handler
-  const handleTriggerAction = async (action: "PRICE_SYNC" | "CATALOG_DISCOVERY") => {
+  const handleTriggerAction = async (action: "PRICE_SYNC" | "CATALOG_DISCOVERY" | "FULL_CATALOG_CRAWL") => {
     setIsTriggering(true);
     setTriggerAction(action);
     setTriggerMessage(null);
@@ -273,7 +308,7 @@ export function SettingsCenter({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
-          maxPages: action === "CATALOG_DISCOVERY" ? scanPages : undefined,
+          maxPages: action === "CATALOG_DISCOVERY" ? (scanPages === 0 ? undefined : scanPages) : undefined,
         }),
       });
 
@@ -284,7 +319,7 @@ export function SettingsCenter({
 
       setTriggerMessage({
         success: true,
-        message: data.message || "İşlem başarıyla tamamlandı.",
+        message: data.message || "İşlem başarıyla başlatıldı.",
       });
 
       await pollProgress();
@@ -630,12 +665,13 @@ export function SettingsCenter({
                   Her sayfa 25 oyun içerir (40 sayfa ≈ 1.000 oyun).
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {[
                   { pages: 5, label: "5 Sayfa", desc: "~125 Oyun", badge: "Hızlı Test" },
                   { pages: 20, label: "20 Sayfa", desc: "~500 Oyun", badge: "Standart" },
                   { pages: 40, label: "40 Sayfa", desc: "~1.000 Oyun", badge: "Önerilen" },
-                  { pages: 80, label: "80 Sayfa", desc: "~2.000 Oyun", badge: "Tam Katalog" },
+                  { pages: 80, label: "80 Sayfa", desc: "~2.000 Oyun", badge: "Geniş" },
+                  { pages: 0, label: "Tüm Mağaza", desc: "~3.500 Oyun", badge: "Tam Otomatik" },
                 ].map((tier) => (
                   <button
                     key={tier.pages}
@@ -660,38 +696,56 @@ export function SettingsCenter({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
-                <button
-                  onClick={() => handleTriggerAction("CATALOG_DISCOVERY")}
-                  disabled={isTriggering}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
-                  <span>Şimdi Yeni Oyunları Tara ({scanPages * 25} Ürün)</span>
-                </button>
-
-                <button
-                  onClick={() => handleTriggerAction("PRICE_SYNC")}
-                  disabled={isTriggering}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
-                >
-                  <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
-                  <span>Şimdi Fiyatları Güncelle</span>
-                </button>
-              </div>
-
-              {/* Force Unlock Button */}
+            <div className="flex flex-col gap-3">
+              {/* Prominent Full Store Autonomous Crawl Button */}
               <button
                 type="button"
-                onClick={handleForceUnlock}
-                disabled={isUnlocking}
-                className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-400 hover:text-amber-400 border border-zinc-800 hover:border-amber-800/60 rounded-lg px-2.5 py-1.5 transition-colors"
-                title="Arka planda kilit takılı kaldıysa sıfırlar"
+                onClick={() => handleTriggerAction("FULL_CATALOG_CRAWL")}
+                disabled={isTriggering}
+                className="group relative flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-lg shadow-emerald-950/50 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 transition-all active:scale-[0.99]"
               >
-                <Lock className={`h-3 w-3 ${isUnlocking ? "animate-spin" : ""}`} />
-                <span>{isUnlocking ? "Kilit Açılıyor..." : "Kilidi Sıfırla (Force Unlock)"}</span>
+                <Zap className={`h-4 w-4 shrink-0 text-amber-300 ${isTriggering && triggerAction === "FULL_CATALOG_CRAWL" ? "animate-bounce" : ""}`} />
+                <span>🚀 Tüm Mağazayı Otomatik Çek (Tamamlanana Kadar)</span>
+                <span className="ml-1 text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-400/30 text-emerald-200">
+                  Rate-Limit Korumalı &bull; Arka Plan
+                </span>
               </button>
+
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerAction(scanPages === 0 ? "FULL_CATALOG_CRAWL" : "CATALOG_DISCOVERY")}
+                    disabled={isTriggering}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:text-white disabled:opacity-50 transition-all border border-zinc-700"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
+                    <span>Seçili Kapsamı Tara ({scanPages === 0 ? "Tüm Mağaza" : `${scanPages * 25} Ürün`})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerAction("PRICE_SYNC")}
+                    disabled={isTriggering}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                  >
+                    <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
+                    <span>Şimdi Fiyatları Güncelle</span>
+                  </button>
+                </div>
+
+                {/* Force Unlock Button */}
+                <button
+                  type="button"
+                  onClick={handleForceUnlock}
+                  disabled={isUnlocking}
+                  className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-400 hover:text-amber-400 border border-zinc-800 hover:border-amber-800/60 rounded-lg px-2.5 py-1.5 transition-colors"
+                  title="Arka planda kilit takılı kaldıysa sıfırlar"
+                >
+                  <Lock className={`h-3 w-3 ${isUnlocking ? "animate-spin" : ""}`} />
+                  <span>{isUnlocking ? "Kilit Açılıyor..." : "Kilidi Sıfırla (Force Unlock)"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Live Progress Bar & Activity Feed */}
@@ -710,12 +764,31 @@ export function SettingsCenter({
                       <AlertTriangle className="h-4 w-4 text-red-400" />
                     )}
                     <span className="font-semibold text-white">
-                      {syncProgress.action === "CATALOG_DISCOVERY" ? "Katalog Keşfi" : "Fiyat Senkronizasyonu"}
+                      {syncProgress.action === "FULL_CATALOG_CRAWL"
+                        ? "🚀 Tam Mağaza Taraması"
+                        : syncProgress.action === "CATALOG_DISCOVERY"
+                        ? "Katalog Keşfi"
+                        : "Fiyat Senkronizasyonu"}
                       {syncProgress.isRunning ? " Devam Ediyor..." : syncProgress.status === "COMPLETED" ? " Tamamlandı" : " Hata ile Sonlandı"}
                     </span>
                   </div>
-                  <div className="font-mono text-emerald-400 font-bold text-xs">
-                    %{syncProgress.progressPercent}
+
+                  <div className="flex items-center gap-2">
+                    {syncProgress.isRunning && (
+                      <button
+                        type="button"
+                        onClick={handleStopSync}
+                        disabled={isStopping || syncProgress.isCancelRequested}
+                        className="flex items-center gap-1 rounded bg-red-950/80 hover:bg-red-900 border border-red-800/80 px-2 py-0.5 text-[11px] font-medium text-red-200 transition-colors"
+                        title="Taramayı güvenle durdur"
+                      >
+                        <Square className="h-3 w-3 fill-current" />
+                        <span>{isStopping ? "Durduruluyor..." : syncProgress.isCancelRequested ? "Bitiriliyor..." : "Taramayı Durdur"}</span>
+                      </button>
+                    )}
+                    <div className="font-mono text-emerald-400 font-bold text-xs">
+                      %{syncProgress.progressPercent}
+                    </div>
                   </div>
                 </div>
 

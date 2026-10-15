@@ -46,6 +46,14 @@ export async function POST(req: Request) {
       });
     }
 
+    if (body.action === "CANCEL" || body.action === "STOP") {
+      syncProgressTracker.requestCancel();
+      return NextResponse.json({
+        success: true,
+        message: "Durdurma talebi iletildi. Mevcut sayfa işlendikten sonra işlem güvenle durdurulacak.",
+      });
+    }
+
     return NextResponse.json({ error: "Geçersiz işlem" }, { status: 400 });
   } catch (err: any) {
     console.error("[SyncProgress API Error]", err);

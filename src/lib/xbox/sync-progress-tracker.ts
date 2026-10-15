@@ -6,7 +6,9 @@ export interface SyncLogEntry {
 
 export interface SyncProgressState {
   isRunning: boolean;
-  action: "CATALOG_DISCOVERY" | "PRICE_SYNC" | null;
+  action: "CATALOG_DISCOVERY" | "PRICE_SYNC" | "FULL_CATALOG_CRAWL" | null;
+  isFullCrawl?: boolean;
+  isCancelRequested?: boolean;
   startedAt: string | null;
   progressPercent: number; // 0 to 100
   currentPhase: string;
@@ -23,9 +25,12 @@ export interface SyncProgressState {
 }
 
 class SyncProgressTracker {
+  private cancelRequested = false;
   private state: SyncProgressState = {
     isRunning: false,
     action: null,
+    isFullCrawl: false,
+    isCancelRequested: false,
     startedAt: null,
     progressPercent: 0,
     currentPhase: "Hazır",
@@ -46,18 +51,34 @@ class SyncProgressTracker {
     return d.toTimeString().split(" ")[0]; // "11:28:45"
   }
 
+  public requestCancel() {
+    this.cancelRequested = true;
+    this.state.isCancelRequested = true;
+    this.addLog("Durdurma talebi iletildi. Mevcut sayfa işlendikten sonra tarama güvenle durdurulacak...", "warn");
+  }
+
+  public isCancelled(): boolean {
+    return this.cancelRequested;
+  }
+
   public startSync(
-    action: "CATALOG_DISCOVERY" | "PRICE_SYNC",
+    action: "CATALOG_DISCOVERY" | "PRICE_SYNC" | "FULL_CATALOG_CRAWL",
     maxPages: number = 40,
-    estimatedTotal: number = 1000
+    estimatedTotal: number = 1000,
+    isFullCrawl: boolean = false
   ) {
+    this.cancelRequested = false;
     this.state = {
       isRunning: true,
       action,
+      isFullCrawl,
+      isCancelRequested: false,
       startedAt: new Date().toISOString(),
       progressPercent: 2,
       currentPhase:
-        action === "CATALOG_DISCOVERY"
+        isFullCrawl || action === "FULL_CATALOG_CRAWL"
+          ? "Tüm Xbox Series X|S kataloğunu taramak için mağaza yayınına bağlanılıyor..."
+          : action === "CATALOG_DISCOVERY"
           ? "Microsoft Store Series X|S kanalına bağlanılıyor..."
           : "Fiyat güncelleme kuyruğu hazırlanıyor...",
       pagesScanned: 0,
@@ -71,7 +92,9 @@ class SyncProgressTracker {
         {
           timestamp: this.getTimestamp(),
           message:
-            action === "CATALOG_DISCOVERY"
+            isFullCrawl || action === "FULL_CATALOG_CRAWL"
+              ? "🚀 Tam Mağaza Taraması başlatıldı. Tüm Series X|S kataloğu bitene kadar otomatik çekilecek."
+              : action === "CATALOG_DISCOVERY"
               ? `Katalog taraması başlatıldı (Hedef: ${maxPages} sayfa, ~${maxPages * 25} ürün).`
               : "Fiyat güncellemesi başlatıldı.",
           type: "info",
@@ -157,9 +180,12 @@ class SyncProgressTracker {
   }
 
   public reset() {
+    this.cancelRequested = false;
     this.state = {
       isRunning: false,
       action: null,
+      isFullCrawl: false,
+      isCancelRequested: false,
       startedAt: null,
       progressPercent: 0,
       currentPhase: "Hazır",

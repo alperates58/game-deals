@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    let action: "PRICE_SYNC" | "CATALOG_DISCOVERY" | "FORCE_UNLOCK" = "PRICE_SYNC";
+    let action: "PRICE_SYNC" | "CATALOG_DISCOVERY" | "FULL_CATALOG_CRAWL" | "FORCE_UNLOCK" = "PRICE_SYNC";
     let limit: number | undefined;
     let maxPages: number | undefined;
 
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
       const body = await req.json();
       if (body?.action === "CATALOG_DISCOVERY") {
         action = "CATALOG_DISCOVERY";
+      } else if (body?.action === "FULL_CATALOG_CRAWL") {
+        action = "FULL_CATALOG_CRAWL";
       } else if (body?.action === "FORCE_UNLOCK") {
         action = "FORCE_UNLOCK";
       }
@@ -49,9 +51,56 @@ export async function POST(req: Request) {
       });
     }
 
+    if (action === "FULL_CATALOG_CRAWL") {
+      if (syncProgressTracker.getProgress().isRunning) {
+        return NextResponse.json(
+          { error: "Zaten aktif bir tarama veya senkronizasyon yürütülüyor.", locked: true },
+          { status: 409 }
+        );
+      }
+
+      // Launch full store crawl in background (avoids HTTP proxy timeout)
+      runIncrementalDiscovery({
+        triggerSource: "MANUAL_SETTINGS_UI",
+        fullCrawl: true,
+      }).catch((err) => {
+        console.error("[FullCatalogCrawl Error]", err);
+      });
+
+      return NextResponse.json({
+        success: true,
+        action: "FULL_CATALOG_CRAWL",
+        message: "🚀 Tüm Xbox Series X|S mağaza taraması arka planda başlatıldı. İlerleme panelinden anlık takip edebilirsiniz.",
+      });
+    }
+
     if (action === "CATALOG_DISCOVERY") {
       const targetPages = maxPages || (limit ? Math.ceil(limit / 25) : 40);
-      // Incremental discovery for new Xbox Series X|S games
+
+      // If scanning 80 or more pages, run in background to prevent proxy timeouts
+      if (targetPages >= 80) {
+        if (syncProgressTracker.getProgress().isRunning) {
+          return NextResponse.json(
+            { error: "Zaten aktif bir tarama yürütülüyor.", locked: true },
+            { status: 409 }
+          );
+        }
+
+        runIncrementalDiscovery({
+          triggerSource: "MANUAL_SETTINGS_UI",
+          maxPages: targetPages,
+        }).catch((err) => {
+          console.error("[CatalogDiscovery Background Error]", err);
+        });
+
+        return NextResponse.json({
+          success: true,
+          action: "CATALOG_DISCOVERY",
+          message: `${targetPages} sayfalık katalog taraması arka planda başlatıldı. İlerleme panelinden anlık takip edebilirsiniz.`,
+        });
+      }
+
+      // Synchronous run for standard page counts (<= 40)
       const result = await runIncrementalDiscovery({
         triggerSource: "MANUAL_SETTINGS_UI",
         maxPages: targetPages,

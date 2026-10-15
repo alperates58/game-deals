@@ -10,6 +10,7 @@ import { syncProgressTracker } from "./sync-progress-tracker";
 
 export interface IncrementalDiscoveryOptions {
   maxPages?: number; // default: 40 pages (~1,000 items)
+  fullCrawl?: boolean; // if true, streams until catalog exhaustion (~120-150 pages)
   batchSize?: number; // default: 25
   triggerSource?: string; // "MANUAL_OWNER" | "SCHEDULER"
 }
@@ -33,12 +34,14 @@ export interface IncrementalDiscoveryResult {
 /**
  * Runs incremental Xbox Series X|S catalog discovery under advisory lock.
  * Scans recent browse stream pages for newly added titles, back-catalog releases, and bundles/DLCs.
+ * When fullCrawl is enabled, continuously streams all pages until store catalog exhaustion.
  */
 export async function runIncrementalDiscovery(
   options: IncrementalDiscoveryOptions = {}
 ): Promise<IncrementalDiscoveryResult> {
   const startTime = Date.now();
-  const maxPages = options.maxPages || 40;
+  const isFullCrawl = Boolean(options.fullCrawl);
+  const maxPages = isFullCrawl ? 250 : (options.maxPages || 40);
   const batchSize = options.batchSize || 25;
 
   const locked = await acquireAdvisoryLock();
@@ -50,7 +53,12 @@ export async function runIncrementalDiscovery(
     };
   }
 
-  syncProgressTracker.startSync("CATALOG_DISCOVERY", maxPages, maxPages * 25);
+  syncProgressTracker.startSync(
+    isFullCrawl ? "FULL_CATALOG_CRAWL" : "CATALOG_DISCOVERY",
+    isFullCrawl ? 140 : maxPages,
+    isFullCrawl ? 3500 : maxPages * 25,
+    isFullCrawl
+  );
 
   const syncRun = await prisma.syncRun.create({
     data: {
@@ -136,9 +144,19 @@ export async function runIncrementalDiscovery(
       }
     };
 
-    // Scan recent pages from Emerald
-    for await (const page of discoveryProvider.enumerateAll({ maxPages })) {
+    // Scan pages from Emerald (fullCrawl streams until catalog exhaustion)
+    let dynamicMaxPages = maxPages;
+    for await (const page of discoveryProvider.enumerateAll({ maxPages: isFullCrawl ? undefined : maxPages })) {
+      if (syncProgressTracker.isCancelled()) {
+        syncProgressTracker.addLog("Durdurma talebi uygulandı. Çekilen ürünler kaydedilerek işlem tamamlanıyor...", "warn");
+        break;
+      }
+
       pagesScanned++;
+      if (isFullCrawl && page.totalCatalogItems) {
+        dynamicMaxPages = Math.max(Math.ceil(page.totalCatalogItems / 25), pagesScanned);
+      }
+
       for (const p of page.products) {
         if (!discoveredIds.has(p.productId)) {
           discoveredIds.add(p.productId);
@@ -148,6 +166,7 @@ export async function runIncrementalDiscovery(
       }
 
       while (pendingBatch.length >= batchSize) {
+        if (syncProgressTracker.isCancelled()) break;
         const chunk = pendingBatch.splice(0, batchSize);
         await flushBatch(chunk);
       }
@@ -155,7 +174,7 @@ export async function runIncrementalDiscovery(
       // Live progress tracking update
       syncProgressTracker.updatePageProgress({
         page: pagesScanned,
-        maxPages,
+        maxPages: dynamicMaxPages,
         rawCount: page.products.length,
         totalCatalogItems: page.totalCatalogItems,
         addedCount: productsAdded,
@@ -258,9 +277,11 @@ export async function runIncrementalDiscovery(
       },
     });
 
+    const isCancelled = syncProgressTracker.isCancelled();
+    const summaryPrefix = isCancelled ? "Kullanıcı talebiyle durduruldu: " : isFullCrawl ? "Tam mağaza taraması: " : "";
     const summaryText = productsAdded > 0
-      ? `${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). +${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`
-      : `${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). Yeni oyun eklenmedi, ${productsUpdated} oyun güncellendi.`;
+      ? `${summaryPrefix}${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). +${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`
+      : `${summaryPrefix}${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). Yeni oyun eklenmedi, ${productsUpdated} oyun güncellendi.`;
 
     const summaryPayload = JSON.stringify({
       text: summaryText,
@@ -280,7 +301,7 @@ export async function runIncrementalDiscovery(
     await prisma.syncRun.update({
       where: { id: syncRun.id },
       data: {
-        status: "COMPLETED",
+        status: isCancelled ? "PARTIAL" : "COMPLETED",
         finishedAt: now,
         productsFound: rawDiscovered,
         productsChecked: rawDiscovered,
@@ -294,7 +315,7 @@ export async function runIncrementalDiscovery(
 
     return {
       success: true,
-      message: finalMessage,
+      message: summaryText,
       stats: {
         pagesScanned,
         rawDiscovered,
