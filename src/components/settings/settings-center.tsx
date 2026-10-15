@@ -846,12 +846,35 @@ export function SettingsCenter({
                 {/* Live Activity Console */}
                 {syncProgress.logs && syncProgress.logs.length > 0 && (
                   <div className="mt-2 rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5 max-h-36 overflow-y-auto font-mono text-[10px] space-y-1 text-zinc-400">
-                    {syncProgress.logs.slice(-6).map((log, i) => (
-                      <div key={i} className="flex items-start gap-1.5 leading-relaxed">
-                        <span className="text-zinc-600 select-none">&gt;</span>
-                        <span className="text-zinc-300">{log}</span>
-                      </div>
-                    ))}
+                    {syncProgress.logs.slice(-8).map((log: any, i) => {
+                      const logMsg = typeof log === "string" ? log : log?.message || "";
+                      const logTime = typeof log === "object" ? log?.timestamp : null;
+                      const logType = typeof log === "object" ? log?.type : "info";
+
+                      return (
+                        <div key={i} className="flex items-start gap-1.5 leading-relaxed">
+                          <span className="text-zinc-600 select-none shrink-0">&gt;</span>
+                          {logTime && (
+                            <span className="text-zinc-500 select-none shrink-0" suppressHydrationWarning>
+                              [{logTime}]
+                            </span>
+                          )}
+                          <span
+                            className={
+                              logType === "error"
+                                ? "text-red-400 font-medium"
+                                : logType === "warn"
+                                ? "text-amber-400 font-medium"
+                                : logType === "success"
+                                ? "text-emerald-300 font-medium"
+                                : "text-zinc-300"
+                            }
+                          >
+                            {logMsg}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
