@@ -207,7 +207,7 @@ export function AlertsView({ initialAlerts, recentEvents }: AlertsViewProps) {
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-                    <span className="text-zinc-500 text-[11px]">
+                    <span className="text-zinc-500 text-[11px]" suppressHydrationWarning>
                       {(alert.triggerCount || 0) > 0
                         ? `Tetiklenme: ${alert.triggerCount} kez (${new Date(
                             alert.lastTriggeredAt!
@@ -277,7 +277,7 @@ export function AlertsView({ initialAlerts, recentEvents }: AlertsViewProps) {
                   <span className="inline-block rounded px-2 py-0.5 text-[10px] font-mono font-medium bg-amber-950 text-amber-400 border border-amber-800/60">
                     {evt.status}
                   </span>
-                  <span className="block text-[10px] text-zinc-500 mt-0.5">
+                  <span className="block text-[10px] text-zinc-500 mt-0.5" suppressHydrationWarning>
                     {new Date(evt.createdAt).toLocaleDateString("tr-TR")}
                   </span>
                 </div>

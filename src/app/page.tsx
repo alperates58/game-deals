@@ -139,7 +139,7 @@ export default async function HomePage() {
               <p className="text-[11px] text-zinc-400 font-medium">Tarihi Dip Fiyatta</p>
             </div>
             <div className="rounded-xl bg-zinc-900/60 p-3 border border-zinc-800/70">
-              <p className="text-xs font-semibold text-zinc-200 mt-1">
+              <p className="text-xs font-semibold text-zinc-200 mt-1" suppressHydrationWarning>
                 {data.lastSyncAt
                   ? new Date(data.lastSyncAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
                   : "Bugün"}

@@ -280,7 +280,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   </span>
                 )}
                 {game.releaseDate && (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5" suppressHydrationWarning>
                     <Calendar className="h-3.5 w-3.5 text-zinc-500" />
                     Çıkış: {new Date(game.releaseDate).toLocaleDateString("tr-TR")}
                   </span>
@@ -371,7 +371,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-zinc-400 shrink-0" />
-                  <div>
+                  <div suppressHydrationWarning>
                     <span className="text-zinc-400">Gözlem Tarihi: </span>
                     <strong className="text-zinc-300">
                       {new Date(game.historicalLowAt).toLocaleDateString("tr-TR")}
@@ -701,7 +701,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
             <tbody className="divide-y divide-zinc-800/60 font-mono">
               {game.priceHistories.map((h) => (
                 <tr key={h.id} className="hover:bg-zinc-800/30">
-                  <td className="py-2.5 px-3 font-sans text-zinc-300">
+                  <td className="py-2.5 px-3 font-sans text-zinc-300" suppressHydrationWarning>
                     {new Date(h.observedAt).toLocaleString("tr-TR")}
                   </td>
                   <td className="py-2.5 px-3 font-bold text-emerald-400">
