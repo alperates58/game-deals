@@ -47,8 +47,13 @@ class SyncProgressTracker {
   };
 
   private getTimestamp(): string {
-    const d = new Date();
-    return d.toTimeString().split(" ")[0]; // "11:28:45"
+    return new Date().toLocaleTimeString("tr-TR", {
+      timeZone: "Europe/Istanbul",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
   }
 
   public requestCancel() {
