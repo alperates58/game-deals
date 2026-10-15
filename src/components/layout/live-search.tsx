@@ -22,7 +22,19 @@ interface SearchResultItem {
   verdict?: string | null;
 }
 
-export function LiveSearch() {
+export interface LiveSearchProps {
+  onItemSelect?: () => void;
+  className?: string;
+  placeholder?: string;
+  autoFocus?: boolean;
+}
+
+export function LiveSearch({
+  onItemSelect,
+  className,
+  placeholder = "Oyun veya DLC ara...",
+  autoFocus = false,
+}: LiveSearchProps = {}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +103,8 @@ export function LiveSearch() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!isOpen || results.length === 0) {
       if (e.key === "Enter" && query.trim().length > 0) {
+        setIsOpen(false);
+        onItemSelect?.();
         router.push(`/firsatlar?q=${encodeURIComponent(query.trim())}`);
       }
       return;
@@ -107,9 +121,11 @@ export function LiveSearch() {
       if (selectedIndex >= 0 && selectedIndex < results.length) {
         const item = results[selectedIndex];
         setIsOpen(false);
+        onItemSelect?.();
         router.push(`/oyun/${item.slug}`);
       } else if (query.trim().length > 0) {
         setIsOpen(false);
+        onItemSelect?.();
         router.push(`/firsatlar?q=${encodeURIComponent(query.trim())}`);
       }
     } else if (e.key === "Escape") {
@@ -135,7 +151,7 @@ export function LiveSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full min-w-0 max-w-xs sm:max-w-sm lg:max-w-md">
+    <div ref={containerRef} className={className || "relative w-full min-w-0 max-w-xs sm:max-w-sm lg:max-w-md"}>
       <div className="relative">
         <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 sm:h-4 w-3.5 sm:w-4 text-zinc-400 pointer-events-none" />
         <input
@@ -149,7 +165,8 @@ export function LiveSearch() {
             if (results.length > 0) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Oyun veya DLC ara..."
+          autoFocus={autoFocus}
+          placeholder={placeholder}
           className="h-9 sm:h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/90 pl-8 sm:pl-9 pr-8 sm:pr-9 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
         />
         {isLoading && (
@@ -174,6 +191,7 @@ export function LiveSearch() {
                     key={item.id}
                     onClick={() => {
                       setIsOpen(false);
+                      onItemSelect?.();
                       router.push(`/oyun/${item.slug}`);
                     }}
                     onMouseEnter={() => setSelectedIndex(index)}
@@ -229,6 +247,7 @@ export function LiveSearch() {
               <div
                 onClick={() => {
                   setIsOpen(false);
+                  onItemSelect?.();
                   router.push(`/firsatlar?q=${encodeURIComponent(query.trim())}`);
                 }}
                 className="p-2.5 text-center text-xs font-medium text-emerald-400 hover:bg-zinc-800/80 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"

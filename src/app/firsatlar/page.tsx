@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { GameCard } from "@/components/game/game-card";
-import { TrendingDown, Gamepad2, Package, Layers } from "lucide-react";
+import { TrendingDown, Gamepad2, Package, Layers, Search } from "lucide-react";
 import Link from "next/link";
 import { ProductClass } from "@prisma/client";
 
@@ -19,9 +19,11 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
   const { q, type = "all", sort = "dealScore", minDiscount = "0" } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
+  const hasQuery = Boolean(q && q.trim().length > 0);
+  const cleanQ = q ? q.trim() : "";
 
-  // By default in Phase 1.1: Only BASE_GAME and BUNDLE are shown in the main deals view
-  let productClassCondition: any = { in: ["BASE_GAME", "BUNDLE"] as ProductClass[] };
+  // Category filter:
+  let productClassCondition: any = undefined;
   if (type === "game") {
     productClassCondition = "BASE_GAME";
   } else if (type === "bundle") {
@@ -30,19 +32,36 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     productClassCondition = {
       in: ["DLC", "ADD_ON", "EXPANSION", "SEASON_PASS", "CONTENT_PACK"] as ProductClass[],
     };
+  } else if (!hasQuery) {
+    // When merely browsing deals without a search query, show games and bundles
+    productClassCondition = { in: ["BASE_GAME", "BUNDLE"] as ProductClass[] };
+  } else {
+    // When searching, include all valid product classes except purely virtual items
+    productClassCondition = {
+      notIn: ["CURRENCY", "CONSUMABLE"] as ProductClass[],
+    };
   }
 
   const whereClause: any = {
     isActive: true,
     productClass: productClassCondition,
-    discountPercent: { gte: Math.max(1, minDiscNum) },
   };
 
-  if (q && q.trim().length > 0) {
+  // Discount condition:
+  // If user searched for a term (e.g. "wukong"), show all products unless minDiscount filter was explicitly set (> 0)
+  if (minDiscNum > 0) {
+    whereClause.discountPercent = { gte: minDiscNum };
+  } else if (!hasQuery) {
+    // Default deals view requires at least 1% discount
+    whereClause.discountPercent = { gte: 1 };
+  }
+
+  if (hasQuery) {
     whereClause.OR = [
-      { title: { contains: q.trim(), mode: "insensitive" } },
-      { publisher: { contains: q.trim(), mode: "insensitive" } },
-      { franchise: { contains: q.trim(), mode: "insensitive" } },
+      { title: { contains: cleanQ, mode: "insensitive" } },
+      { normalizedTitle: { contains: cleanQ, mode: "insensitive" } },
+      { publisher: { contains: cleanQ, mode: "insensitive" } },
+      { franchise: { contains: cleanQ, mode: "insensitive" } },
     ];
   }
 
@@ -53,6 +72,9 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     orderBy = [{ currentPrice: "asc" }];
   } else if (sort === "priceDesc") {
     orderBy = [{ currentPrice: "desc" }];
+  } else if (hasQuery && sort === "dealScore") {
+    // For search queries, prioritize on sale items, then highest popularity
+    orderBy = [{ discountPercent: "desc" }, { popularityScore: "desc" }];
   }
 
   const deals = await prisma.game.findMany({
@@ -70,11 +92,13 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
         <div>
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1">
-            <TrendingDown className="h-4 w-4" />
-            Xbox İndirim Kataloğu
+            {hasQuery ? <Search className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+            {hasQuery ? "Arama Sonuçları" : "Xbox İndirim Kataloğu"}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            {type === "game"
+            {hasQuery
+              ? `"${cleanQ}" için Sonuçlar`
+              : type === "game"
               ? "Oyun İndirimleri"
               : type === "bundle"
               ? "Paket ve Koleksiyon İndirimleri"
@@ -83,7 +107,7 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
               : "Tüm Aktif Fırsatlar"}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            {deals.length} içerik listeleniyor — Geçmiş fiyat analizlerine göre derecelendirilmiştir
+            {deals.length} içerik listeleniyor {hasQuery ? "— Veritabanı arama eşleşmeleri" : "— Geçmiş fiyat analizlerine göre derecelendirilmiştir"}
           </p>
         </div>
 
@@ -162,10 +186,15 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">
-          <p className="text-base font-semibold text-zinc-300">Uygun Fırsat Bulunamadı</p>
-          <p className="mt-1 text-xs text-zinc-400">
-            Arama veya filtre kriterlerinizi değiştirerek tekrar deneyebilirsiniz.
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">
+          <Gamepad2 className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
+          <h3 className="text-base font-bold text-white">
+            {hasQuery ? `"${cleanQ}" için sonuç bulunamadı` : "Uygun Fırsat Bulunamadı"}
+          </h3>
+          <p className="mt-1.5 text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
+            {hasQuery
+              ? "Aradığınız oyun veya eklenti henüz kataloğa eklenmemiş olabilir. Ürün kodunu biliyorsanız Ayarlar > Manuel Ürün Ekle alanından doğrudan veritabanına aktarabilirsiniz."
+              : "Arama veya filtre kriterlerinizi değiştirerek tekrar deneyebilirsiniz."}
           </p>
         </div>
       )}

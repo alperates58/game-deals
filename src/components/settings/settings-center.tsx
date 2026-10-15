@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Settings,
   ShieldAlert,
@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   ExternalLink,
   Lock,
+  Unlock,
   Download,
   Trash2,
   UploadCloud,
@@ -22,8 +23,11 @@ import {
   Server,
   Clock,
   Sparkles,
+  Loader2,
+  Terminal,
 } from "lucide-react";
 import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
+import type { SyncProgressState } from "@/lib/xbox/sync-progress-tracker";
 import Link from "next/link";
 
 interface SystemStats {
@@ -86,6 +90,10 @@ export function SettingsCenter({
   const [isTriggering, setIsTriggering] = useState(false);
   const [triggerAction, setTriggerAction] = useState<string | null>(null);
   const [triggerMessage, setTriggerMessage] = useState<{ success: boolean; message: string } | null>(null);
+  const [scanPages, setScanPages] = useState<number>(40);
+  const [syncProgress, setSyncProgress] = useState<SyncProgressState | null>(null);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const progressPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Manual Add state
   const [manualInput, setManualInput] = useState("");
@@ -152,17 +160,57 @@ export function SettingsCenter({
     }
   };
 
+  // Polling helper
+  const pollProgress = async () => {
+    try {
+      const res = await fetch("/api/settings/sync-progress");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.progress) {
+          setSyncProgress(data.progress);
+          if (data.progress.isRunning) {
+            setIsTriggering(true);
+            setTriggerAction(data.progress.action);
+          } else {
+            setIsTriggering(false);
+            setTriggerAction(null);
+            if (progressPollingRef.current) {
+              clearInterval(progressPollingRef.current);
+              progressPollingRef.current = null;
+            }
+          }
+        }
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  useEffect(() => {
+    pollProgress();
+    return () => {
+      if (progressPollingRef.current) clearInterval(progressPollingRef.current);
+    };
+  }, []);
+
   // Trigger Action handler
   const handleTriggerAction = async (action: "PRICE_SYNC" | "CATALOG_DISCOVERY") => {
     setIsTriggering(true);
     setTriggerAction(action);
     setTriggerMessage(null);
 
+    // Start live progress polling
+    if (progressPollingRef.current) clearInterval(progressPollingRef.current);
+    progressPollingRef.current = setInterval(pollProgress, 1200);
+
     try {
       const res = await fetch("/api/settings/sync-now", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({
+          action,
+          maxPages: action === "CATALOG_DISCOVERY" ? scanPages : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -175,6 +223,8 @@ export function SettingsCenter({
         message: data.message || "İşlem başarıyla tamamlandı.",
       });
 
+      await pollProgress();
+
       // Refresh settings & stats
       const sRes = await fetch("/api/settings");
       if (sRes.ok) {
@@ -185,9 +235,38 @@ export function SettingsCenter({
       }
     } catch (err: any) {
       setTriggerMessage({ success: false, message: err.message });
+      await pollProgress();
     } finally {
-      setIsTriggering(false);
-      setTriggerAction(null);
+      // Polling continues until progress reports completed
+    }
+  };
+
+  // Force unlock handler
+  const handleForceUnlock = async () => {
+    setIsUnlocking(true);
+    try {
+      const res = await fetch("/api/settings/sync-progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "FORCE_UNLOCK" }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTriggerMessage({ success: true, message: data.message || "Kilit başarıyla sıfırlandı." });
+        setSyncProgress(null);
+        setIsTriggering(false);
+        setTriggerAction(null);
+        if (progressPollingRef.current) {
+          clearInterval(progressPollingRef.current);
+          progressPollingRef.current = null;
+        }
+      } else {
+        throw new Error(data.error || "Kilit sıfırlanamadı.");
+      }
+    } catch (err: any) {
+      setTriggerMessage({ success: false, message: err.message });
+    } finally {
+      setIsUnlocking(false);
     }
   };
 
@@ -473,25 +552,170 @@ export function SettingsCenter({
               Zamanlayıcıyı beklemeden mağaza katalog taramasını veya mevcut oyunların fiyat geçmişi güncellemesini hemen çalıştırabilirsiniz.
             </p>
 
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
-              <button
-                onClick={() => handleTriggerAction("CATALOG_DISCOVERY")}
-                disabled={isTriggering}
-                className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
-                <span>Şimdi Yeni Oyunları Tara</span>
-              </button>
+            {/* Scope Selection */}
+            <div className="mb-4 rounded-lg bg-zinc-950/70 border border-zinc-800/80 p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <span className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5 text-emerald-400" />
+                  Katalog Tarama Derinliği (Sayfa Sayısı):
+                </span>
+                <span className="text-[11px] text-zinc-400">
+                  Her sayfa 25 oyun içerir (40 sayfa ≈ 1.000 oyun).
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { pages: 5, label: "5 Sayfa", desc: "~125 Oyun", badge: "Hızlı Test" },
+                  { pages: 20, label: "20 Sayfa", desc: "~500 Oyun", badge: "Standart" },
+                  { pages: 40, label: "40 Sayfa", desc: "~1.000 Oyun", badge: "Önerilen" },
+                  { pages: 80, label: "80 Sayfa", desc: "~2.000 Oyun", badge: "Tam Katalog" },
+                ].map((tier) => (
+                  <button
+                    key={tier.pages}
+                    type="button"
+                    disabled={isTriggering}
+                    onClick={() => setScanPages(tier.pages)}
+                    className={`rounded-lg px-2.5 py-1.5 text-xs text-left transition-all border ${
+                      scanPages === tier.pages
+                        ? "border-emerald-500 bg-emerald-950/40 text-emerald-300 font-semibold shadow-sm"
+                        : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                    } disabled:opacity-50`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{tier.label}</span>
+                      <span className="text-[10px] px-1 py-0.5 rounded bg-zinc-800/80 text-zinc-400 font-normal">
+                        {tier.badge}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-zinc-500 mt-0.5">{tier.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
+                <button
+                  onClick={() => handleTriggerAction("CATALOG_DISCOVERY")}
+                  disabled={isTriggering}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
+                  <span>Şimdi Yeni Oyunları Tara ({scanPages * 25} Ürün)</span>
+                </button>
+
+                <button
+                  onClick={() => handleTriggerAction("PRICE_SYNC")}
+                  disabled={isTriggering}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                >
+                  <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
+                  <span>Şimdi Fiyatları Güncelle</span>
+                </button>
+              </div>
+
+              {/* Force Unlock Button */}
               <button
-                onClick={() => handleTriggerAction("PRICE_SYNC")}
-                disabled={isTriggering}
-                className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                type="button"
+                onClick={handleForceUnlock}
+                disabled={isUnlocking}
+                className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-400 hover:text-amber-400 border border-zinc-800 hover:border-amber-800/60 rounded-lg px-2.5 py-1.5 transition-colors"
+                title="Arka planda kilit takılı kaldıysa sıfırlar"
               >
-                <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
-                <span>Şimdi Fiyatları Güncelle</span>
+                <Lock className={`h-3 w-3 ${isUnlocking ? "animate-spin" : ""}`} />
+                <span>{isUnlocking ? "Kilit Açılıyor..." : "Kilidi Sıfırla (Force Unlock)"}</span>
               </button>
             </div>
+
+            {/* Live Progress Bar & Activity Feed */}
+            {syncProgress && (syncProgress.isRunning || syncProgress.status === "FAILED" || syncProgress.status === "COMPLETED") && (
+              <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    {syncProgress.isRunning ? (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                    ) : syncProgress.status === "COMPLETED" ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4 text-red-400" />
+                    )}
+                    <span className="font-semibold text-white">
+                      {syncProgress.action === "CATALOG_DISCOVERY" ? "Katalog Keşfi" : "Fiyat Senkronizasyonu"}
+                      {syncProgress.isRunning ? " Devam Ediyor..." : syncProgress.status === "COMPLETED" ? " Tamamlandı" : " Hata ile Sonlandı"}
+                    </span>
+                  </div>
+                  <div className="font-mono text-emerald-400 font-bold text-xs">
+                    %{syncProgress.progressPercent}
+                  </div>
+                </div>
+
+                {/* Progress Bar Track */}
+                <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      syncProgress.status === "FAILED"
+                        ? "bg-red-500"
+                        : syncProgress.status === "COMPLETED"
+                        ? "bg-emerald-500"
+                        : "bg-emerald-500 animate-pulse"
+                    }`}
+                    style={{ width: `${Math.max(syncProgress.progressPercent, 3)}%` }}
+                  />
+                </div>
+
+                <div className="text-[11px] text-zinc-400 flex items-center justify-between">
+                  <span>{syncProgress.currentPhase}</span>
+                  {syncProgress.startedAt && (
+                    <span className="text-[10px] text-zinc-500" suppressHydrationWarning>
+                      Başlangıç: {new Date(syncProgress.startedAt).toLocaleTimeString("tr-TR")}
+                    </span>
+                  )}
+                </div>
+
+                {/* Real-time KPI counters */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
+                    <span className="text-[10px] text-zinc-500 block">Taranan Sayfa</span>
+                    <span className="text-xs font-bold text-zinc-200">
+                      {syncProgress.currentPage} / {syncProgress.totalPages}
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
+                    <span className="text-[10px] text-zinc-500 block">Keşfedilen Ürün</span>
+                    <span className="text-xs font-bold text-white">
+                      {syncProgress.totalDiscovered}
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
+                    <span className="text-[10px] text-zinc-500 block">Yeni Eklenen</span>
+                    <span className="text-xs font-bold text-emerald-400">
+                      +{syncProgress.newItemsAdded}
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
+                    <span className="text-[10px] text-zinc-500 block">Güncellenen</span>
+                    <span className="text-xs font-bold text-blue-400">
+                      {syncProgress.itemsUpdated}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Activity Console */}
+                {syncProgress.logs && syncProgress.logs.length > 0 && (
+                  <div className="mt-2 rounded-lg bg-zinc-900/90 border border-zinc-800 p-2.5 max-h-36 overflow-y-auto font-mono text-[10px] space-y-1 text-zinc-400">
+                    {syncProgress.logs.slice(-6).map((log, i) => (
+                      <div key={i} className="flex items-start gap-1.5 leading-relaxed">
+                        <span className="text-zinc-600 select-none">&gt;</span>
+                        <span className="text-zinc-300">{log}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {triggerMessage && (
               <div className={`mt-4 rounded-lg p-3 text-xs flex items-center gap-2 ${triggerMessage.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
@@ -505,28 +729,28 @@ export function SettingsCenter({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
               <span className="text-[11px] font-medium text-zinc-400">Son Katalog Taraması</span>
-              <p className="mt-1 text-sm font-semibold text-white">
+              <p className="mt-1 text-sm font-semibold text-white" suppressHydrationWarning>
                 {scheduleInfo?.lastCatalogDiscoveryAt ? new Date(scheduleInfo.lastCatalogDiscoveryAt).toLocaleString("tr-TR") : "Henüz yapılmadı"}
               </p>
             </div>
 
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
               <span className="text-[11px] font-medium text-zinc-400">Sıradaki Katalog Taraması</span>
-              <p className="mt-1 text-sm font-semibold text-emerald-400">
+              <p className="mt-1 text-sm font-semibold text-emerald-400" suppressHydrationWarning>
                 {scheduleInfo?.nextCatalogDiscoveryAt ? new Date(scheduleInfo.nextCatalogDiscoveryAt).toLocaleString("tr-TR") : "Devre Dışı"}
               </p>
             </div>
 
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
               <span className="text-[11px] font-medium text-zinc-400">Son Fiyat Senkronizasyonu</span>
-              <p className="mt-1 text-sm font-semibold text-white">
+              <p className="mt-1 text-sm font-semibold text-white" suppressHydrationWarning>
                 {scheduleInfo?.lastPriceSyncAt ? new Date(scheduleInfo.lastPriceSyncAt).toLocaleString("tr-TR") : "Henüz yapılmadı"}
               </p>
             </div>
 
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
               <span className="text-[11px] font-medium text-zinc-400">Sıradaki Fiyat Senkronizasyonu</span>
-              <p className="mt-1 text-sm font-semibold text-emerald-400">
+              <p className="mt-1 text-sm font-semibold text-emerald-400" suppressHydrationWarning>
                 {scheduleInfo?.nextPriceSyncAt ? new Date(scheduleInfo.nextPriceSyncAt).toLocaleString("tr-TR") : "Devre Dışı"}
               </p>
             </div>
@@ -776,7 +1000,7 @@ export function SettingsCenter({
                         <td className="py-2.5 text-zinc-400">
                           {(b.sizeBytes / (1024 * 1024)).toFixed(2)} MB
                         </td>
-                        <td className="py-2.5 text-zinc-400">
+                        <td className="py-2.5 text-zinc-400" suppressHydrationWarning>
                           {new Date(b.startedAt).toLocaleString("tr-TR")}
                         </td>
                         <td className="py-2.5">

@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "Xbox Gerçek Fırsat Takip Sistemi | game.alperates.com.tr",
   description:
     "Xbox ve Microsoft Store Türkiye'deki gerçek indirimleri, takip başladığından beri görülen en düşük fiyatları ve fırsat analizlerini keşfedin.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

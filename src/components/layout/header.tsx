@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Gamepad2,
   Sparkles,
   TrendingDown,
   Clock,
@@ -10,6 +9,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { LiveSearch } from "./live-search";
+import { BrandLogo } from "./brand-logo";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Role } from "@prisma/client";
 import { MobileNav } from "./mobile-nav";
@@ -24,19 +24,7 @@ export async function Header() {
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <MobileNav user={user} />
 
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md shadow-emerald-950/50 group-hover:bg-emerald-500 transition-colors">
-              <Gamepad2 className="h-5 w-5" />
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
-                Xbox Fırsat
-              </span>
-              <span className="hidden sm:inline-block rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400">
-                TR
-              </span>
-            </div>
-          </Link>
+          <BrandLogo />
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1 ml-2">

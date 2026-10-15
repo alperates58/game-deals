@@ -26,3 +26,12 @@ export async function releaseAdvisoryLock(key: number = SYNC_LOCK_KEY): Promise<
     return false;
   }
 }
+
+export async function forceReleaseAllAdvisoryLocks(): Promise<void> {
+  try {
+    await prisma.$queryRawUnsafe(`SELECT pg_advisory_unlock_all();`);
+  } catch (error) {
+    console.error("[AdvisoryLock] Error force unlocking all:", error);
+  }
+}
+

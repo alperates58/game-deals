@@ -19,11 +19,12 @@ import {
   LogIn,
   UserPlus,
   X,
-  Search,
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
 import { Role } from "@prisma/client";
+import { LiveSearch } from "./live-search";
+import { BrandLogo } from "./brand-logo";
 
 export interface SidebarProps {
   user: {
@@ -57,7 +58,6 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
   const [mounted, setMounted] = useState(false);
   const [isRendered, setIsRendered] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const touchStartX = useRef<number | null>(null);
   const touchCurrentX = useRef<number | null>(null);
@@ -122,15 +122,6 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       router.refresh();
     } catch (e) {
       console.error("Logout failed:", e);
-    }
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim().length > 0) {
-      onClose();
-      router.push(`/firsatlar?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery("");
     }
   };
 
@@ -234,26 +225,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       >
         {/* Header / Brand */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-zinc-800 bg-[#09090b] shrink-0">
-          <Link
-            href="/"
-            onClick={onClose}
-            className="flex items-center gap-3 group"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-md shadow-emerald-950/50 group-hover:bg-emerald-500 transition-colors shrink-0">
-              <Gamepad2 className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
-                  Xbox Fırsat
-                </span>
-                <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
-                  TR
-                </span>
-              </div>
-              <p className="text-[10px] text-zinc-500 font-medium">Gerçek İndirim Takip</p>
-            </div>
-          </Link>
+          <BrandLogo onClick={onClose} showTagline={true} size="md" />
 
           <button
             type="button"
@@ -265,18 +237,13 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* Quick Search inside Sidebar */}
-        <div className="p-3 border-b border-zinc-800/80 bg-zinc-900/30 shrink-0">
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Oyun veya DLC ara..."
-              className="h-10 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-9 pr-3 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all"
-            />
-          </form>
+        {/* Live Search inside Sidebar */}
+        <div className="p-3 border-b border-zinc-800/80 bg-zinc-900/30 shrink-0 relative z-30">
+          <LiveSearch
+            onItemSelect={onClose}
+            placeholder="Oyun veya DLC ara..."
+            className="relative w-full"
+          />
         </div>
 
         {/* Navigation Content (Scrollable) */}

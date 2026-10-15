@@ -6,9 +6,10 @@ import { qualifyXboxSeriesPlatform } from "./platform-qualifier";
 import { processNormalizedProduct } from "../pricing/price-sync";
 import { RelationType } from "@prisma/client";
 import { NormalizedXboxProduct } from "./types";
+import { syncProgressTracker } from "./sync-progress-tracker";
 
 export interface IncrementalDiscoveryOptions {
-  maxPages?: number; // default: 5 pages (125 items)
+  maxPages?: number; // default: 40 pages (~1,000 items)
   batchSize?: number; // default: 25
   triggerSource?: string; // "MANUAL_OWNER" | "SCHEDULER"
 }
@@ -37,7 +38,7 @@ export async function runIncrementalDiscovery(
   options: IncrementalDiscoveryOptions = {}
 ): Promise<IncrementalDiscoveryResult> {
   const startTime = Date.now();
-  const maxPages = options.maxPages || 5;
+  const maxPages = options.maxPages || 40;
   const batchSize = options.batchSize || 25;
 
   const locked = await acquireAdvisoryLock();
@@ -48,6 +49,8 @@ export async function runIncrementalDiscovery(
       message: "Başka bir senkronizasyon veya tarama işlemi yürütülüyor. PostgreSQL advisory lock devrede.",
     };
   }
+
+  syncProgressTracker.startSync("CATALOG_DISCOVERY", maxPages, maxPages * 25);
 
   const syncRun = await prisma.syncRun.create({
     data: {
@@ -125,6 +128,17 @@ export async function runIncrementalDiscovery(
         const chunk = pendingBatch.splice(0, batchSize);
         await flushBatch(chunk);
       }
+
+      // Live progress tracking update
+      syncProgressTracker.updatePageProgress({
+        page: pagesScanned,
+        maxPages,
+        rawCount: page.products.length,
+        totalCatalogItems: page.totalCatalogItems,
+        addedCount: productsAdded,
+        updatedCount: productsUpdated,
+        relationsCount: relationsCreated,
+      });
     }
 
     if (pendingBatch.length > 0) {
@@ -132,6 +146,7 @@ export async function runIncrementalDiscovery(
     }
 
     // Link relationships for enriched items
+    syncProgressTracker.addLog("Paket ve DLC ilişkileri tespit ediliyor ve veritabanına bağlanıyor...", "info");
     const dbGames = await prisma.game.findMany({
       select: { id: true, xboxProductId: true, productClass: true },
     });
@@ -232,9 +247,12 @@ export async function runIncrementalDiscovery(
       },
     });
 
+    const finalMessage = `Artımlı katalog taraması tamamlandı. ${pagesScanned} sayfa tarandı, ${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`;
+    syncProgressTracker.finishSync(finalMessage, { productsAdded, productsUpdated, relationsCreated });
+
     return {
       success: true,
-      message: `Artımlı katalog taraması tamamlandı. ${pagesScanned} sayfa tarandı, ${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`,
+      message: finalMessage,
       stats: {
         pagesScanned,
         rawDiscovered,
@@ -248,6 +266,8 @@ export async function runIncrementalDiscovery(
     };
   } catch (err: any) {
     console.error("[IncrementalDiscovery] Fatal error:", err);
+    syncProgressTracker.failSync(err.message);
+
     await prisma.syncRun.update({
       where: { id: syncRun.id },
       data: {
