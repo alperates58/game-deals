@@ -3,10 +3,10 @@ import { NormalizedXboxProduct, ProductClass } from "./types";
 import { generateSlug } from "../pricing/slug";
 
 export const KNOWN_BUNDLE_CHILDREN: Record<string, string[]> = {
-  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NX3K6WKGHLG), Mafia 2 (9N000033SQDR), Mafia 3 (9PN06NXGLVZG)
-  "9NKG0X1MGQTX": ["9NX3K6WKGHLG", "9N000033SQDR", "9PN06NXGLVZG"],
-  // Grand Theft Auto: The Trilogy – The Definitive Edition (9MXMJFNZMVWD) -> GTA 3 (9NF3HCF7MWB4), Vice City (9PC16M34CB91), San Andreas (9P7RSGG6Z699)
-  "9MXMJFNZMVWD": ["9NF3HCF7MWB4", "9PC16M34CB91", "9P7RSGG6Z699"],
+  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NX36W49M2GH), Mafia 2 (9N000033SQDR), Mafia 3 (C2M493H501ZG)
+  "9NKG0X1MGQTX": ["9NX36W49M2GH", "9N000033SQDR", "C2M493H501ZG"],
+  // Grand Theft Auto: The Trilogy – The Definitive Edition (9MXMJFNZMVWD) -> GTA 3 (9N3QFH749NBW), Vice City (9PC16M34CB91), San Andreas (9P7RSGG6Z699)
+  "9MXMJFNZMVWD": ["9N3QFH749NBW", "9PC16M34CB91", "9P7RSGG6Z699"],
 };
 
 export function determineProductClass(

@@ -114,7 +114,7 @@ async function getHomePageData() {
     }),
     // Games with ACTUAL recorded price DROPS (active on sale, latest price is strictly lower than previous price)
     prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT DISTINCT g.id
+      SELECT g.id
       FROM "Game" g
       JOIN "PriceHistory" ph_curr ON ph_curr."gameId" = g.id
       JOIN "PriceHistory" ph_prev ON ph_prev."gameId" = g.id AND ph_prev."observedAt" < ph_curr."observedAt"
@@ -132,14 +132,18 @@ async function getHomePageData() {
           WHERE ph_newer."gameId" = g.id
             AND ph_newer."observedAt" > ph_curr."observedAt"
         )
-      ORDER BY ph_curr."observedAt" DESC
+      GROUP BY g.id
+      ORDER BY MAX(ph_curr."observedAt") DESC
       LIMIT 15
-    `,
+    `.catch((err) => {
+      console.error("Failed to query price drops raw:", err);
+      return [] as Array<{ id: string }>;
+    }),
     // True dynamic count of all games currently at historical low
     prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int as count FROM "Game"
       WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
-    `,
+    `.catch(() => [{ count: 0 }]),
   ]);
 
   // Fetch full game records for genuine price drops

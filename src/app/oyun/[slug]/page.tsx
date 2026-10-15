@@ -113,21 +113,49 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const existingChildBigIds = new Set(game.childRelations.map((r) => r.childGame.xboxProductId.toUpperCase()));
   const missingKnownKids = knownKids.filter((id) => !existingChildBigIds.has(id.toUpperCase()));
 
-  const isRealBundle =
-    game.productClass === "BUNDLE" ||
-    knownKids.length > 0 ||
-    /(bundle|koleksiyon|collection|trilogy|saga|anthology|ikili paket|çift paket|\bpack\b)/i.test(game.title);
+  // A real bundle must match known bundle criteria or title keywords
+  const isTitleBundle = /(bundle|koleksiyon|collection|trilogy|saga|anthology|ikili paket|çift paket|\bpack\b)/i.test(game.title);
+  const isKnownBundle = knownKids.length > 0;
+  const isRealBundle = isTitleBundle || isKnownBundle;
 
-  // If a single base game mistakenly has BUNDLE_CONTAINS relations in DB, clean them up
-  if (!isRealBundle && game.childRelations.length > 0) {
+  // If a single game was mistakenly saved with productClass = "BUNDLE" (e.g. from legacy crawler bug), correct it to "GAME"
+  if (!isRealBundle && game.productClass === "BUNDLE") {
+    try {
+      await prisma.game.update({
+        where: { id: game.id },
+        data: { productClass: "GAME" },
+      });
+      game.productClass = "GAME";
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Detect and purge any inverted relations:
+  // 1. If this is not a real bundle, it should have NO BUNDLE_CONTAINS child relations.
+  // 2. Even if it is a bundle, none of its children can be a bundle/trilogy/collection itself!
+  const invertedChildren = game.childRelations.filter((r) => {
+    if (!isRealBundle) return true;
+    const cTitle = r.childGame.title.toLowerCase();
+    return (
+      r.childGame.productClass === "BUNDLE" ||
+      cTitle.includes("trilogy") ||
+      cTitle.includes("koleksiyon") ||
+      cTitle.includes("collection") ||
+      cTitle.includes("bundle")
+    );
+  });
+
+  if (invertedChildren.length > 0) {
     try {
       await prisma.gameRelation.deleteMany({
         where: {
-          parentGameId: game.id,
-          relationType: RelationType.BUNDLE_CONTAINS,
+          id: { in: invertedChildren.map((r) => r.id) },
         },
       });
-      game.childRelations = [];
+      game.childRelations = game.childRelations.filter(
+        (r) => !invertedChildren.some((inv) => inv.id === r.id)
+      );
     } catch {
       // Ignore
     }
