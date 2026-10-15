@@ -4,6 +4,7 @@ import { DealBadge } from "./deal-badge";
 import { TrendingDown, Award } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
+import { formatPrice } from "@/lib/formatters";
 
 export interface GameCardProps {
   id: string;
@@ -118,11 +119,11 @@ export function GameCard({
           <div className="flex items-baseline justify-between">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-base sm:text-lg font-bold text-white tracking-tight">
-                {currentNum.toLocaleString("tr-TR")} {currency}
+                {formatPrice(currentNum)} {currency}
               </span>
               {discountPercent > 0 && (
                 <span className="text-[11px] sm:text-xs text-zinc-400 line-through">
-                  {listNum.toLocaleString("tr-TR")} {currency}
+                  {formatPrice(listNum)} {currency}
                 </span>
               )}
             </div>
@@ -132,7 +133,7 @@ export function GameCard({
           <div className="mt-1.5 flex items-center justify-between text-[11px] text-zinc-400">
             <span className="truncate">Gözlemlenen Dip:</span>
             <span className={`font-semibold ${isAtHistoricalLow ? "text-emerald-400" : "text-zinc-300"}`}>
-              {lowNum.toLocaleString("tr-TR")} {currency}
+              {formatPrice(lowNum)} {currency}
             </span>
           </div>
         </div>

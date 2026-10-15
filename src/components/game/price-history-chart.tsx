@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,7 +10,8 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import { Info, Clock, Tag } from "lucide-react";
+import { Info, Clock } from "lucide-react";
+import { formatDateTime, formatShortDate, formatPrice } from "@/lib/formatters";
 
 interface PricePoint {
   observedAt: string;
@@ -25,6 +27,12 @@ interface PriceHistoryChartProps {
 }
 
 export function PriceHistoryChart({ data, historicalLow, currency }: PriceHistoryChartProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // 1. Durum: Hiç kayıt yok
   if (!data || data.length === 0) {
     return (
@@ -41,10 +49,7 @@ export function PriceHistoryChart({ data, historicalLow, currency }: PriceHistor
   // 2. Durum: Tek bir referans gözlem var (Doğruluk ilkesi: Yapay nokta eklenmez, grafik çizilmez)
   if (data.length === 1) {
     const single = data[0];
-    const obsDate = new Date(single.observedAt).toLocaleString("tr-TR", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    const obsDate = formatDateTime(single.observedAt);
 
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
@@ -66,17 +71,17 @@ export function PriceHistoryChart({ data, historicalLow, currency }: PriceHistor
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-4">
             <span className="text-[11px] text-zinc-400 block mb-1">İlk Tespit Tarihi</span>
-            <span className="text-sm font-semibold text-white">{obsDate}</span>
+            <span className="text-sm font-semibold text-white font-mono" suppressHydrationWarning>{obsDate}</span>
           </div>
           <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-4">
             <span className="text-[11px] text-zinc-400 block mb-1">Tespit Edilen Fiyat</span>
             <div className="flex items-baseline gap-2">
               <span className="text-base font-bold text-emerald-400">
-                {single.currentPrice.toLocaleString("tr-TR")} {currency}
+                {formatPrice(single.currentPrice)} {currency}
               </span>
               {single.listPrice > single.currentPrice && (
                 <span className="text-xs text-zinc-400 line-through">
-                  {single.listPrice.toLocaleString("tr-TR")} {currency}
+                  {formatPrice(single.listPrice)} {currency}
                 </span>
               )}
             </div>
@@ -101,11 +106,8 @@ export function PriceHistoryChart({ data, historicalLow, currency }: PriceHistor
 
   // 3. Durum: İki veya daha fazla gözlem (Zaman serisi grafiği)
   const chartData = data.map((d) => ({
-    date: new Date(d.observedAt).toLocaleDateString("tr-TR", {
-      month: "short",
-      day: "numeric",
-    }),
-    fullDate: new Date(d.observedAt).toLocaleString("tr-TR"),
+    date: formatShortDate(d.observedAt),
+    fullDate: formatDateTime(d.observedAt),
     currentPrice: d.currentPrice,
     listPrice: d.listPrice,
     isOnSale: d.isOnSale,
@@ -137,71 +139,77 @@ export function PriceHistoryChart({ data, historicalLow, currency }: PriceHistor
       </div>
 
       <div className="h-64 sm:h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="date"
-              stroke="#52525b"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: "#27272a" }}
-            />
-            <YAxis
-              stroke="#52525b"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: "#27272a" }}
-              domain={yDomain}
-              tickFormatter={(val) => `${val} ₺`}
-            />
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const p = payload[0].payload;
-                  return (
-                    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 shadow-xl text-xs">
-                      <p className="font-semibold text-zinc-300">{p.fullDate || p.date}</p>
-                      <p className="mt-1 font-bold text-emerald-400">
-                        Fiyat: {p.currentPrice.toLocaleString("tr-TR")} {currency}
-                      </p>
-                      {p.listPrice > p.currentPrice && (
-                        <p className="text-zinc-400 line-through">
-                          Liste: {p.listPrice.toLocaleString("tr-TR")} {currency}
+        {!isMounted ? (
+          <div className="h-full w-full flex items-center justify-center rounded-xl bg-zinc-950/40 border border-zinc-800/40 animate-pulse">
+            <span className="text-xs text-zinc-500">Grafik yükleniyor...</span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="date"
+                stroke="#52525b"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: "#27272a" }}
+              />
+              <YAxis
+                stroke="#52525b"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: "#27272a" }}
+                domain={yDomain}
+                tickFormatter={(val) => `${val} ₺`}
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const p = payload[0].payload;
+                    return (
+                      <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 shadow-xl text-xs">
+                        <p className="font-semibold text-zinc-300">{p.fullDate || p.date}</p>
+                        <p className="mt-1 font-bold text-emerald-400">
+                          Fiyat: {formatPrice(p.currentPrice)} {currency}
                         </p>
-                      )}
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            <ReferenceLine
-              y={historicalLow}
-              stroke="#f59e0b"
-              strokeDasharray="4 4"
-              label={{
-                value: `Dip: ${historicalLow} ₺`,
-                fill: "#f59e0b",
-                fontSize: 10,
-                position: "right",
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="currentPrice"
-              stroke="#10b981"
-              strokeWidth={2.5}
-              fillOpacity={1}
-              fill="url(#priceGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+                        {p.listPrice > p.currentPrice && (
+                          <p className="text-zinc-400 line-through">
+                            Liste: {formatPrice(p.listPrice)} {currency}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <ReferenceLine
+                y={historicalLow}
+                stroke="#f59e0b"
+                strokeDasharray="4 4"
+                label={{
+                  value: `Dip: ${formatPrice(historicalLow)} ₺`,
+                  fill: "#f59e0b",
+                  fontSize: 10,
+                  position: "right",
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="currentPrice"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                fillOpacity={1}
+                fill="url(#priceGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

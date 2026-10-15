@@ -132,6 +132,7 @@ export function SettingsCenter({
   const [isLoadingSyncRuns, setIsLoadingSyncRuns] = useState(false);
   const [syncRunFilter, setSyncRunFilter] = useState<"ALL" | "CHANGES_ONLY" | "ERRORS_ONLY">("ALL");
   const [expandedRunIds, setExpandedRunIds] = useState<Set<string>>(new Set());
+  const [expandedUpdatedRunIds, setExpandedUpdatedRunIds] = useState<Set<string>>(new Set());
 
   const filteredSyncRuns = (syncRuns || []).filter((run) => {
     if (syncRunFilter === "CHANGES_ONLY") {
@@ -145,6 +146,15 @@ export function SettingsCenter({
 
   const toggleExpandRun = (runId: string) => {
     setExpandedRunIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(runId)) next.delete(runId);
+      else next.add(runId);
+      return next;
+    });
+  };
+
+  const toggleExpandUpdatedRun = (runId: string) => {
+    setExpandedUpdatedRunIds((prev) => {
       const next = new Set(prev);
       if (next.has(runId)) next.delete(runId);
       else next.add(runId);
@@ -1008,6 +1018,7 @@ export function SettingsCenter({
                     <tbody className="divide-y divide-zinc-800/60">
                       {filteredSyncRuns.map((run) => {
                         const isExpanded = expandedRunIds.has(run.id);
+                        const isUpdatedExpanded = expandedUpdatedRunIds.has(run.id);
                         const hasAdded = run.productsAdded > 0;
                         const hasChanged = run.pricesChanged > 0;
                         const durationSec = run.finishedAt
@@ -1073,7 +1084,7 @@ export function SettingsCenter({
                               </div>
                             </td>
 
-                            {/* Kısa Özet & Eklenen Oyunlar */}
+                            {/* Kısa Özet & Eklenen / Değişen Oyunlar */}
                             <td className="py-3 align-top max-w-md">
                               <div className="text-[11px] text-zinc-300 leading-relaxed font-normal">
                                 {run.summaryText}
@@ -1129,6 +1140,62 @@ export function SettingsCenter({
                                   )}
                                 </div>
                               )}
+
+                              {/* Fiyatı Değişen Oyunlar Listesi (Desktop) */}
+                              {run.updatedGames && run.updatedGames.length > 0 && (
+                                <div className="mt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandUpdatedRun(run.id)}
+                                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                                  >
+                                    <TrendingDown className="h-3 w-3" />
+                                    <span>
+                                      {isUpdatedExpanded
+                                        ? "Fiyatı Değişenleri Gizle"
+                                        : `Fiyatı Değişen Oyunları Göster (${run.updatedGames.length} Oyun)`}
+                                    </span>
+                                    {isUpdatedExpanded ? (
+                                      <ChevronUp className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3" />
+                                    )}
+                                  </button>
+
+                                  {isUpdatedExpanded && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5 p-2 rounded-lg bg-zinc-950/80 border border-blue-900/40">
+                                      {run.updatedGames.map((game, gIdx) => (
+                                        <span
+                                          key={gIdx}
+                                          className="inline-flex items-center gap-1 rounded bg-zinc-900 border border-zinc-700/80 px-2 py-0.5 text-[10px] text-zinc-200"
+                                        >
+                                          {game.slug ? (
+                                            <Link
+                                              href={`/oyun/${game.slug}`}
+                                              target="_blank"
+                                              className="font-medium text-blue-300 hover:underline"
+                                            >
+                                              {game.title}
+                                            </Link>
+                                          ) : (
+                                            <span className="font-medium text-blue-300">{game.title}</span>
+                                          )}
+                                          {game.price !== undefined && (
+                                            <span className="text-zinc-400 font-mono">
+                                              ({game.price} ₺)
+                                            </span>
+                                          )}
+                                          {game.discount ? (
+                                            <span className="text-emerald-400 font-bold">
+                                              -%{game.discount}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </td>
 
                             {/* Durum */}
@@ -1177,6 +1244,7 @@ export function SettingsCenter({
                 <div className="block sm:hidden space-y-3">
                   {filteredSyncRuns.map((run) => {
                     const isExpanded = expandedRunIds.has(run.id);
+                    const isUpdatedExpanded = expandedUpdatedRunIds.has(run.id);
                     const hasAdded = run.productsAdded > 0;
                     const hasChanged = run.pricesChanged > 0;
                     const durationSec = run.finishedAt
@@ -1281,6 +1349,58 @@ export function SettingsCenter({
                                         {game.price} ₺
                                       </span>
                                     )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Fiyatı Değişen Oyunlar (Mobile) */}
+                        {run.updatedGames && run.updatedGames.length > 0 && (
+                          <div className="pt-2 border-t border-zinc-800/60">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandUpdatedRun(run.id)}
+                              className="flex items-center justify-between w-full text-[11px] font-medium text-blue-400 py-1"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <TrendingDown className="h-3.5 w-3.5" />
+                                Fiyatı Değişen Oyunlar ({run.updatedGames.length})
+                              </span>
+                              {isUpdatedExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                            </button>
+
+                            {isUpdatedExpanded && (
+                              <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-zinc-900/90 border border-zinc-800">
+                                {run.updatedGames.map((game, gIdx) => (
+                                  <div
+                                    key={gIdx}
+                                    className="flex items-center justify-between gap-2 w-full py-1 border-b border-zinc-800/40 last:border-0 text-[11px]"
+                                  >
+                                    {game.slug ? (
+                                      <Link
+                                        href={`/oyun/${game.slug}`}
+                                        target="_blank"
+                                        className="font-medium text-blue-300 truncate hover:text-blue-200"
+                                      >
+                                        {game.title}
+                                      </Link>
+                                    ) : (
+                                      <span className="font-medium text-blue-300 truncate">{game.title}</span>
+                                    )}
+                                    <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+                                      {game.price !== undefined && (
+                                        <span className="text-zinc-300">
+                                          {game.price} ₺
+                                        </span>
+                                      )}
+                                      {game.discount ? (
+                                        <span className="text-emerald-400 font-bold">
+                                          -%{game.discount}
+                                        </span>
+                                      ) : null}
+                                    </div>
                                   </div>
                                 ))}
                               </div>

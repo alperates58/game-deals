@@ -95,6 +95,53 @@ export async function GET(req: Request) {
           }
         }
 
+        // If run changed prices but no updatedGames list was parsed,
+        // look up price histories recorded during that run's timeframe
+        if (run.pricesChanged > 0 && updatedGames.length === 0) {
+          try {
+            const windowStart = new Date(run.startedAt.getTime() - 2000);
+            const windowEnd = run.finishedAt
+              ? new Date(run.finishedAt.getTime() + 2000)
+              : new Date(run.startedAt.getTime() + 10 * 60 * 1000);
+
+            const dbPriceHistories = await prisma.priceHistory.findMany({
+              where: {
+                observedAt: {
+                  gte: windowStart,
+                  lte: windowEnd,
+                },
+              },
+              include: {
+                game: {
+                  select: {
+                    title: true,
+                    slug: true,
+                  },
+                },
+              },
+              take: 50,
+            });
+
+            if (dbPriceHistories.length > 0) {
+              const seenSlugs = new Set<string>();
+              updatedGames = [];
+              for (const ph of dbPriceHistories) {
+                if (ph.game && !seenSlugs.has(ph.game.slug)) {
+                  seenSlugs.add(ph.game.slug);
+                  updatedGames.push({
+                    title: ph.game.title,
+                    slug: ph.game.slug,
+                    price: Number(ph.currentPrice),
+                    discount: ph.discountPercent,
+                  });
+                }
+              }
+            }
+          } catch (queryErr) {
+            console.error("Failed to query historical updated games:", queryErr);
+          }
+        }
+
         // Generate fallback text if empty
         if (!summaryText) {
           if (run.productsAdded > 0) {

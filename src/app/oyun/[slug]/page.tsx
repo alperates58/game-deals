@@ -9,6 +9,7 @@ import { DealBadge, ConfidenceBadge } from "@/components/game/deal-badge";
 import { PriceHistoryChart } from "@/components/game/price-history-chart";
 import { XboxStoreActions } from "@/components/game/xbox-store-button";
 import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
+import { formatDate, formatDateTime, formatPrice } from "@/lib/formatters";
 import {
   ExternalLink,
   ShieldCheck,
@@ -282,7 +283,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                 {game.releaseDate && (
                   <span className="flex items-center gap-1.5" suppressHydrationWarning>
                     <Calendar className="h-3.5 w-3.5 text-zinc-500" />
-                    Çıkış: {new Date(game.releaseDate).toLocaleDateString("tr-TR")}
+                    Çıkış: {formatDate(game.releaseDate)}
                   </span>
                 )}
                 {game.franchise && (
@@ -319,11 +320,11 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   <span className="text-xs text-zinc-400 block mb-1">Güncel Satış Fiyatı</span>
                   <div className="flex items-baseline gap-3">
                     <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                      {currentPrice.toLocaleString("tr-TR")} {game.currency}
+                      {formatPrice(currentPrice)} {game.currency}
                     </span>
                     {game.discountPercent > 0 && (
                       <span className="text-base text-zinc-400 line-through">
-                        {listPrice.toLocaleString("tr-TR")} {game.currency}
+                        {formatPrice(listPrice)} {game.currency}
                       </span>
                     )}
                   </div>
@@ -365,7 +366,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   <div>
                     <span className="text-zinc-400">Gözlemlenen En Düşük Fiyat: </span>
                     <strong className={`text-sm ${isAtHistoricalLow ? "text-emerald-400" : "text-white"}`}>
-                      {historicalLow.toLocaleString("tr-TR")} {game.currency}
+                      {formatPrice(historicalLow)} {game.currency}
                     </strong>
                   </div>
                 </div>
@@ -374,7 +375,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                   <div suppressHydrationWarning>
                     <span className="text-zinc-400">Gözlem Tarihi: </span>
                     <strong className="text-zinc-300">
-                      {new Date(game.historicalLowAt).toLocaleDateString("tr-TR")}
+                      {formatDate(game.historicalLowAt)}
                     </strong>
                   </div>
                 </div>
@@ -430,7 +431,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                 <div className="text-sm font-bold text-white">
                   {bundleSavings > 0 ? (
                     <span className="text-emerald-400 font-extrabold">
-                      %{bundleSavingsPercent} Avantaj ({bundleSavings.toLocaleString("tr-TR")} TL Kazanç)
+                      %{bundleSavingsPercent} Avantaj ({formatPrice(bundleSavings)} TL Kazanç)
                     </span>
                   ) : bundleSavings === 0 ? (
                     <span className="text-zinc-300">Fiyatlar Eşit</span>
@@ -458,28 +459,28 @@ export default async function GameDetailPage({ params }: GamePageProps) {
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                 <span className="text-[11px] text-zinc-400 block mb-1">Ayrı Ayrı Satış Fiyatları Toplamı</span>
                 <span className="text-lg font-bold text-zinc-200">
-                  {sumChildPrices.toLocaleString("tr-TR")} {game.currency}
+                  {formatPrice(sumChildPrices)} {game.currency}
                 </span>
                 {sumChildListPrices > sumChildPrices && (
                   <span className="text-xs text-zinc-500 line-through block">
-                    {sumChildListPrices.toLocaleString("tr-TR")} {game.currency} liste
+                    {formatPrice(sumChildListPrices)} {game.currency} liste
                   </span>
                 )}
               </div>
               <div className="rounded-xl border border-purple-500/30 bg-purple-950/40 p-4">
                 <span className="text-[11px] text-purple-300 block mb-1">Paket Satış Fiyatı</span>
                 <span className="text-lg font-black text-purple-200">
-                  {currentPrice.toLocaleString("tr-TR")} {game.currency}
+                  {formatPrice(currentPrice)} {game.currency}
                 </span>
               </div>
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                 <span className="text-[11px] text-zinc-400 block mb-1">Paket Avantaj Durumu</span>
                 <span className={`text-base font-bold ${bundleSavings > 0 ? "text-emerald-400" : "text-zinc-300"}`}>
                   {bundleSavings > 0
-                    ? `${bundleSavings.toLocaleString("tr-TR")} TL Daha Ucuz`
+                    ? `${formatPrice(bundleSavings)} TL Daha Ucuz`
                     : bundleSavings === 0
                     ? "Aynı Fiyat"
-                    : `${Math.abs(bundleSavings).toLocaleString("tr-TR")} TL Daha Pahalı`}
+                    : `${formatPrice(Math.abs(bundleSavings))} TL Daha Pahalı`}
                 </span>
               </div>
             </div>
@@ -525,7 +526,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                       </h5>
                       <div className="mt-1 flex items-baseline gap-2 text-xs">
                         <span className="font-bold text-white">
-                          {child.currentPrice.toNumber().toLocaleString("tr-TR")} {child.currency}
+                          {formatPrice(child.currentPrice.toNumber())} {child.currency}
                         </span>
                         {child.discountPercent > 0 && (
                           <span className="text-[10px] text-emerald-400 font-semibold">
@@ -607,7 +608,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                     </h5>
                     <div className="mt-1 flex items-baseline gap-2 text-xs">
                       <span className="font-bold text-white">
-                        {dlc.currentPrice.toNumber().toLocaleString("tr-TR")} {dlc.currency}
+                        {formatPrice(dlc.currentPrice.toNumber())} {dlc.currency}
                       </span>
                       {dlc.discountPercent > 0 && (
                         <span className="text-[10px] text-emerald-400 font-semibold">
@@ -702,13 +703,13 @@ export default async function GameDetailPage({ params }: GamePageProps) {
               {game.priceHistories.map((h) => (
                 <tr key={h.id} className="hover:bg-zinc-800/30">
                   <td className="py-2.5 px-3 font-sans text-zinc-300" suppressHydrationWarning>
-                    {new Date(h.observedAt).toLocaleString("tr-TR")}
+                    {formatDateTime(h.observedAt)}
                   </td>
                   <td className="py-2.5 px-3 font-bold text-emerald-400">
-                    {h.currentPrice.toNumber().toLocaleString("tr-TR")} {h.currency}
+                    {formatPrice(h.currentPrice.toNumber())} {h.currency}
                   </td>
                   <td className="py-2.5 px-3 text-zinc-400">
-                    {h.listPrice.toNumber().toLocaleString("tr-TR")} {h.currency}
+                    {formatPrice(h.listPrice.toNumber())} {h.currency}
                   </td>
                   <td className="py-2.5 px-3">
                     {h.discountPercent > 0 ? (

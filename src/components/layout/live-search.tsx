@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Search, Loader2, Sparkles, Tag, ArrowRight } from "lucide-react";
 import { ProductClass } from "@prisma/client";
 import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
+import { formatPrice } from "@/lib/formatters";
 
 interface SearchResultItem {
   id: string;
@@ -226,11 +227,11 @@ export function LiveSearch({
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 text-[11px]">
                         <span className="font-bold text-emerald-400">
-                          {item.currentPrice.toLocaleString("tr-TR")} {item.currency}
+                          {formatPrice(item.currentPrice)} {item.currency}
                         </span>
                         {item.discountPercent > 0 && (
                           <span className="text-zinc-400 line-through text-[10px]">
-                            {item.listPrice.toLocaleString("tr-TR")} {item.currency}
+                            {formatPrice(item.listPrice)} {item.currency}
                           </span>
                         )}
                         {item.discountPercent > 0 && (
