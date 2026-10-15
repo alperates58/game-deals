@@ -38,6 +38,25 @@ services:
       postgres:
         condition: service_healthy
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: npm run worker
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-gamedeals}?schema=public
+      - APP_URL=${APP_URL:-https://game.alperates.com.tr}
+      - APP_TIMEZONE=Europe/Istanbul
+      - XBOX_MARKET=TR
+      - XBOX_LANGUAGE=tr-TR
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_started
+
 volumes:
   pgdata:
   backups_data:

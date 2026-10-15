@@ -39,6 +39,8 @@ COPY --chown=nextjs:nodejs next.config.* ./
 COPY --chown=nextjs:nodejs prisma ./prisma
 COPY --chown=nextjs:nodejs scripts ./scripts
 COPY --chown=nextjs:nodejs public ./public
+COPY --chown=nextjs:nodejs src ./src
+COPY --chown=nextjs:nodejs tsconfig.json ./tsconfig.json
 
 # Only this lightweight layer updates on UI/code changes
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next

@@ -23,4 +23,5 @@ Thumbs.db
 *.dump
 *.backup
 *.sql
+!prisma/migrations/**/*.sql
 !prisma/seed.dump

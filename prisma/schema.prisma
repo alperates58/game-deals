@@ -364,3 +364,43 @@ model DatabaseBackup {
   @@index([startedAt(sort: Desc)])
 }
 
+enum ScheduledJobType {
+  CATALOG_DISCOVERY
+  PRICE_SYNC
+  METADATA_REFRESH
+  RELATIONSHIP_REFRESH
+}
+
+enum ScheduledJobStatus {
+  IDLE
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+model ScheduledJobState {
+  id                 String             @id @default(cuid())
+  jobType            ScheduledJobType   @unique
+  enabled            Boolean            @default(true)
+  lastStartedAt      DateTime?
+  lastFinishedAt     DateTime?
+  lastSuccessAt      DateTime?
+  nextRunAt          DateTime?
+  lastStatus         ScheduledJobStatus @default(IDLE)
+  lastErrorSummary   String?
+  lastDurationMs     Int?
+  lastItemsProcessed Int                @default(0)
+  lastItemsAdded     Int                @default(0)
+  lastItemsChanged   Int                @default(0)
+  lastErrorCount     Int                @default(0)
+  last429Count       Int                @default(0)
+  last5xxCount       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([jobType])
+  @@index([nextRunAt])
+}
+

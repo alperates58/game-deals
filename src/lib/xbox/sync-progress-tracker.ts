@@ -6,6 +6,7 @@ export interface SyncLogEntry {
 
 export interface SyncProgressState {
   isRunning: boolean;
+  status?: "IDLE" | "RUNNING" | "COMPLETED" | "FAILED";
   action: "CATALOG_DISCOVERY" | "PRICE_SYNC" | "FULL_CATALOG_CRAWL" | null;
   isFullCrawl?: boolean;
   isCancelRequested?: boolean;
@@ -28,6 +29,7 @@ class SyncProgressTracker {
   private cancelRequested = false;
   private state: SyncProgressState = {
     isRunning: false,
+    status: "IDLE",
     action: null,
     isFullCrawl: false,
     isCancelRequested: false,
@@ -75,6 +77,7 @@ class SyncProgressTracker {
     this.cancelRequested = false;
     this.state = {
       isRunning: true,
+      status: "RUNNING",
       action,
       isFullCrawl,
       isCancelRequested: false,
@@ -162,6 +165,7 @@ class SyncProgressTracker {
 
   public finishSync(summaryMessage: string, stats?: any) {
     this.state.isRunning = false;
+    this.state.status = "COMPLETED";
     this.state.progressPercent = 100;
     this.state.currentPhase = "Tamamlandı";
     this.state.completedAt = new Date().toISOString();
@@ -175,6 +179,7 @@ class SyncProgressTracker {
 
   public failSync(errorMessage: string) {
     this.state.isRunning = false;
+    this.state.status = "FAILED";
     this.state.errorSummary = errorMessage;
     this.state.currentPhase = `Hata: ${errorMessage}`;
     this.addLog(`İşlem durduruldu: ${errorMessage}`, "error");
@@ -188,6 +193,7 @@ class SyncProgressTracker {
     this.cancelRequested = false;
     this.state = {
       isRunning: false,
+      status: "IDLE",
       action: null,
       isFullCrawl: false,
       isCancelRequested: false,

@@ -40,6 +40,8 @@ import {
 } from "lucide-react";
 import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
 import type { SyncProgressState } from "@/lib/xbox/sync-progress-tracker";
+import { ScheduledJobsTable } from "./scheduled-jobs-table";
+import { CatalogQualityPanel } from "./catalog-quality-panel";
 import Link from "next/link";
 
 export interface EnrichedGameItem {
@@ -117,7 +119,7 @@ export function SettingsCenter({
   const [scheduleInfo, setScheduleInfo] = useState<SchedulerScheduleInfo | undefined>(initialScheduleInfo);
   const [backups, setBackups] = useState<BackupItem[]>(initialBackups);
 
-  const [activeTab, setActiveTab] = useState<"general" | "scheduler" | "catalog" | "backup" | "manual">("scheduler");
+  const [activeTab, setActiveTab] = useState<"general" | "scheduler" | "catalog" | "backup" | "manual" | "quality">("scheduler");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -412,8 +414,9 @@ export function SettingsCenter({
     }
   };
 
-  // Trigger Action handler
-  const handleTriggerAction = async (action: "PRICE_SYNC" | "CATALOG_DISCOVERY" | "FULL_CATALOG_CRAWL") => {
+  const handleTriggerAction = async (
+    action: "PRICE_SYNC" | "CATALOG_DISCOVERY" | "FULL_CATALOG_CRAWL" | "METADATA_REFRESH" | "RELATIONSHIP_REFRESH"
+  ) => {
     setIsTriggering(true);
     setTriggerAction(action);
     setTriggerMessage(null);
@@ -653,7 +656,7 @@ export function SettingsCenter({
   };
 
   const navItems: {
-    id: "scheduler" | "backup" | "catalog" | "general" | "manual";
+    id: "scheduler" | "quality" | "backup" | "catalog" | "general" | "manual";
     title: string;
     subtitle: string;
     icon: any;
@@ -663,6 +666,12 @@ export function SettingsCenter({
       title: "Zamanlayıcı & Keşif",
       subtitle: "Otomatik tarama & senkron",
       icon: Clock,
+    },
+    {
+      id: "quality",
+      title: "Katalog Sağlığı",
+      subtitle: "Veri kalitesi & anomaliler",
+      icon: Activity,
     },
     {
       id: "backup",
@@ -694,7 +703,7 @@ export function SettingsCenter({
     <div className="space-y-6">
       {/* Responsive Bento Grid Navigation Selector (No horizontal overflow) */}
       <div
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"
         role="tablist"
         aria-label="Ayarlar Bölümleri"
       >
@@ -852,6 +861,26 @@ export function SettingsCenter({
                     <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
                     <span>Şimdi Fiyatları Güncelle</span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerAction("METADATA_REFRESH")}
+                    disabled={isTriggering}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3.5 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                  >
+                    <Clock className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "METADATA_REFRESH" ? "animate-spin" : ""}`} />
+                    <span>Metadata Tazele</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerAction("RELATIONSHIP_REFRESH")}
+                    disabled={isTriggering}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-3.5 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                  >
+                    <Layers className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "RELATIONSHIP_REFRESH" ? "animate-spin" : ""}`} />
+                    <span>İlişkileri Doğrula</span>
+                  </button>
                 </div>
 
                 {/* Force Unlock Button */}
@@ -1007,6 +1036,9 @@ export function SettingsCenter({
               </div>
             )}
           </div>
+
+          {/* Autonomous Operations Telemetry Table */}
+          <ScheduledJobsTable />
 
           {/* Schedule Status & Telemetry Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1707,6 +1739,11 @@ export function SettingsCenter({
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: CATALOG QUALITY (FAZ 1.4) */}
+      {activeTab === "quality" && (
+        <CatalogQualityPanel />
       )}
 
       {/* TAB 2: BACKUP & RESTORE CENTER */}

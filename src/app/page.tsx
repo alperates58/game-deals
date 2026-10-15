@@ -298,7 +298,7 @@ export default async function HomePage() {
               </div>
               <p className="text-[11px] text-zinc-400 font-medium mt-0.5 flex items-center justify-between">
                 <span>Aktif İndirim</span>
-                <span className="text-[10px] text-zinc-500 font-normal">Kataloğun %{Math.round((data.activeDealsCount / (data.totalGames || 1)) * 100)}'u</span>
+                <span className="text-[10px] text-zinc-500 font-normal">Kataloğun %{Math.round((data.activeDealsCount / (data.totalGames || 1)) * 100)}&apos;u</span>
               </p>
             </Link>
 

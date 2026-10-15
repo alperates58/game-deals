@@ -215,7 +215,10 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
       const allAvails = [...(dsa.Availabilities || []), ...(dsa.HistoricalBestAvailabilities || [])];
       for (const avail of allAvails) {
         const priceObj = avail.OrderManagementData?.Price;
-        if (typeof priceObj?.ListPrice === "number") {
+        if (
+          typeof priceObj?.ListPrice === "number" &&
+          (priceObj?.CurrencyCode === "TRY" || priceObj.ListPrice === 0)
+        ) {
           purchaseAvailability = avail;
           break;
         }
