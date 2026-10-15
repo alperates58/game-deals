@@ -105,6 +105,74 @@ export default async function GameDetailPage({ params }: GamePageProps) {
     notFound();
   }
 
+  // On-demand bundle content auto-recovery if bundle is missing children
+  if (game.productClass === "BUNDLE" && game.childRelations.length <= 1) {
+    try {
+      const { catalogClient } = await import("@/lib/xbox/catalog-client");
+      const { processNormalizedProduct } = await import("@/lib/pricing/price-sync");
+      const { qualifyXboxSeriesPlatform } = await import("@/lib/xbox/platform-qualifier");
+
+      const [freshBundle] = await catalogClient.fetchProductsBatch([game.xboxProductId]);
+      if (freshBundle?.bundledProductIds && freshBundle.bundledProductIds.length > game.childRelations.length) {
+        const existingChildBigIds = new Set(game.childRelations.map((r) => r.childGame.xboxProductId));
+        const missingChildIds = freshBundle.bundledProductIds.filter((id) => !existingChildBigIds.has(id));
+
+        if (missingChildIds.length > 0) {
+          const fetchedChildren = await catalogClient.fetchProductsBatch(missingChildIds);
+          for (let i = 0; i < fetchedChildren.length; i++) {
+            const cp = fetchedChildren[i];
+            const qual = qualifyXboxSeriesPlatform({
+              productId: cp.productId,
+              availableOn: cp.platforms,
+              currentPrice: cp.currentPrice,
+              listPrice: cp.listPrice,
+              isFree: cp.isFree,
+              productType: cp.productType,
+              parentIsSeriesCompatible: true,
+            });
+
+            if (qual.isQualified) {
+              await processNormalizedProduct(cp, {
+                discoverySource: "BUNDLE_CHILD",
+                platforms: qual.platforms,
+                isSeriesXCompatible: true,
+              });
+              const childInDb = await prisma.game.findUnique({ where: { xboxProductId: cp.productId } });
+              if (childInDb) {
+                await prisma.gameRelation.upsert({
+                  where: {
+                    parentGameId_childGameId_relationType: {
+                      parentGameId: game.id,
+                      childGameId: childInDb.id,
+                      relationType: RelationType.BUNDLE_CONTAINS,
+                    },
+                  },
+                  create: {
+                    parentGameId: game.id,
+                    childGameId: childInDb.id,
+                    relationType: RelationType.BUNDLE_CONTAINS,
+                    position: game.childRelations.length + i,
+                    source: "MICROSOFT_DISPLAY_CATALOG",
+                  },
+                  update: {},
+                });
+              }
+            }
+          }
+
+          // Re-fetch updated child relations
+          game.childRelations = await prisma.gameRelation.findMany({
+            where: { parentGameId: game.id, relationType: RelationType.BUNDLE_CONTAINS },
+            include: { childGame: true },
+            orderBy: { position: "asc" },
+          });
+        }
+      }
+    } catch (enrichErr: any) {
+      console.warn(`[GameDetail] On-demand bundle enrichment notice:`, enrichErr.message);
+    }
+  }
+
   // Also query DLCs/Addons if this is a BASE_GAME or has child add-ons
   const addOnRelations = await prisma.gameRelation.findMany({
     where: {

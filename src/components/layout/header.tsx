@@ -60,8 +60,8 @@ export async function Header() {
           </nav>
         </div>
 
-        {/* Center / Right: Live Search */}
-        <div className="flex-1 flex justify-end max-w-xs sm:max-w-sm lg:max-w-md min-w-0">
+        {/* Center / Right: Live Search (Desktop only, mobile search is in sidebar drawer) */}
+        <div className="hidden md:flex flex-1 justify-end max-w-sm md:max-w-md lg:max-w-lg min-w-0">
           <LiveSearch />
         </div>
 

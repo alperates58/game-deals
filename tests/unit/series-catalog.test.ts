@@ -32,7 +32,7 @@ describe("Series X|S Platform Qualifier Tests", () => {
     expect(result.isCrossGen).toBe(true);
   });
 
-  it("should reject PC-only products", () => {
+  it("should qualify PC products when paid", () => {
     const result = qualifyXboxSeriesPlatform({
       productId: "PCONLY123",
       availableOn: ["PC"],
@@ -43,11 +43,11 @@ describe("Series X|S Platform Qualifier Tests", () => {
       isFree: false,
     });
 
-    expect(result.isQualified).toBe(false);
-    expect(result.reason).toBe("REJECTED_PC_ONLY");
+    expect(result.isQualified).toBe(true);
+    expect(result.reason).toBe("QUALIFIED_SERIES_XS");
   });
 
-  it("should reject Xbox One-only products with no Series X|S support", () => {
+  it("should qualify Xbox One products when paid", () => {
     const result = qualifyXboxSeriesPlatform({
       productId: "XB1ONLY123",
       availableOn: ["XboxOne"],
@@ -58,8 +58,8 @@ describe("Series X|S Platform Qualifier Tests", () => {
       isFree: false,
     });
 
-    expect(result.isQualified).toBe(false);
-    expect(result.reason).toBe("REJECTED_XBOX_ONE_ONLY");
+    expect(result.isQualified).toBe(true);
+    expect(result.reason).toBe("QUALIFIED_SERIES_XS");
   });
 
   it("should reject free products from primary catalog", () => {

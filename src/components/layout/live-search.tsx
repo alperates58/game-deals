@@ -65,7 +65,7 @@ export function LiveSearch({
 
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=8`, {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}&limit=10`, {
           signal: controller.signal,
         });
         if (res.ok) {
@@ -137,22 +137,22 @@ export function LiveSearch({
   const getClassBadge = (pClass: ProductClass) => {
     switch (pClass) {
       case "BASE_GAME":
-        return <span className="rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/40 px-1.5 py-0.5 text-[9px] font-semibold">Oyun</span>;
+        return <span className="rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800/40 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">Oyun</span>;
       case "BUNDLE":
-        return <span className="rounded bg-purple-950/80 text-purple-300 border border-purple-800/40 px-1.5 py-0.5 text-[9px] font-semibold">Paket</span>;
+        return <span className="rounded bg-purple-950/80 text-purple-300 border border-purple-800/40 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">Paket</span>;
       case "DLC":
-        return <span className="rounded bg-blue-950/80 text-blue-300 border border-blue-800/40 px-1.5 py-0.5 text-[9px] font-semibold">DLC</span>;
+        return <span className="rounded bg-blue-950/80 text-blue-300 border border-blue-800/40 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">DLC</span>;
       case "SEASON_PASS":
-        return <span className="rounded bg-amber-950/80 text-amber-300 border border-amber-800/40 px-1.5 py-0.5 text-[9px] font-semibold">Sezon Bileti</span>;
+        return <span className="rounded bg-amber-950/80 text-amber-300 border border-amber-800/40 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">Sezon Bileti</span>;
       case "EXPANSION":
-        return <span className="rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/40 px-1.5 py-0.5 text-[9px] font-semibold">Genişletme</span>;
+        return <span className="rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/40 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">Genişletme</span>;
       default:
-        return <span className="rounded bg-zinc-800 text-zinc-300 border border-zinc-700 px-1.5 py-0.5 text-[9px] font-semibold">Eklenti</span>;
+        return <span className="rounded bg-zinc-800 text-zinc-300 border border-zinc-700 px-1.5 py-0.5 text-[9px] font-semibold shrink-0">Eklenti</span>;
     }
   };
 
   return (
-    <div ref={containerRef} className={className || "relative w-full min-w-0 max-w-xs sm:max-w-sm lg:max-w-md"}>
+    <div ref={containerRef} className={className || "relative w-full min-w-0 max-w-sm md:max-w-md lg:max-w-lg"}>
       <div className="relative">
         <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 sm:h-4 w-3.5 sm:w-4 text-zinc-400 pointer-events-none" />
         <input
@@ -175,14 +175,14 @@ export function LiveSearch({
         )}
       </div>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu - Widen for desktop to prevent truncating titles */}
       {isOpen && query.trim().length >= 2 && (
-        <div className="absolute top-full right-0 sm:left-0 sm:right-0 mt-2 z-50 w-[min(340px,calc(100vw-32px))] sm:w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/95 shadow-2xl backdrop-blur-md">
+        <div className="absolute top-full right-0 mt-2 z-50 w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-w-[92vw] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/98 shadow-2xl backdrop-blur-md">
           {results.length > 0 ? (
-            <div className="divide-y divide-zinc-800/60 max-h-[420px] overflow-y-auto">
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/50 flex items-center justify-between">
-                <span>Veritabanı Sonuçları ({results.length})</span>
-                <span className="text-zinc-400">↑↓ seç, Enter git</span>
+            <div className="divide-y divide-zinc-800/60 max-h-[460px] overflow-y-auto">
+              <div className="px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/60 flex items-center justify-between">
+                <span>Arama Sonuçları ({results.length})</span>
+                <span className="text-zinc-500">↑↓ seç, Enter git</span>
               </div>
 
               {results.map((item, index) => {
@@ -196,18 +196,18 @@ export function LiveSearch({
                       router.push(`/oyun/${item.slug}`);
                     }}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center gap-3 p-2.5 cursor-pointer transition-colors ${
+                    className={`flex items-center gap-3 p-2.5 sm:p-3 cursor-pointer transition-colors ${
                       isSelected ? "bg-zinc-800/90" : "hover:bg-zinc-800/50"
                     }`}
                   >
                     {/* Thumbnail */}
-                    <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded bg-zinc-950 border border-zinc-800">
+                    <div className="relative h-14 w-10.5 shrink-0 overflow-hidden rounded-lg bg-zinc-950 border border-zinc-800">
                       {item.imageUrl ? (
                         <Image
                           src={getOptimizedImageUrl(item.imageUrl, "thumb")}
                           alt={item.title}
                           fill
-                          sizes="36px"
+                          sizes="42px"
                           className="object-cover"
                         />
                       ) : (
@@ -219,26 +219,26 @@ export function LiveSearch({
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-xs font-semibold text-zinc-100">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-xs sm:text-sm font-semibold text-zinc-100 hover:text-emerald-400 transition-colors">
                           {item.title}
                         </span>
                         {getClassBadge(item.productClass)}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px]">
-                        <span className="font-bold text-emerald-400">
-                          {formatPrice(item.currentPrice)} {item.currency}
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <span className="text-[11px] text-zinc-400 truncate max-w-[220px]">
+                          {item.publisher || "Xbox Mağazası"}
                         </span>
-                        {item.discountPercent > 0 && (
-                          <span className="text-zinc-400 line-through text-[10px]">
-                            {formatPrice(item.listPrice)} {item.currency}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {item.discountPercent > 0 && (
+                            <span className="rounded bg-emerald-950/80 border border-emerald-500/30 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                              -%{item.discountPercent}
+                            </span>
+                          )}
+                          <span className="font-bold text-emerald-400 text-xs sm:text-sm">
+                            {formatPrice(item.currentPrice)} {item.currency}
                           </span>
-                        )}
-                        {item.discountPercent > 0 && (
-                          <span className="rounded bg-emerald-950 px-1 py-0.2 text-[10px] font-bold text-emerald-400">
-                            %{item.discountPercent}
-                          </span>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>

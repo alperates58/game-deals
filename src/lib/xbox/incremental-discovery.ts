@@ -194,6 +194,62 @@ export async function runIncrementalDiscovery(
     });
     const dbMap = new Map(dbGames.map((g) => [g.xboxProductId, g]));
 
+    // Auto-enrich any missing bundled child products from Microsoft Catalog
+    const missingChildIds = new Set<string>();
+    for (const prod of enrichedList) {
+      if (prod.bundledProductIds && prod.bundledProductIds.length > 0) {
+        for (const childId of prod.bundledProductIds) {
+          if (!dbMap.has(childId)) {
+            missingChildIds.add(childId);
+          }
+        }
+      }
+    }
+
+    if (missingChildIds.size > 0) {
+      syncProgressTracker.addLog(
+        `${missingChildIds.size} adet eksik paket içeriği (oyun/DLC) Microsoft mağazasından tamamlanıyor...`,
+        "info"
+      );
+      const missingList = Array.from(missingChildIds);
+      const childBatchSize = 20;
+      for (let i = 0; i < missingList.length; i += childBatchSize) {
+        if (syncProgressTracker.isCancelled()) break;
+        const chunk = missingList.slice(i, i + childBatchSize);
+        try {
+          const childProducts = await catalogClient.fetchProductsBatch(chunk);
+          for (const cp of childProducts) {
+            const qual = qualifyXboxSeriesPlatform({
+              productId: cp.productId,
+              availableOn: cp.platforms,
+              currentPrice: cp.currentPrice,
+              listPrice: cp.listPrice,
+              isFree: cp.isFree,
+              productType: cp.productType,
+              parentIsSeriesCompatible: true,
+            });
+
+            if (qual.isQualified) {
+              await processNormalizedProduct(cp, {
+                discoverySource: "BUNDLE_CHILD",
+                platforms: qual.platforms,
+                isSeriesXCompatible: true,
+              });
+              const newChild = await prisma.game.findUnique({
+                where: { xboxProductId: cp.productId },
+                select: { id: true, xboxProductId: true, productClass: true },
+              });
+              if (newChild) {
+                dbMap.set(newChild.xboxProductId, newChild);
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error(`[IncrementalDiscovery] Error auto-enriching bundle children:`, err.message);
+        }
+      }
+    }
+
     for (const prod of enrichedList) {
       const parentInDb = dbMap.get(prod.productId);
       if (!parentInDb) continue;

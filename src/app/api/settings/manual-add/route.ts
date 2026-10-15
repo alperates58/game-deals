@@ -107,9 +107,11 @@ export async function POST(req: Request) {
     if (product.bundledProductIds && product.bundledProductIds.length > 0) {
       const childProducts = await client.fetchAllInBatches(product.bundledProductIds);
       for (let i = 0; i < childProducts.length; i++) {
-        const cp = childProducts[i];
         try {
-          await processNormalizedProduct(cp, "İlişkili İçerik", false);
+          await processNormalizedProduct(cp, {
+            discoverySource: "BUNDLE_CHILD",
+            isSeriesXCompatible: true,
+          });
           const childGame = await prisma.game.findUnique({ where: { xboxProductId: cp.productId } });
           if (childGame) {
             await prisma.gameRelation.upsert({

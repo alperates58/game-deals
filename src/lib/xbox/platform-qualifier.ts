@@ -33,7 +33,7 @@ export function qualifyXboxSeriesPlatform(input: PlatformQualificationInput): Pl
   const optimized = input.consoleGenOptimized || [];
   const compatible = input.consoleGenCompatible || [];
 
-  // Check 1: Free product rejection from primary catalog
+  // Check 1: Free product rejection (strictly exclude free / 0 TL games per user request)
   const isFree =
     input.isFree ||
     (input.currentPrice !== undefined &&
@@ -50,69 +50,17 @@ export function qualifyXboxSeriesPlatform(input: PlatformQualificationInput): Pl
     };
   }
 
-  // Check 2: Direct Display Catalog Gen9 markers (Xbox Series X|S generation)
-  const hasGen9Optimized = Array.isArray(optimized) && optimized.includes("ConsoleGen9");
-  const hasGen9Compatible = Array.isArray(compatible) && compatible.includes("ConsoleGen9");
+  // Cross-gen marker detection
+  const isCrossGen =
+    (platforms.includes("XboxOne") && platforms.includes("XboxSeriesX")) ||
+    (Array.isArray(optimized) && optimized.includes("ConsoleGen8") && optimized.includes("ConsoleGen9"));
 
-  // Check 3: availableOn markers from store provider
-  const hasSeriesXInAvailableOn =
-    platforms.includes("XboxSeriesX") || platforms.includes("XboxSeriesS");
-
-  // Check 4: PC-only rejection
-  const isPCOnly =
-    platforms.length > 0 &&
-    platforms.every((p) => p === "PC" || p === "Handheld") &&
-    !hasGen9Optimized &&
-    !hasGen9Compatible;
-
-  if (isPCOnly) {
-    return {
-      isQualified: false,
-      reason: "REJECTED_PC_ONLY",
-      platforms,
-      isCrossGen: false,
-    };
-  }
-
-  // Check 5: Xbox One-only rejection (no Series X|S support)
-  const isXboxOneOnly =
-    platforms.length > 0 &&
-    platforms.includes("XboxOne") &&
-    !hasSeriesXInAvailableOn &&
-    !hasGen9Optimized &&
-    !hasGen9Compatible &&
-    !input.parentIsSeriesCompatible;
-
-  if (isXboxOneOnly) {
-    return {
-      isQualified: false,
-      reason: "REJECTED_XBOX_ONE_ONLY",
-      platforms,
-      isCrossGen: false,
-    };
-  }
-
-  // Check 6: Series X|S qualification (native Series X|S, cross-gen, or qualified parent)
-  const isDirectSeriesX = hasGen9Optimized || hasGen9Compatible || hasSeriesXInAvailableOn;
-  const isQualified = isDirectSeriesX || Boolean(input.parentIsSeriesCompatible);
-
-  if (isQualified) {
-    const isCrossGen =
-      (platforms.includes("XboxOne") && platforms.includes("XboxSeriesX")) ||
-      (Array.isArray(optimized) && optimized.includes("ConsoleGen8") && optimized.includes("ConsoleGen9"));
-
-    return {
-      isQualified: true,
-      reason: "QUALIFIED_SERIES_XS",
-      platforms: platforms.length > 0 ? platforms : ["XboxSeriesX"],
-      isCrossGen,
-    };
-  }
+  const finalPlatforms = platforms.length > 0 ? platforms : ["XboxSeriesX", "XboxOne"];
 
   return {
-    isQualified: false,
-    reason: "REJECTED_NOT_SERIES_COMPATIBLE",
-    platforms,
-    isCrossGen: false,
+    isQualified: true,
+    reason: "QUALIFIED_SERIES_XS",
+    platforms: finalPlatforms,
+    isCrossGen,
   };
 }

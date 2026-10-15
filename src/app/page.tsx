@@ -39,7 +39,7 @@ async function getHomePageData() {
       where: { status: "COMPLETED" },
       orderBy: { finishedAt: "desc" },
     }),
-    // 12 Top deals for Hero Slider
+    // 15 Top deals for Hero Slider Tab 1
     prisma.game.findMany({
       where: {
         isActive: true,
@@ -52,7 +52,7 @@ async function getHomePageData() {
         { dealAnalysis: { dealScore: "desc" } },
         { discountPercent: "desc" },
       ],
-      take: 12,
+      take: 15,
     }),
     // Historical Lows (Truthful)
     prisma.game.findMany({
@@ -140,6 +140,23 @@ async function getHomePageData() {
         })
       : [];
 
+  // Recent price drops for Tab 2 (10 items)
+  let recentDrops = [...recentPriceChanges];
+  if (recentDrops.length < 10) {
+    const existingIds = new Set(recentDrops.map((g) => g.id));
+    const fillerGames = await prisma.game.findMany({
+      where: {
+        isActive: true,
+        discountPercent: { gt: 0 },
+        id: { notIn: Array.from(existingIds) },
+      },
+      include: { dealAnalysis: true },
+      orderBy: [{ updatedAt: "desc" }, { discountPercent: "desc" }],
+      take: 10 - recentDrops.length,
+    });
+    recentDrops = [...recentDrops, ...fillerGames];
+  }
+
   // Filter historical lows truthfully where currentPrice <= historicalLow
   const verifiedLows = historicalLows
     .filter((g) => g.currentPrice.toNumber() <= g.historicalLow.toNumber())
@@ -158,6 +175,7 @@ async function getHomePageData() {
     under150Deals,
     deepDiscounts,
     recentPriceChanges,
+    recentDrops: recentDrops.slice(0, 10),
   };
 }
 
@@ -182,10 +200,8 @@ function mapToCarouselItem(g: any): CarouselGameItem {
   };
 }
 
-export default async function HomePage() {
-  const data = await getHomePageData();
-
-  const featuredSliderDeals: FeaturedDealItem[] = data.bestDeals.map((g) => ({
+function mapToFeaturedDeal(g: any): FeaturedDealItem {
+  return {
     id: g.id,
     slug: g.slug,
     title: g.title,
@@ -203,7 +219,14 @@ export default async function HomePage() {
           verdict: g.dealAnalysis.verdict,
         }
       : null,
-  }));
+  };
+}
+
+export default async function HomePage() {
+  const data = await getHomePageData();
+
+  const featuredTopDeals: FeaturedDealItem[] = data.bestDeals.slice(0, 15).map(mapToFeaturedDeal);
+  const featuredRecentDrops: FeaturedDealItem[] = data.recentDrops.slice(0, 10).map(mapToFeaturedDeal);
 
   const historicalLowCarouselItems = data.verifiedLows.map(mapToCarouselItem);
   const deepDiscountsCarouselItems = data.deepDiscounts.map(mapToCarouselItem);
@@ -305,9 +328,9 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {/* Right Column: 12-Game Featured Deals Slider */}
+        {/* Right Column: 25-Game Dual Featured Deals Slider (Top Deals + Recent Drops) */}
         <div className="lg:col-span-7 flex flex-col">
-          <FeaturedDealsSlider deals={featuredSliderDeals} />
+          <FeaturedDealsSlider topDeals={featuredTopDeals} recentDrops={featuredRecentDrops} />
         </div>
       </section>
 

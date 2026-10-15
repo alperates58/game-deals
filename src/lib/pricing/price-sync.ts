@@ -40,8 +40,17 @@ export async function processNormalizedProduct(
   const effectivePlatforms = options.platforms || product.platforms || [];
   const effectiveSeriesX = options.isSeriesXCompatible ?? true;
   const effectiveSource = options.discoverySource || "FULL_CATALOG";
-  // Exclude free games or zero price items per scope rules
-  if (product.isFree || (product.currentPrice === 0 && product.listPrice === 0)) {
+  // Exclude free games or zero price items per scope rules, EXCEPT for bundles and package contents
+  const isBundleOrPackageItem =
+    product.productClass === "BUNDLE" ||
+    options.discoverySource === "BUNDLE_CHILD" ||
+    Boolean((options as any).allowFree) ||
+    product.productClass === "DLC" ||
+    product.productClass === "EXPANSION" ||
+    product.productClass === "ADDON" ||
+    (product.bundledProductIds && product.bundledProductIds.length > 0);
+
+  if ((product.isFree || (product.currentPrice === 0 && product.listPrice === 0)) && !isBundleOrPackageItem) {
     return { added: false, priceChanged: false, skipped: true };
   }
 
@@ -109,7 +118,7 @@ export async function processNormalizedProduct(
         storeUrl: product.storeUrl,
         isCore: effectiveIsCore,
         isActive: true,
-        isFree: false,
+        isFree: Boolean(product.isFree || (product.currentPrice === 0 && product.listPrice === 0)),
         platforms: effectivePlatforms,
         isSeriesXCompatible: effectiveSeriesX,
         discoverySource: effectiveSource,

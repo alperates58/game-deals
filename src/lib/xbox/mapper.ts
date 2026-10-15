@@ -194,20 +194,43 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     platforms.push("Xbox");
   }
 
-  // Authoritative Bundled child IDs
-  const bundledProductIds: string[] = [];
-  const rawBundledSkus = skuWithBundles?.Properties?.BundledSkus;
-  if (Array.isArray(rawBundledSkus)) {
-    for (const item of rawBundledSkus) {
-      if (item.BigId) {
-        bundledProductIds.push(item.BigId.toUpperCase());
+  // Authoritative Bundled child IDs (Aggregated across all SKUs & RelatedProducts)
+  const bundledProductIdsSet = new Set<string>();
+  let hasAnyBundleFlag = false;
+
+  for (const dsa of raw.DisplaySkuAvailabilities || []) {
+    const sku = dsa.Sku;
+    if (sku?.Properties?.IsBundle) {
+      hasAnyBundleFlag = true;
+    }
+    const rawBundledSkus = sku?.Properties?.BundledSkus;
+    if (Array.isArray(rawBundledSkus)) {
+      for (const item of rawBundledSkus) {
+        if (item.BigId) {
+          bundledProductIdsSet.add(item.BigId.trim().toUpperCase());
+        }
       }
     }
   }
 
+  // Also check MarketProperties RelatedProducts for bundle contents
+  const marketProp = raw.MarketProperties?.[0];
+  if (marketProp?.RelatedProducts && Array.isArray(marketProp.RelatedProducts)) {
+    for (const r of marketProp.RelatedProducts) {
+      const relType = (r.RelationshipType || "").toLowerCase();
+      if (
+        (relType.includes("bundle") || relType.includes("include") || relType.includes("package")) &&
+        r.RelatedProductId
+      ) {
+        bundledProductIdsSet.add(r.RelatedProductId.trim().toUpperCase());
+      }
+    }
+  }
+
+  const bundledProductIds = Array.from(bundledProductIdsSet);
+
   // Authoritative addOnParent ID
   let parentProductId: string | undefined = undefined;
-  const marketProp = raw.MarketProperties?.[0];
   if (marketProp?.RelatedProducts && Array.isArray(marketProp.RelatedProducts)) {
     const parentRel = marketProp.RelatedProducts.find(
       (r) => r.RelationshipType === "addOnParent"
@@ -218,7 +241,7 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
   }
 
   // Determine ProductClass
-  const isBundle = Boolean(skuWithBundles?.Properties?.IsBundle);
+  const isBundle = hasAnyBundleFlag || bundledProductIds.length > 0;
   const productClass = determineProductClass(
     title,
     raw.ProductType || "Game",

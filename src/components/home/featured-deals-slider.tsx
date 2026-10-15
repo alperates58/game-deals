@@ -35,10 +35,13 @@ export interface FeaturedDealItem {
 }
 
 interface FeaturedDealsSliderProps {
-  deals: FeaturedDealItem[];
+  deals?: FeaturedDealItem[];
+  topDeals?: FeaturedDealItem[];
+  recentDrops?: FeaturedDealItem[];
 }
 
-export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
+export function FeaturedDealsSlider({ deals, topDeals, recentDrops }: FeaturedDealsSliderProps) {
+  const [activeTab, setActiveTab] = useState<"top" | "drops">("top");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -50,7 +53,17 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
   const touchCurrentX = useRef<number | null>(null);
   const isHorizontalSwipe = useRef<boolean>(false);
 
-  const total = deals.length;
+  const effectiveTop = topDeals && topDeals.length > 0 ? topDeals : deals || [];
+  const effectiveDrops = recentDrops && recentDrops.length > 0 ? recentDrops : [];
+  const hasTabs = effectiveTop.length > 0 && effectiveDrops.length > 0;
+
+  const currentDeals = hasTabs && activeTab === "drops" ? effectiveDrops : effectiveTop;
+  const total = currentDeals.length;
+
+  const handleTabChange = (tab: "top" | "drops") => {
+    setActiveTab(tab);
+    setCurrentIndex(0);
+  };
 
   const nextSlide = useCallback(() => {
     if (total <= 1) return;
@@ -141,11 +154,11 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
     isHorizontalSwipe.current = false;
   };
 
-  if (!deals || deals.length === 0) {
+  if (total === 0) {
     return null;
   }
 
-  const current = deals[currentIndex];
+  const current = currentDeals[currentIndex];
   const isAtHistoricalLow =
     current.currentPrice <= current.historicalLow && current.discountPercent > 0;
 
@@ -203,20 +216,52 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
         </div>
       )}
 
-      {/* Header bar: Badge & Slide Controls */}
-      <div className="relative z-10 flex items-center justify-between gap-2 pb-3 sm:pb-4 border-b border-zinc-800/50">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="flex h-2 w-2 relative shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-400 truncate">
-            Günün Öne Çıkan Fırsatı
-          </span>
-        </div>
+      {/* Header bar: Dual Tabs / Badge & Slide Controls */}
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pb-3 sm:pb-4 border-b border-zinc-800/50">
+        {hasTabs ? (
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => handleTabChange("top")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold transition-all ${
+                activeTab === "top"
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent"
+              }`}
+            >
+              <Flame className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Günün Fırsatları</span>
+              <span className="text-[10px] opacity-80 font-mono">({effectiveTop.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("drops")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold transition-all ${
+                activeTab === "drops"
+                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 border border-transparent"
+              }`}
+            >
+              <TrendingDown className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Yeni Fiyatı Düşenler</span>
+              <span className="text-[10px] opacity-80 font-mono">({effectiveDrops.length})</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-2 w-2 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-400 truncate">
+              Günün Öne Çıkan Fırsatı
+            </span>
+          </div>
+        )}
 
         {/* Slide Counter & Arrows */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
           <span className="text-[11px] font-mono text-zinc-400 pr-1">
             <span className="text-zinc-200 font-semibold">
               {String(currentIndex + 1).padStart(2, "0")}
@@ -372,7 +417,7 @@ export function FeaturedDealsSlider({ deals }: FeaturedDealsSliderProps) {
       <div className="relative z-10 flex items-center justify-between pt-3 sm:pt-4 border-t border-zinc-800/60 mt-2 sm:mt-3">
         {/* Navigation Indicator Pills */}
         <div className="flex items-center gap-1.5">
-          {deals.map((deal, idx) => (
+          {currentDeals.map((deal, idx) => (
             <button
               key={deal.id}
               type="button"
