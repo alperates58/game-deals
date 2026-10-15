@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwner } from "@/lib/auth/session";
 import { syncProgressTracker } from "@/lib/xbox/sync-progress-tracker";
-import { forceReleaseAllAdvisoryLocks } from "@/lib/db/advisory-lock";
+import { resetStuckJobStates } from "@/lib/scheduler/job-runner";
 
 export async function GET() {
   try {
@@ -37,12 +37,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    if (body.action === "FORCE_UNLOCK") {
-      await forceReleaseAllAdvisoryLocks();
+    if (body.action === "FORCE_UNLOCK" || body.action === "RESET_STUCK_STATE") {
+      const { repairedJobs } = await resetStuckJobStates();
       syncProgressTracker.reset();
       return NextResponse.json({
         success: true,
-        message: "Tüm PostgreSQL advisory kilitleri ve tarama durumu başarıyla sıfırlandı.",
+        message:
+          repairedJobs.length > 0
+            ? `İlerleme durumu sıfırlandı ve takılı kalan ${repairedJobs.join(", ")} iş kaydı düzeltildi. (Not: PostgreSQL oturum kilitleri bağlantı kapandığında otomatik serbest bırakılır.)`
+            : "İlerleme durumu ve kilitler başarıyla sıfırlandı. (Not: PostgreSQL oturum kilitleri bağlantı kapandığında otomatik serbest bırakılır.)",
+        repairedJobs,
       });
     }
 

@@ -1,7 +1,7 @@
 import { prisma } from "../db/prisma";
 import { ScheduledJobType } from "@prisma/client";
 import { getSystemSettings } from "../settings/system-settings";
-import { runScheduledJob } from "./job-runner";
+import { runScheduledJob, reconcileStaleRunningJobs } from "./job-runner";
 
 export interface WorkerLoopOptions {
   pollIntervalMs?: number; // default: 30000 (30 seconds)
@@ -30,6 +30,11 @@ export class AutonomousWorker {
 
     const settings = await getSystemSettings();
     const now = new Date();
+
+    // Reconcile any stale RUNNING states left from an interrupted previous run
+    await reconcileStaleRunningJobs().catch((err) =>
+      console.error("[Worker] Error reconciling stale jobs on init:", err)
+    );
 
     for (const jobType of jobTypes) {
       const existing = await prisma.scheduledJobState.findUnique({
@@ -78,6 +83,11 @@ export class AutonomousWorker {
    * Returns list of jobs executed during this tick.
    */
   public async tick(): Promise<ScheduledJobType[]> {
+    // Reconcile any stale RUNNING states before evaluating due jobs
+    await reconcileStaleRunningJobs().catch((err) =>
+      console.error("[Worker] Error reconciling stale jobs on tick:", err)
+    );
+
     const now = new Date();
     const settings = await getSystemSettings();
     const states = await prisma.scheduledJobState.findMany();

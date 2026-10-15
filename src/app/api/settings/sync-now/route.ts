@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOwner } from "@/lib/auth/session";
-import { runScheduledJob } from "@/lib/scheduler/job-runner";
+import { runScheduledJob, resetStuckJobStates } from "@/lib/scheduler/job-runner";
 import { ScheduledJobType } from "@prisma/client";
-import { forceReleaseAllAdvisoryLocks } from "@/lib/db/advisory-lock";
 import { syncProgressTracker } from "@/lib/xbox/sync-progress-tracker";
 
 export async function POST(req: Request) {
@@ -25,7 +24,8 @@ export async function POST(req: Request) {
       | "FULL_CATALOG_CRAWL"
       | "METADATA_REFRESH"
       | "RELATIONSHIP_REFRESH"
-      | "FORCE_UNLOCK" = "PRICE_SYNC";
+      | "FORCE_UNLOCK"
+      | "RESET_STUCK_STATE" = "PRICE_SYNC";
     let limit: number | undefined;
     let maxPages: number | undefined;
 
@@ -44,12 +44,16 @@ export async function POST(req: Request) {
       // Body is optional
     }
 
-    if (action === "FORCE_UNLOCK") {
-      await forceReleaseAllAdvisoryLocks();
+    if (action === "FORCE_UNLOCK" || action === "RESET_STUCK_STATE") {
+      const { repairedJobs } = await resetStuckJobStates();
       syncProgressTracker.reset();
       return NextResponse.json({
         success: true,
-        message: "Tüm PostgreSQL kilitleri ve senkronizasyon durumu başarıyla sıfırlandı.",
+        message:
+          repairedJobs.length > 0
+            ? `İlerleme durumu sıfırlandı ve takılı kalan ${repairedJobs.join(", ")} iş kaydı düzeltildi. (Not: PostgreSQL oturum kilitleri bağlantı kapandığında otomatik serbest bırakılır.)`
+            : "İlerleme durumu ve kilitler başarıyla sıfırlandı. (Not: PostgreSQL oturum kilitleri bağlantı kapandığında otomatik serbest bırakılır.)",
+        repairedJobs,
       });
     }
 

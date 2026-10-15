@@ -14,6 +14,7 @@ export interface IncrementalDiscoveryOptions {
   fullCrawl?: boolean; // if true, streams until catalog exhaustion (~120-150 pages)
   batchSize?: number; // default: 25
   triggerSource?: string; // "MANUAL_OWNER" | "SCHEDULER"
+  skipLock?: boolean;
 }
 
 export interface IncrementalDiscoveryResult {
@@ -45,13 +46,18 @@ export async function runIncrementalDiscovery(
   const maxPages = isFullCrawl ? 250 : (options.maxPages || 40);
   const batchSize = options.batchSize || 25;
 
-  const locked = await acquireAdvisoryLock();
-  if (!locked) {
-    return {
-      success: false,
-      locked: true,
-      message: "Başka bir senkronizasyon veya tarama işlemi yürütülüyor. PostgreSQL advisory lock devrede.",
-    };
+  let acquiredStandaloneLock = false;
+
+  if (!options.skipLock) {
+    const locked = await acquireAdvisoryLock();
+    if (!locked) {
+      return {
+        success: false,
+        locked: true,
+        message: "Başka bir senkronizasyon veya tarama işlemi yürütülüyor. PostgreSQL advisory lock devrede.",
+      };
+    }
+    acquiredStandaloneLock = true;
   }
 
   syncProgressTracker.startSync(
@@ -488,6 +494,8 @@ export async function runIncrementalDiscovery(
       message: `Katalog tarama hatası: ${err.message}`,
     };
   } finally {
-    await releaseAdvisoryLock();
+    if (acquiredStandaloneLock) {
+      await releaseAdvisoryLock();
+    }
   }
 }

@@ -78,35 +78,47 @@ docker compose logs -f worker
 
 ---
 
-### Adım 5: Manuel Eylem vs Zamanlayıcı Kilit Çakışması (Lock Collision Test)
+### Adım 5: Manuel Eylem vs Zamanlayıcı Kilit Çakışması & Dedicated Connection (Lock Collision Test)
 ```bash
 # Senaryo:
 # 1. /ayarlar sayfasından "Tüm Mağazayı Otomatik Çek" veya "Katalog Taraması" başlat.
-# 2. Hemen ardından ikinci bir sekmeden veya terminalden aynı işlemi tetikle:
+# 2. İşlem devam ederken PostgreSQL'de açık kilit oturumunu doğrula:
+docker compose exec postgres psql -U postgres -d gamedeals -c "SELECT pid, locktype, mode, granted, classid, objid FROM pg_locks WHERE locktype = 'advisory';"
+
+# 3. İkinci bir sekmeden veya terminalden aynı işlemi tetikle:
 curl -X POST http://localhost:3000/api/settings/sync-now \
   -H "Content-Type: application/json" \
   -d '{"action": "CATALOG_DISCOVERY"}'
 
 # Beklenen Sonuç:
 # - HTTP 409 Conflict döner
-# - { "error": "Aynı iş (CATALOG_DISCOVERY) şu anda başka bir süreç tarafından yürütülüyor. Advisory lock devrede.", "locked": true }
+# - { "error": "Aynı iş (CATALOG_DISCOVERY) şu anda başka bir süreç tarafından yürütülüyor. PostgreSQL advisory lock devrede.", "locked": true }
 # - Aynı anda iki işlem asla çalışmaz (Race condition engellenir).
+# - İşlem tamamlandığında pg_locks tablosundaki kilitlerin otomatik kalktığını doğrula.
 ```
 
 ---
 
-### Adım 6: Worker Yeniden Başlatma & Durum Korunumu (Worker Restart Resilience)
+### Adım 6: Worker Yeniden Başlatma & Stale Job Reconciliation (Worker Crash Recovery)
 ```bash
-# 1. Worker'ı durdur ve yeniden başlat
-docker compose restart worker
+# Senaryo:
+# 1. Uzun süren bir işlem çalışırken worker container'ını 'kill' et (simüle edilmiş container çökmesi):
+docker compose kill worker
 
-# 2. Worker loglarını incele
+# 2. PostgreSQL'deki session advisory kilidinin container ölür ölmez DÜŞTÜĞÜNÜ doğrula:
+docker compose exec postgres psql -U postgres -d gamedeals -c "SELECT pid, locktype, mode, granted FROM pg_locks WHERE locktype = 'advisory';"
+# (Kilit kalmamış olmalıdır - Dedicated Connection güvenliği)
+
+# 3. Worker'ı tekrar başlat:
+docker compose up -d worker
+
+# 4. Worker loglarını incele:
 docker compose logs --tail=50 worker
 
 # Beklenen Sonuç:
-# - Graceful shutdown tetiklenir ("Graceful shutdown requested...")
-# - Yeniden başlarken PostgreSQL'deki ScheduledJobState okunur
-# - Sıfırdan tekrar başlamaz; önceki nextRunAt değerleri aynen korunur.
+# - Worker açılışında 'reconcileStaleRunningJobs' tetiklenir.
+# - Asılı kalan RUNNING kayıtları FAILED olarak işaretlenir ve nextRunAt yeniden hesaplanır.
+# - Worker döngüsü kesintisiz işlemeye devam eder.
 ```
 
 ---

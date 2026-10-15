@@ -42,9 +42,23 @@ Tüm iş durumları `ScheduledJobState` tablosunda saklanır:
 ### 4. Hata Güvenliği (Failure Safety)
 - Upstream 429 veya 5xx durumunda mevcut veritabanı kayıtları asla silinmez.
 - Hata alan iş, worker sürecini çökertmez (`try/catch` izolasyonu).
-- Worker yeniden başlatıldığında PostgreSQL'deki kalıcı durum okunarak kesintisiz devam edilir.
+### 5. Bağlantı Güvenliği & Dedicated Connection Mimarisi (Pre-QA Hotfix)
+Prisma ORM bağlantı havuzu (connection pool) kullandığından, session-level advisory kilitlerin (`pg_try_advisory_lock` / `pg_advisory_unlock`) bağımsız Prisma `$queryRaw` çağrılarıyla farklı havuz bağlantılarına dağılması durumunda kilit sızıntısı ve çözülememe riski mevcuttur.
+
+Bu nedenle:
+- Advisory kilit yönetimi doğrudan `pg` (node-postgres) üzerinden açılan **özel/dedicated bir veritabanı bağlantısı** ile yürütülür.
+- `withXboxJobLocks(jobType, runActualJob)` fonksiyonu:
+  1. Tek bir dedicated `pg.Client` bağlantısı açar.
+  2. İş kilidini ve evrensel kilidi AYNI bağlantı üzerinde sırayla alır.
+  3. Korumalı işi çalıştırır.
+  4. `finally` bloğu içinde AYNI bağlantı üzerinde evrensel kilidi ve iş kilidini çözer, ardından bağlantıyı kapatır.
+  5. İşlem veya container aniden sonlansa dahi, PostgreSQL TCP bağlantısının kesildiğini tespit ederek session advisory kilitlerini anında otomatik olarak serbest bırakır.
+- `pg_advisory_unlock_all()` yalnızca çağıran PostgreSQL oturumunun kilitlerini çözebildiğinden, diğer worker süreçlerinin kilitlerini uzaktan açtığı yönündeki yanıltıcı "Force Unlock" semantiği kaldırılmıştır.
+- Bunun yerine **Stale Job Reconciliation** (30 dakikayı aşan RUNNING işlerin otomatik düzeltilmesi) ve **Reset Stuck State** mekanizması devreye alınmıştır.
 
 ## Sonuçlar
 - Pozitif: Sıfır yarış durumu (race condition), sıfır veri kaybı, 429 koruması.
 - Pozitif: Web process hafif ve duyarlı kalır.
 - Pozitif: Manuel panel eylemleri ve otonom döngü tam olarak aynı servis katmanını (`runScheduledJob`) kullanır.
+- Pozitif: Prisma bağlantı havuzu belirsizliklerinden tamamen arındırılmış, deterministik ve bağlantı-güvenli PostgreSQL advisory lock yaşam döngüsü.
+

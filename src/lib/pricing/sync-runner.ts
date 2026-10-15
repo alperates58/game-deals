@@ -7,6 +7,7 @@ import { syncProgressTracker } from "../xbox/sync-progress-tracker";
 export interface SyncRunnerOptions {
   limit?: number;
   triggerSource?: string;
+  skipLock?: boolean;
 }
 
 export interface SyncRunnerResult {
@@ -27,14 +28,18 @@ export interface SyncRunnerResult {
  */
 export async function runPriceSync(options: SyncRunnerOptions = {}): Promise<SyncRunnerResult> {
   const startTime = Date.now();
-  const locked = await acquireAdvisoryLock();
+  let acquiredStandaloneLock = false;
 
-  if (!locked) {
-    return {
-      success: false,
-      locked: true,
-      message: "Başka bir senkronizasyon işlemi zaten yürütülüyor. Advisory lock devrede.",
-    };
+  if (!options.skipLock) {
+    const locked = await acquireAdvisoryLock();
+    if (!locked) {
+      return {
+        success: false,
+        locked: true,
+        message: "Başka bir senkronizasyon işlemi zaten yürütülüyor. Advisory lock devrede.",
+      };
+    }
+    acquiredStandaloneLock = true;
   }
 
   const syncRun = await prisma.syncRun.create({
@@ -191,6 +196,8 @@ export async function runPriceSync(options: SyncRunnerOptions = {}): Promise<Syn
       message: `Senkronizasyon hatası: ${err.message}`,
     };
   } finally {
-    await releaseAdvisoryLock();
+    if (acquiredStandaloneLock) {
+      await releaseAdvisoryLock();
+    }
   }
 }

@@ -466,18 +466,18 @@ export function SettingsCenter({
     }
   };
 
-  // Force unlock handler
+  // Reset stuck state handler (safe reconciliation of stuck states & interface locks)
   const handleForceUnlock = async () => {
     setIsUnlocking(true);
     try {
       const res = await fetch("/api/settings/sync-progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "FORCE_UNLOCK" }),
+        body: JSON.stringify({ action: "RESET_STUCK_STATE" }),
       });
       const data = await res.json();
       if (res.ok) {
-        setTriggerMessage({ success: true, message: data.message || "Kilit başarıyla sıfırlandı." });
+        setTriggerMessage({ success: true, message: data.message || "Durum başarıyla sıfırlandı." });
         setSyncProgress(null);
         setIsTriggering(false);
         setTriggerAction(null);
@@ -486,7 +486,7 @@ export function SettingsCenter({
           progressPollingRef.current = null;
         }
       } else {
-        throw new Error(data.error || "Kilit sıfırlanamadı.");
+        throw new Error(data.error || "Durum sıfırlanamadı.");
       }
     } catch (err: any) {
       setTriggerMessage({ success: false, message: err.message });
@@ -883,16 +883,16 @@ export function SettingsCenter({
                   </button>
                 </div>
 
-                {/* Force Unlock Button */}
+                {/* Reset Stuck State Button */}
                 <button
                   type="button"
                   onClick={handleForceUnlock}
                   disabled={isUnlocking}
                   className="flex items-center justify-center gap-1.5 text-[11px] text-zinc-400 hover:text-amber-400 border border-zinc-800 hover:border-amber-800/60 rounded-lg px-2.5 py-1.5 transition-colors"
-                  title="Arka planda kilit takılı kaldıysa sıfırlar"
+                  title="Takılı kalan senkronizasyon durumunu ve arayüz kilitlerini sıfırlar. (PostgreSQL oturum kilitleri bağlantı kapandığında otomatik serbest bırakılır)"
                 >
                   <Lock className={`h-3 w-3 ${isUnlocking ? "animate-spin" : ""}`} />
-                  <span>{isUnlocking ? "Kilit Açılıyor..." : "Kilidi Sıfırla (Force Unlock)"}</span>
+                  <span>{isUnlocking ? "Sıfırlanıyor..." : "Durumu Sıfırla (Reset State)"}</span>
                 </button>
               </div>
             </div>
