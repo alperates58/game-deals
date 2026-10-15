@@ -142,51 +142,55 @@ export async function enrichBundleChildrenFromCatalog(
     const childBigId = allChildBigIds[i];
     const cp = fetchedMap.get(childBigId);
 
-    if (cp) {
-      const qual = qualifyXboxSeriesPlatform({
-        productId: cp.productId,
-        availableOn: cp.platforms,
-        currentPrice: cp.currentPrice,
-        listPrice: cp.listPrice,
-        isFree: cp.isFree,
-        productType: cp.productType,
-        parentIsSeriesCompatible: true,
+    try {
+      if (cp) {
+        const qual = qualifyXboxSeriesPlatform({
+          productId: cp.productId,
+          availableOn: cp.platforms,
+          currentPrice: cp.currentPrice,
+          listPrice: cp.listPrice,
+          isFree: cp.isFree,
+          productType: cp.productType,
+          parentIsSeriesCompatible: true,
+        });
+
+        await processNormalizedProduct(cp, {
+          discoverySource: "BUNDLE_CHILD",
+          platforms: qual.platforms,
+          isSeriesXCompatible: qual.platforms.includes("XboxSeriesX"),
+        });
+      }
+
+      const childInDb = await prisma.game.findUnique({
+        where: { xboxProductId: childBigId },
+        select: { id: true },
       });
 
-      await processNormalizedProduct(cp, {
-        discoverySource: "BUNDLE_CHILD",
-        platforms: qual.platforms,
-        isSeriesXCompatible: qual.platforms.includes("XboxSeriesX"),
-      });
-    }
-
-    const childInDb = await prisma.game.findUnique({
-      where: { xboxProductId: childBigId },
-      select: { id: true },
-    });
-
-    if (childInDb) {
-      validChildDbIds.push(childInDb.id);
-      await prisma.gameRelation.upsert({
-        where: {
-          parentGameId_childGameId_relationType: {
+      if (childInDb) {
+        validChildDbIds.push(childInDb.id);
+        await prisma.gameRelation.upsert({
+          where: {
+            parentGameId_childGameId_relationType: {
+              parentGameId: bundleGameId,
+              childGameId: childInDb.id,
+              relationType: RelationType.BUNDLE_CONTAINS,
+            },
+          },
+          create: {
             parentGameId: bundleGameId,
             childGameId: childInDb.id,
             relationType: RelationType.BUNDLE_CONTAINS,
+            position: i,
+            source: BUNDLE_RELATION_SOURCE_V2,
           },
-        },
-        create: {
-          parentGameId: bundleGameId,
-          childGameId: childInDb.id,
-          relationType: RelationType.BUNDLE_CONTAINS,
-          position: i,
-          source: BUNDLE_RELATION_SOURCE_V2,
-        },
-        update: {
-          position: i,
-          source: BUNDLE_RELATION_SOURCE_V2,
-        },
-      });
+          update: {
+            position: i,
+            source: BUNDLE_RELATION_SOURCE_V2,
+          },
+        });
+      }
+    } catch (childErr: any) {
+      console.warn(`[BundleEnricher] Child ${childBigId} upsert warning:`, childErr.message);
     }
   }
 
