@@ -6,6 +6,7 @@ import { qualifyXboxSeriesPlatform } from "./platform-qualifier";
 import { processNormalizedProduct } from "../pricing/price-sync";
 import { RelationType } from "@prisma/client";
 import { NormalizedXboxProduct } from "./types";
+import { KNOWN_BUNDLE_CHILDREN } from "./mapper";
 import { syncProgressTracker } from "./sync-progress-tracker";
 
 export interface IncrementalDiscoveryOptions {
@@ -110,7 +111,7 @@ export async function runIncrementalDiscovery(
           const res = await processNormalizedProduct(prod, {
             discoverySource: "FULL_CATALOG",
             platforms: qual.platforms,
-            isSeriesXCompatible: true,
+            isSeriesXCompatible: qual.platforms.includes("XboxSeriesX"),
           });
 
           if (res.added) {
@@ -208,6 +209,18 @@ export async function runIncrementalDiscovery(
       }
     }
 
+    // Also verify any known curated bundle children in the registry
+    for (const [bundleBigId, childIds] of Object.entries(KNOWN_BUNDLE_CHILDREN)) {
+      if (dbMap.has(bundleBigId.toUpperCase())) {
+        for (const childId of childIds) {
+          const cleanId = childId.trim().toUpperCase();
+          if (bigIdPattern.test(cleanId) && !dbMap.has(cleanId)) {
+            missingChildIds.add(cleanId);
+          }
+        }
+      }
+    }
+
     if (missingChildIds.size > 0) {
       syncProgressTracker.addLog(
         `${missingChildIds.size} adet eksik paket içeriği (oyun/DLC) Microsoft mağazasından tamamlanıyor...`,
@@ -242,7 +255,7 @@ export async function runIncrementalDiscovery(
               const res = await processNormalizedProduct(cp, {
                 discoverySource: "BUNDLE_CHILD",
                 platforms: qual.platforms,
-                isSeriesXCompatible: true,
+                isSeriesXCompatible: qual.platforms.includes("XboxSeriesX"),
               });
 
               if (res.added) {
@@ -352,6 +365,41 @@ export async function runIncrementalDiscovery(
             relationsCreated++;
           } catch {
             // Ignore duplicate
+          }
+        }
+      }
+    }
+
+    // Link relations for any known curated bundles
+    for (const [bundleBigId, childIds] of Object.entries(KNOWN_BUNDLE_CHILDREN)) {
+      const parentInDb = dbMap.get(bundleBigId.toUpperCase());
+      if (parentInDb) {
+        for (let i = 0; i < childIds.length; i++) {
+          const childBigId = childIds[i].toUpperCase();
+          const childInDb = dbMap.get(childBigId);
+          if (childInDb) {
+            try {
+              await prisma.gameRelation.upsert({
+                where: {
+                  parentGameId_childGameId_relationType: {
+                    parentGameId: parentInDb.id,
+                    childGameId: childInDb.id,
+                    relationType: RelationType.BUNDLE_CONTAINS,
+                  },
+                },
+                create: {
+                  parentGameId: parentInDb.id,
+                  childGameId: childInDb.id,
+                  relationType: RelationType.BUNDLE_CONTAINS,
+                  position: 10 + i,
+                  source: "KNOWN_REGISTRY",
+                },
+                update: {},
+              });
+              relationsCreated++;
+            } catch {
+              // Ignore duplicate
+            }
           }
         }
       }

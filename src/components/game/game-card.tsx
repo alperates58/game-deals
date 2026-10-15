@@ -23,6 +23,7 @@ export interface GameCardProps {
     confidenceScore: any;
   } | null;
   isCore?: boolean;
+  platforms?: string[];
 }
 
 export function GameCard({
@@ -36,6 +37,7 @@ export function GameCard({
   currency,
   historicalLow,
   dealAnalysis,
+  platforms,
 }: GameCardProps) {
   const currentNum = typeof currentPrice === "number" ? currentPrice : currentPrice.toNumber();
   const listNum = typeof listPrice === "number" ? listPrice : listPrice.toNumber();
@@ -70,16 +72,27 @@ export function GameCard({
 
         {/* Top Badges */}
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 z-10">
-          {discountPercent > 0 ? (
-            <span className="flex items-center gap-0.5 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-black text-black shadow-md">
-              <TrendingDown className="h-3.5 w-3.5" />
-              %{discountPercent}
-            </span>
-          ) : (
-            <span className="rounded-md bg-zinc-900/80 px-2 py-0.5 text-[11px] font-medium text-zinc-400 backdrop-blur-sm">
-              Standart
-            </span>
-          )}
+          <div className="flex items-center gap-1">
+            {discountPercent > 0 ? (
+              <span className="flex items-center gap-0.5 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-black text-black shadow-md">
+                <TrendingDown className="h-3.5 w-3.5" />
+                %{discountPercent}
+              </span>
+            ) : (
+              <span className="rounded-md bg-zinc-900/80 px-2 py-0.5 text-[11px] font-medium text-zinc-400 backdrop-blur-sm">
+                Standart
+              </span>
+            )}
+            {platforms?.includes("XboxSeriesX") ? (
+              <span className="rounded-md bg-zinc-950/90 border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 backdrop-blur-sm shadow-sm" title="Xbox Series X|S">
+                X|S
+              </span>
+            ) : platforms?.includes("XboxOne") ? (
+              <span className="rounded-md bg-zinc-950/90 border border-zinc-700/60 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 backdrop-blur-sm shadow-sm" title="Xbox One">
+                One
+              </span>
+            ) : null}
+          </div>
 
           {isAtHistoricalLow && (
             <span className="flex items-center gap-1 rounded-md bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-bold text-black backdrop-blur-sm shadow-md animate-pulse">

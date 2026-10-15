@@ -2,6 +2,11 @@ import { XboxProductRaw } from "./schemas";
 import { NormalizedXboxProduct, ProductClass } from "./types";
 import { generateSlug } from "../pricing/slug";
 
+export const KNOWN_BUNDLE_CHILDREN: Record<string, string[]> = {
+  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NZ073P2XL0W), Mafia 3 (9NC3ZDVBLWLT)
+  "9NKG0X1MGQTX": ["9NZ073P2XL0W", "9NC3ZDVBLWLT"],
+};
+
 export function determineProductClass(
   title: string,
   productType: string,
@@ -98,38 +103,48 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     }
   }
 
-  // Find authoritative purchase availability in TRY
+  // Find authoritative purchase availability in TRY (select best deal if multiple availabilities exist)
   let purchaseAvailability: any = null;
-  let skuWithBundles: any = null;
+  let bestDiscount = -1;
+  let lowestPrice = Infinity;
 
   for (const dsa of raw.DisplaySkuAvailabilities || []) {
-    const sku = dsa.Sku;
-    if (sku?.Properties?.BundledSkus && sku.Properties.BundledSkus.length > 0) {
-      skuWithBundles = sku;
-    }
-
     for (const avail of dsa.Availabilities || []) {
       const isPurchase = avail.Actions?.includes("Purchase");
-      const currency = avail.OrderManagementData?.Price?.CurrencyCode;
+      const priceObj = avail.OrderManagementData?.Price;
+      const currency = priceObj?.CurrencyCode;
 
-      if (isPurchase && currency === "TRY") {
-        purchaseAvailability = avail;
-        break;
+      if (isPurchase && currency === "TRY" && typeof priceObj?.ListPrice === "number") {
+        const cPrice = priceObj.ListPrice;
+        const mPrice = priceObj.MSRP ?? cPrice;
+        const disc = mPrice > cPrice && mPrice > 0 ? Math.round(((mPrice - cPrice) / mPrice) * 100) : 0;
+
+        if (!purchaseAvailability || disc > bestDiscount || (disc === bestDiscount && cPrice < lowestPrice)) {
+          purchaseAvailability = avail;
+          bestDiscount = disc;
+          lowestPrice = cPrice;
+        }
       }
     }
-    if (purchaseAvailability) break;
   }
 
   // Fallback availability
   if (!purchaseAvailability) {
     for (const dsa of raw.DisplaySkuAvailabilities || []) {
       for (const avail of dsa.Availabilities || []) {
-        if (avail.OrderManagementData?.Price?.CurrencyCode === "TRY") {
-          purchaseAvailability = avail;
-          break;
+        const priceObj = avail.OrderManagementData?.Price;
+        if (priceObj?.CurrencyCode === "TRY" && typeof priceObj?.ListPrice === "number") {
+          const cPrice = priceObj.ListPrice;
+          const mPrice = priceObj.MSRP ?? cPrice;
+          const disc = mPrice > cPrice && mPrice > 0 ? Math.round(((mPrice - cPrice) / mPrice) * 100) : 0;
+
+          if (!purchaseAvailability || disc > bestDiscount || (disc === bestDiscount && cPrice < lowestPrice)) {
+            purchaseAvailability = avail;
+            bestDiscount = disc;
+            lowestPrice = cPrice;
+          }
         }
       }
-      if (purchaseAvailability) break;
     }
   }
 
@@ -194,7 +209,7 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     platforms.push("Xbox");
   }
 
-  // Authoritative Bundled child IDs (Aggregated across all SKUs & RelatedProducts)
+  // Authoritative Bundled child IDs (Aggregated across all SKUs, Properties & RelatedProducts)
   const bundledProductIdsSet = new Set<string>();
   let hasAnyBundleFlag = false;
 
@@ -203,27 +218,69 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     if (sku?.Properties?.IsBundle) {
       hasAnyBundleFlag = true;
     }
-    const rawBundledSkus = sku?.Properties?.BundledSkus;
+    const rawBundledSkus = (sku?.Properties as any)?.BundledSkus || (sku?.Properties as any)?.BundledProducts;
     if (Array.isArray(rawBundledSkus)) {
       for (const item of rawBundledSkus) {
-        if (item.BigId) {
-          bundledProductIdsSet.add(item.BigId.trim().toUpperCase());
+        const bid = (item.BigId || item.ProductId || item.ProductBigId || item.Id || (typeof item === "string" ? item : ""))?.toString().trim().toUpperCase();
+        if (bid && bid.length === 12) {
+          bundledProductIdsSet.add(bid);
+        }
+      }
+    }
+    const rawBundledIds = (sku?.Properties as any)?.BundledProductIds;
+    if (Array.isArray(rawBundledIds)) {
+      for (const item of rawBundledIds) {
+        const bid = item?.toString().trim().toUpperCase();
+        if (bid && bid.length === 12) {
+          bundledProductIdsSet.add(bid);
         }
       }
     }
   }
 
-  // Also check MarketProperties RelatedProducts for bundle contents
-  const marketProp = raw.MarketProperties?.[0];
-  if (marketProp?.RelatedProducts && Array.isArray(marketProp.RelatedProducts)) {
-    for (const r of marketProp.RelatedProducts) {
-      const relType = (r.RelationshipType || "").toLowerCase();
-      if (
-        (relType.includes("bundle") || relType.includes("include") || relType.includes("package")) &&
-        r.RelatedProductId
-      ) {
-        bundledProductIdsSet.add(r.RelatedProductId.trim().toUpperCase());
+  // Also check top-level Properties
+  const rawProps = (raw as any)?.Properties;
+  if (Array.isArray(rawProps?.BundledSkus)) {
+    for (const item of rawProps.BundledSkus) {
+      const bid = (item.BigId || item.ProductId || (typeof item === "string" ? item : ""))?.toString().trim().toUpperCase();
+      if (bid && bid.length === 12) bundledProductIdsSet.add(bid);
+    }
+  }
+  if (Array.isArray(rawProps?.BundledProductIds)) {
+    for (const item of rawProps.BundledProductIds) {
+      const bid = item?.toString().trim().toUpperCase();
+      if (bid && bid.length === 12) bundledProductIdsSet.add(bid);
+    }
+  }
+
+  // Also check all MarketProperties RelatedProducts for bundle contents
+  for (const mp of raw.MarketProperties || []) {
+    if (Array.isArray(mp.RelatedProducts)) {
+      for (const r of mp.RelatedProducts) {
+        const relType = (r.RelationshipType || "").toLowerCase();
+        if (
+          relType !== "addonparent" &&
+          (relType.includes("bundle") ||
+            relType.includes("include") ||
+            relType.includes("package") ||
+            relType.includes("child") ||
+            relType.includes("subproduct") ||
+            relType.includes("content")) &&
+          r.RelatedProductId
+        ) {
+          const bid = r.RelatedProductId.trim().toUpperCase();
+          if (bid.length === 12) bundledProductIdsSet.add(bid);
+        }
       }
+    }
+  }
+
+  // Known curated bundle children registry (failsafe for major game collections)
+  const knownKids = KNOWN_BUNDLE_CHILDREN[productId.toUpperCase()];
+  if (knownKids && knownKids.length > 0) {
+    hasAnyBundleFlag = true;
+    for (const k of knownKids) {
+      bundledProductIdsSet.add(k.toUpperCase());
     }
   }
 

@@ -10,6 +10,7 @@ interface DealsPageProps {
   searchParams: Promise<{
     q?: string;
     type?: string;
+    platform?: string;
     sort?: string;
     minDiscount?: string;
     maxPrice?: string;
@@ -17,7 +18,7 @@ interface DealsPageProps {
 }
 
 export default async function DealsPage({ searchParams }: DealsPageProps) {
-  const { q, type = "all", sort = "dealScore", minDiscount = "0", maxPrice = "" } = await searchParams;
+  const { q, type = "all", platform = "all", sort = "dealScore", minDiscount = "0", maxPrice = "" } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
@@ -49,6 +50,13 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     productClass: productClassCondition,
   };
 
+  // Platform condition (Xbox Series X|S vs Xbox One)
+  if (platform === "series") {
+    whereClause.platforms = { has: "XboxSeriesX" };
+  } else if (platform === "one") {
+    whereClause.platforms = { has: "XboxOne" };
+  }
+
   // Discount condition
   if (minDiscNum > 0) {
     whereClause.discountPercent = { gte: minDiscNum };
@@ -70,6 +78,7 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     ];
   }
 
+  let changedGameCount = 0;
   let orderBy: any = [{ dealAnalysis: { dealScore: "desc" } }];
   if (sort === "discount") {
     orderBy = [{ discountPercent: "desc" }];
@@ -89,8 +98,18 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
       LIMIT 80
     `;
     const changedGameIds = changedGameRows.map((r) => r.id);
-    whereClause.id = { in: changedGameIds };
-    orderBy = [{ updatedAt: "desc" }];
+    changedGameCount = changedGameIds.length;
+    if (changedGameIds.length > 0) {
+      whereClause.id = { in: changedGameIds };
+      orderBy = [{ updatedAt: "desc" }];
+    } else {
+      // Graceful fallback: If no game has >=2 price history entries yet,
+      // show games with active discounts ordered by most recently updated
+      if (!whereClause.discountPercent) {
+        whereClause.discountPercent = { gt: 0 };
+      }
+      orderBy = [{ updatedAt: "desc" }, { discountPercent: "desc" }];
+    }
   } else if (hasQuery && sort === "dealScore") {
     orderBy = [{ discountPercent: "desc" }, { popularityScore: "desc" }];
   }
@@ -127,14 +146,22 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
               : "Tüm Aktif Fırsatlar"}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            {deals.length} içerik listeleniyor {hasQuery ? "— Veritabanı arama eşleşmeleri" : sort === "priceChange" ? "— En son fiyatı değişen oyunlar" : "— Geçmiş fiyat analizlerine göre derecelendirilmiştir"}
+            {deals.length} içerik listeleniyor{" "}
+            {platform === "series" ? "(Xbox Series X|S)" : platform === "one" ? "(Xbox One)" : ""}{" "}
+            {hasQuery
+              ? "— Veritabanı arama eşleşmeleri"
+              : sort === "priceChange"
+              ? changedGameCount > 0
+                ? "— En son fiyatı değişen oyunlar"
+                : "— Son güncellenen indirimli oyunlar"
+              : "— Geçmiş fiyat analizlerine göre derecelendirilmiştir"}
           </p>
         </div>
 
         {/* Dynamic Filter Bar */}
         <CatalogFilterBar
           basePath="/firsatlar"
-          filters={{ type, minDiscount, maxPrice, sort, q: cleanQ }}
+          filters={{ type, platform, minDiscount, maxPrice, sort, q: cleanQ }}
           showTypeTabs={true}
         />
       </div>
@@ -152,16 +179,12 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
           <h3 className="text-base font-bold text-white">
             {hasQuery
               ? `"${cleanQ}" için sonuç bulunamadı`
-              : sort === "priceChange"
-              ? "Henüz Kayıtlı Fiyat Değişimi Bulunmuyor"
               : "Seçilen Kriterlere Uygun Fırsat Bulunamadı"}
           </h3>
           <p className="mt-1.5 text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
             {hasQuery
               ? "Aradığınız oyun veya eklenti henüz kataloğa eklenmemiş olabilir. Ürün kodunu biliyorsanız Ayarlar > Manuel Ürün Ekle alanından doğrudan veritabanına aktarabilirsiniz."
-              : sort === "priceChange"
-              ? "Sistemimiz yeni kuruldu ve şu anda tüm oyunların başlangıç fiyatları kaydedildi. Periyodik fiyat senkronizasyonu çalıştıkça fiyatı düşen veya değişen oyunlar anlık olarak burada listelenecektir."
-              : "Arama veya filtre kriterlerinizi (indirim oranı, bütçe veya kategori) değiştirerek tekrar deneyebilirsiniz."}
+              : "Arama veya filtre kriterlerinizi (platform, indirim oranı, bütçe veya kategori) değiştirerek tekrar deneyebilirsiniz."}
           </p>
         </div>
       )}

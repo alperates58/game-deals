@@ -38,7 +38,8 @@ export async function processNormalizedProduct(
   const effectiveIsCore = options.isCore ?? isCore;
   const effectiveNow = options.now ?? now;
   const effectivePlatforms = options.platforms || product.platforms || [];
-  const effectiveSeriesX = options.isSeriesXCompatible ?? true;
+  const effectiveSeriesX =
+    options.isSeriesXCompatible ?? (effectivePlatforms.includes("XboxSeriesX") || effectivePlatforms.length === 0);
   const effectiveSource = options.discoverySource || "FULL_CATALOG";
   // Exclude free games or zero price items per scope rules, EXCEPT for bundles and package contents
   const isBundleOrPackageItem =

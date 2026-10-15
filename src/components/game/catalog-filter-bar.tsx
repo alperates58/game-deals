@@ -3,6 +3,7 @@ import { Gamepad2, Package, Layers, TrendingDown, Sparkles, Clock, ArrowDownWide
 
 export interface CatalogFilterState {
   type?: string; // "all" | "game" | "bundle" | "addon"
+  platform?: string; // "all" | "series" | "one"
   minDiscount?: string; // "0" | "50" | "75" | "90"
   maxPrice?: string; // "" | "100" | "250"
   sort?: string; // "dealScore" | "discount" | "priceChange" | "priceAsc" | "priceDesc"
@@ -21,6 +22,7 @@ export function CatalogFilterBar({
   showTypeTabs = true,
 }: CatalogFilterBarProps) {
   const currentType = filters.type || "all";
+  const currentPlatform = filters.platform || "all";
   const currentMinDisc = filters.minDiscount || "0";
   const currentMaxPrice = filters.maxPrice || "";
   const currentSort = filters.sort || "dealScore";
@@ -33,6 +35,7 @@ export function CatalogFilterBar({
 
     const merged = {
       type: currentType,
+      platform: currentPlatform,
       minDiscount: currentMinDisc,
       maxPrice: currentMaxPrice,
       sort: currentSort,
@@ -40,6 +43,7 @@ export function CatalogFilterBar({
     };
 
     if (merged.type && merged.type !== "all") params.set("type", merged.type);
+    if (merged.platform && merged.platform !== "all") params.set("platform", merged.platform);
     if (merged.minDiscount && merged.minDiscount !== "0") params.set("minDiscount", merged.minDiscount);
     if (merged.maxPrice) params.set("maxPrice", merged.maxPrice);
     if (merged.sort && merged.sort !== "dealScore") params.set("sort", merged.sort);
@@ -173,8 +177,30 @@ export function CatalogFilterBar({
         </div>
       </div>
 
-      {/* Bottom Row: Percentage Discount Pills & Budget Pills */}
+      {/* Bottom Row: Platform Pills, Percentage Discount Pills & Budget Pills */}
       <div className="flex flex-wrap items-center gap-3 text-xs">
+        {/* Platform Selector Pills */}
+        <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg p-1">
+          <span className="text-[11px] text-zinc-500 font-medium px-2 hidden sm:inline">Platform:</span>
+          {[
+            { value: "all", label: "Tüm Konsollar" },
+            { value: "series", label: "Xbox Series X|S" },
+            { value: "one", label: "Xbox One" },
+          ].map((item) => (
+            <Link
+              key={item.value}
+              href={buildUrl({ platform: item.value })}
+              className={`px-2.5 py-1 rounded-md transition-colors font-medium text-[11px] ${
+                currentPlatform === item.value
+                  ? "bg-emerald-600 text-white font-bold shadow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
         {/* Discount Rate Pills */}
         <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg p-1">
           <span className="text-[11px] text-zinc-500 font-medium px-2 hidden sm:inline">İndirim:</span>

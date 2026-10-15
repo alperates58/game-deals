@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 interface HistoricalLowsPageProps {
   searchParams: Promise<{
     type?: string;
+    platform?: string;
     minDiscount?: string;
     maxPrice?: string;
     sort?: string;
@@ -17,7 +18,7 @@ interface HistoricalLowsPageProps {
 }
 
 export default async function HistoricalLowsPage({ searchParams }: HistoricalLowsPageProps) {
-  const { type = "all", minDiscount = "0", maxPrice = "", sort = "dealScore", q = "" } = await searchParams;
+  const { type = "all", platform = "all", minDiscount = "0", maxPrice = "", sort = "dealScore", q = "" } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
@@ -38,6 +39,13 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     isActive: true,
     discountPercent: { gt: 0 },
   };
+
+  // Platform condition (Xbox Series X|S vs Xbox One)
+  if (platform === "series") {
+    whereClause.platforms = { has: "XboxSeriesX" };
+  } else if (platform === "one") {
+    whereClause.platforms = { has: "XboxOne" };
+  }
 
   if (productClassCondition) {
     whereClause.productClass = productClassCondition;
@@ -97,7 +105,9 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
             Takip Başladığından Beri En Düşük Fiyattakiler
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl">
-            {verifiedLows.length} içerik listeleniyor — Sistemimizin takibe aldığı tarihten bu yana gördüğü en düşük fiyatta olan oyunlar ve eklentiler.
+            {verifiedLows.length} içerik listeleniyor{" "}
+            {platform === "series" ? "(Xbox Series X|S)" : platform === "one" ? "(Xbox One)" : ""}{" "}
+            — Sistemimizin takibe aldığı tarihten bu yana gördüğü en düşük fiyatta olan oyunlar ve eklentiler.
           </p>
         </div>
 
@@ -112,7 +122,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
         {/* Dynamic Filter Bar */}
         <CatalogFilterBar
           basePath="/tarihi-dip"
-          filters={{ type, minDiscount, maxPrice, sort, q: cleanQ }}
+          filters={{ type, platform, minDiscount, maxPrice, sort, q: cleanQ }}
           showTypeTabs={true}
         />
       </div>
@@ -129,7 +139,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
           <Award className="h-10 w-10 text-zinc-600 mx-auto mb-3" />
           <p className="text-base font-semibold text-zinc-300">Seçilen Filtrelere Uygun Tarihi Dip Fırsatı Bulunamadı</p>
           <p className="mt-1 text-xs text-zinc-400">
-            Filtreleme kriterlerinizi (indirim oranı, bütçe veya içerik türü) değiştirerek tekrar deneyebilirsiniz.
+            Filtreleme kriterlerinizi (platform, indirim oranı, bütçe veya içerik türü) değiştirerek tekrar deneyebilirsiniz.
           </p>
         </div>
       )}

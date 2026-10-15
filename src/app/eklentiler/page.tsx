@@ -10,13 +10,14 @@ interface AddonsPageProps {
   searchParams: Promise<{
     q?: string;
     class?: string;
+    platform?: string;
     sort?: string;
     minDiscount?: string;
   }>;
 }
 
 export default async function AddonsPage({ searchParams }: AddonsPageProps) {
-  const { q, class: classFilter, sort = "discount", minDiscount = "0" } = await searchParams;
+  const { q, class: classFilter, platform = "all", sort = "discount", minDiscount = "0" } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
 
@@ -36,6 +37,13 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
       : { in: allowedAddonClasses },
     discountPercent: { gte: minDiscNum },
   };
+
+  // Platform condition (Xbox Series X|S vs Xbox One)
+  if (platform === "series") {
+    whereClause.platforms = { has: "XboxSeriesX" };
+  } else if (platform === "one") {
+    whereClause.platforms = { has: "XboxOne" };
+  }
 
   if (q && q.trim().length > 0) {
     whereClause.OR = [
@@ -76,33 +84,55 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
             DLC & Eklentiler
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Genişletme paketleri, sezon biletleri ve ek içerikler ({addons.length} içerik)
+            Genişletme paketleri, sezon biletleri ve ek içerikler ({addons.length} içerik{platform === "series" ? " — Xbox Series X|S" : platform === "one" ? " — Xbox One" : ""})
           </p>
         </div>
 
-        {/* Subtype tabs */}
+        {/* Subtype tabs & Filters */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Platform Filter */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: String(minDiscNum) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: String(minDiscNum), platform: "all" })}`}
+              className={`px-2.5 py-1 rounded-md transition-colors ${platform === "all" ? "bg-zinc-800 text-blue-300 font-bold" : "text-zinc-400 hover:text-white"}`}
+            >
+              Tüm Konsollar
+            </Link>
+            <Link
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: String(minDiscNum), platform: "series" })}`}
+              className={`px-2.5 py-1 rounded-md transition-colors ${platform === "series" ? "bg-blue-600 text-white font-bold" : "text-zinc-400 hover:text-white"}`}
+            >
+              Xbox Series X|S
+            </Link>
+            <Link
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: String(minDiscNum), platform: "one" })}`}
+              className={`px-2.5 py-1 rounded-md transition-colors ${platform === "one" ? "bg-blue-600 text-white font-bold" : "text-zinc-400 hover:text-white"}`}
+            >
+              Xbox One
+            </Link>
+          </div>
+
+          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
+            <Link
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), sort, minDiscount: String(minDiscNum), ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${!classFilter ? "bg-blue-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Tüm Eklentiler
             </Link>
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "DLC", sort, minDiscount: String(minDiscNum) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "DLC", sort, minDiscount: String(minDiscNum), ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${classFilter === "DLC" ? "bg-blue-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               DLC
             </Link>
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "EXPANSION", sort, minDiscount: String(minDiscNum) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "EXPANSION", sort, minDiscount: String(minDiscNum), ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${classFilter === "EXPANSION" ? "bg-blue-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Genişletme
             </Link>
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "SEASON_PASS", sort, minDiscount: String(minDiscNum) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), class: "SEASON_PASS", sort, minDiscount: String(minDiscNum), ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2.5 py-1 rounded-md transition-colors ${classFilter === "SEASON_PASS" ? "bg-blue-600 text-white font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Sezon Bileti
@@ -112,13 +142,13 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
           {/* Quick Discount Filters */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "0" })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "0", ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 0 ? "bg-zinc-800 text-blue-300 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Tüm Fiyatlar
             </Link>
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "50" })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "50", ...(platform !== "all" ? { platform } : {}) })}`}
               className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 50 ? "bg-zinc-800 text-blue-300 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               %50+ İndirim
