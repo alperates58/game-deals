@@ -23,8 +23,6 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
-    ports:
-      - "${PORT:-3000}:3000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-gamedeals}?schema=public
       - APP_URL=${APP_URL:-https://game.alperates.com.tr}
