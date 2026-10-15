@@ -3,6 +3,7 @@ import { GameCard } from "@/components/game/game-card";
 import { Clock, Info, Award } from "lucide-react";
 import { CatalogFilterBar } from "@/components/game/catalog-filter-bar";
 import { ProductClass } from "@prisma/client";
+import { buildReleaseDateFilter } from "@/lib/catalog/filters";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ interface HistoricalLowsPageProps {
   searchParams: Promise<{
     type?: string;
     platform?: string;
+    year?: string;
     minDiscount?: string;
     maxPrice?: string;
     sort?: string;
@@ -18,11 +20,26 @@ interface HistoricalLowsPageProps {
 }
 
 export default async function HistoricalLowsPage({ searchParams }: HistoricalLowsPageProps) {
-  const { type = "all", platform = "all", minDiscount = "0", maxPrice = "", sort = "dealScore", q = "" } = await searchParams;
+  const {
+    type = "all",
+    platform = "all",
+    year = "all",
+    minDiscount = "0",
+    maxPrice = "",
+    sort = "dealScore",
+    q = "",
+  } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
   const cleanQ = q.trim();
+
+  // Authoritative SQL condition: Only games whose current price is at or below historical low
+  const lowIdsRaw = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM "Game"
+    WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
+  `;
+  const lowIds = lowIdsRaw.map((r) => r.id);
 
   let productClassCondition: any = undefined;
   if (type === "game") {
@@ -36,6 +53,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
   }
 
   const whereClause: any = {
+    id: { in: lowIds },
     isActive: true,
     discountPercent: { gt: 0 },
   };
@@ -45,6 +63,12 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     whereClause.platforms = { has: "XboxSeriesX" };
   } else if (platform === "one") {
     whereClause.platforms = { has: "XboxOne" };
+  }
+
+  // Release year (Yapım Yılı) condition
+  const dateFilter = buildReleaseDateFilter(year);
+  if (dateFilter) {
+    whereClause.releaseDate = dateFilter;
   }
 
   if (productClassCondition) {
@@ -78,7 +102,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     orderBy = [{ updatedAt: "desc" }];
   }
 
-  const games = await prisma.game.findMany({
+  const verifiedLows = await prisma.game.findMany({
     where: whereClause,
     include: {
       dealAnalysis: true,
@@ -86,11 +110,6 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     orderBy,
     take: 120,
   });
-
-  // Filter truthfully where currentPrice <= historicalLow
-  const verifiedLows = games.filter(
-    (g) => g.currentPrice.toNumber() <= g.historicalLow.toNumber()
-  );
 
   return (
     <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
@@ -122,7 +141,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
         {/* Dynamic Filter Bar */}
         <CatalogFilterBar
           basePath="/tarihi-dip"
-          filters={{ type, platform, minDiscount, maxPrice, sort, q: cleanQ }}
+          filters={{ type, platform, year, minDiscount, maxPrice, sort, q: cleanQ }}
           showTypeTabs={true}
         />
       </div>

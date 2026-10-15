@@ -24,6 +24,7 @@ export interface GameCardProps {
   } | null;
   isCore?: boolean;
   platforms?: string[];
+  releaseDate?: Date | string | null;
 }
 
 export function GameCard({
@@ -38,12 +39,19 @@ export function GameCard({
   historicalLow,
   dealAnalysis,
   platforms,
+  releaseDate,
 }: GameCardProps) {
   const currentNum = typeof currentPrice === "number" ? currentPrice : currentPrice.toNumber();
   const listNum = typeof listPrice === "number" ? listPrice : listPrice.toNumber();
   const lowNum = typeof historicalLow === "number" ? historicalLow : historicalLow.toNumber();
 
   const isAtHistoricalLow = currentNum <= lowNum && discountPercent > 0;
+
+  const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : null;
+  const validYear =
+    releaseYear && !isNaN(releaseYear) && releaseYear >= 1990 && releaseYear <= 2050
+      ? releaseYear
+      : null;
 
   return (
     <Link
@@ -117,10 +125,15 @@ export function GameCard({
       {/* Card Content */}
       <div className="flex flex-1 flex-col justify-between p-3.5">
         <div>
-          {publisher && (
-            <p className="text-[11px] font-medium text-zinc-400 truncate mb-0.5">
-              {publisher}
-            </p>
+          {(publisher || validYear) && (
+            <div className="flex items-center justify-between gap-1 text-[11px] font-medium text-zinc-400 mb-0.5">
+              <span className="truncate">{publisher || ""}</span>
+              {validYear && (
+                <span className="text-[10px] text-zinc-500 font-mono shrink-0">
+                  {validYear}
+                </span>
+              )}
+            </div>
           )}
           <h3 className="text-sm font-semibold text-zinc-100 line-clamp-1 group-hover:text-emerald-400 transition-colors">
             {title}

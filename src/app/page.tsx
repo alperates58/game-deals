@@ -112,15 +112,27 @@ async function getHomePageData() {
       ],
       take: 15,
     }),
-    // Games with ACTUAL recorded price changes (at least 2 price history entries)
+    // Games with ACTUAL recorded price DROPS (active on sale, latest price is strictly lower than previous price)
     prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT g.id
+      SELECT DISTINCT g.id
       FROM "Game" g
-      JOIN "PriceHistory" ph ON ph."gameId" = g.id
+      JOIN "PriceHistory" ph_curr ON ph_curr."gameId" = g.id
+      JOIN "PriceHistory" ph_prev ON ph_prev."gameId" = g.id AND ph_prev."observedAt" < ph_curr."observedAt"
       WHERE g."isActive" = true
-      GROUP BY g.id
-      HAVING COUNT(ph.id) >= 2
-      ORDER BY MAX(ph."observedAt") DESC
+        AND g."discountPercent" > 0
+        AND ph_curr."currentPrice" < ph_prev."currentPrice"
+        AND NOT EXISTS (
+          SELECT 1 FROM "PriceHistory" ph_mid
+          WHERE ph_mid."gameId" = g.id
+            AND ph_mid."observedAt" > ph_prev."observedAt"
+            AND ph_mid."observedAt" < ph_curr."observedAt"
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM "PriceHistory" ph_newer
+          WHERE ph_newer."gameId" = g.id
+            AND ph_newer."observedAt" > ph_curr."observedAt"
+        )
+      ORDER BY ph_curr."observedAt" DESC
       LIMIT 15
     `,
     // True dynamic count of all games currently at historical low
@@ -130,37 +142,31 @@ async function getHomePageData() {
     `,
   ]);
 
-  // Fetch full game records for true price changes
+  // Fetch full game records for genuine price drops
   const changedIds = recentPriceChangesRaw.map((r) => r.id);
   const recentPriceChanges =
     changedIds.length > 0
       ? await prisma.game.findMany({
-          where: { id: { in: changedIds } },
+          where: { id: { in: changedIds }, isActive: true, discountPercent: { gt: 0 } },
           include: { dealAnalysis: true },
         })
       : [];
-
-  // Recent price drops for Tab 2 (10 items)
-  let recentDrops = [...recentPriceChanges];
-  if (recentDrops.length < 10) {
-    const existingIds = new Set(recentDrops.map((g) => g.id));
-    const fillerGames = await prisma.game.findMany({
-      where: {
-        isActive: true,
-        discountPercent: { gt: 0 },
-        id: { notIn: Array.from(existingIds) },
-      },
-      include: { dealAnalysis: true },
-      orderBy: [{ updatedAt: "desc" }, { discountPercent: "desc" }],
-      take: 10 - recentDrops.length,
-    });
-    recentDrops = [...recentDrops, ...fillerGames];
-  }
 
   // Filter historical lows truthfully where currentPrice <= historicalLow
   const verifiedLows = historicalLows
     .filter((g) => g.currentPrice.toNumber() <= g.historicalLow.toNumber())
     .slice(0, 15);
+
+  const hasGenuineDrops = recentPriceChanges.length > 0;
+
+  // Slider Tab 2 items:
+  // If genuine price drops exist, show them under "Yeni Fiyatı Düşenler".
+  // If NO genuine drops exist currently, show top historical low deals under "Tarihi Dip Fırsatları",
+  // ensuring users NEVER see full-price games with -%0 or Zayıf Fırsat in the slider!
+  const sliderTab2Games = hasGenuineDrops
+    ? recentPriceChanges.slice(0, 10)
+    : verifiedLows.slice(0, 10);
+  const sliderTab2Label = hasGenuineDrops ? "Yeni Fiyatı Düşenler" : "Tarihi Dip Fırsatları";
 
   const totalHistoricalLowsCount = Number(totalHistoricalLowsRaw[0]?.count || 0);
 
@@ -175,7 +181,8 @@ async function getHomePageData() {
     under150Deals,
     deepDiscounts,
     recentPriceChanges,
-    recentDrops: recentDrops.slice(0, 10),
+    recentDrops: sliderTab2Games,
+    sliderTab2Label,
   };
 }
 
@@ -330,7 +337,11 @@ export default async function HomePage() {
 
         {/* Right Column: 25-Game Dual Featured Deals Slider (Top Deals + Recent Drops) */}
         <div className="lg:col-span-7 flex flex-col">
-          <FeaturedDealsSlider topDeals={featuredTopDeals} recentDrops={featuredRecentDrops} />
+          <FeaturedDealsSlider
+            topDeals={featuredTopDeals}
+            recentDrops={featuredRecentDrops}
+            dropTabLabel={data.sliderTab2Label}
+          />
         </div>
       </section>
 
@@ -361,12 +372,12 @@ export default async function HomePage() {
         />
       )}
 
-      {/* Slider Carousel 3: 📉 Son Fiyatı Düşenler & Değişenler Vitrini (Sadece gerçek 2+ gözlemli fiyat değişimi olanlar) */}
+      {/* Slider Carousel 3: 📉 Son Fiyatı Düşenler Vitrini (Sadece gerçekten fiyatı düşmüş ve aktif indirimdeki oyunlar) */}
       {recentChangesCarouselItems.length > 0 && (
         <DealsCarousel
-          title="Son Fiyatı Düşenler & Değişenler"
-          subtitle="Sistemimiz tarafından doğrulanmış gerçek fiyat düşüşleri ve hareketleri"
-          icon={<Clock className="h-4 w-4" />}
+          title="Son Fiyatı Düşenler"
+          subtitle="Sistemimiz tarafından doğrulanmış gerçek fiyat düşüşleri"
+          icon={<TrendingDown className="h-4 w-4" />}
           iconStyle="bg-blue-950 border-blue-500/40 text-blue-400"
           seeAllHref="/firsatlar?sort=priceChange"
           seeAllText="Fiyatı Değişenleri Gör"

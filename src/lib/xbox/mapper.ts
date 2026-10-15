@@ -3,8 +3,10 @@ import { NormalizedXboxProduct, ProductClass } from "./types";
 import { generateSlug } from "../pricing/slug";
 
 export const KNOWN_BUNDLE_CHILDREN: Record<string, string[]> = {
-  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NZ073P2XL0W), Mafia 3 (9NC3ZDVBLWLT)
-  "9NKG0X1MGQTX": ["9NZ073P2XL0W", "9NC3ZDVBLWLT"],
+  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NX3K6WKGHLG), Mafia 2 (9N000033SQDR), Mafia 3 (9PN06NXGLVZG)
+  "9NKG0X1MGQTX": ["9NX3K6WKGHLG", "9N000033SQDR", "9PN06NXGLVZG"],
+  // Grand Theft Auto: The Trilogy – The Definitive Edition (9MXMJFNZMVWD) -> GTA 3 (9NF3HCF7MWB4), Vice City (9PC16M34CB91), San Andreas (9P7RSGG6Z699)
+  "9MXMJFNZMVWD": ["9NF3HCF7MWB4", "9PC16M34CB91", "9P7RSGG6Z699"],
 };
 
 export function determineProductClass(
@@ -253,27 +255,8 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     }
   }
 
-  // Also check all MarketProperties RelatedProducts for bundle contents
-  for (const mp of raw.MarketProperties || []) {
-    if (Array.isArray(mp.RelatedProducts)) {
-      for (const r of mp.RelatedProducts) {
-        const relType = (r.RelationshipType || "").toLowerCase();
-        if (
-          relType !== "addonparent" &&
-          (relType.includes("bundle") ||
-            relType.includes("include") ||
-            relType.includes("package") ||
-            relType.includes("child") ||
-            relType.includes("subproduct") ||
-            relType.includes("content")) &&
-          r.RelatedProductId
-        ) {
-          const bid = r.RelatedProductId.trim().toUpperCase();
-          if (bid.length === 12) bundledProductIdsSet.add(bid);
-        }
-      }
-    }
-  }
+  // Note: MarketProperties RelatedProducts with relType 'Bundle' indicates parent bundles that contain this item,
+  // not items contained within this item. Child items are strictly defined in Sku.Properties.BundledSkus.
 
   // Known curated bundle children registry (failsafe for major game collections)
   const knownKids = KNOWN_BUNDLE_CHILDREN[productId.toUpperCase()];

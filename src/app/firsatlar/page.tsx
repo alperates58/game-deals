@@ -3,6 +3,7 @@ import { GameCard } from "@/components/game/game-card";
 import { TrendingDown, Gamepad2, Search } from "lucide-react";
 import { ProductClass } from "@prisma/client";
 import { CatalogFilterBar } from "@/components/game/catalog-filter-bar";
+import { buildReleaseDateFilter } from "@/lib/catalog/filters";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ interface DealsPageProps {
     q?: string;
     type?: string;
     platform?: string;
+    year?: string;
     sort?: string;
     minDiscount?: string;
     maxPrice?: string;
@@ -18,7 +20,15 @@ interface DealsPageProps {
 }
 
 export default async function DealsPage({ searchParams }: DealsPageProps) {
-  const { q, type = "all", platform = "all", sort = "dealScore", minDiscount = "0", maxPrice = "" } = await searchParams;
+  const {
+    q,
+    type = "all",
+    platform = "all",
+    year = "all",
+    sort = "dealScore",
+    minDiscount = "0",
+    maxPrice = "",
+  } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
@@ -57,6 +67,12 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     whereClause.platforms = { has: "XboxOne" };
   }
 
+  // Release year (Yapım Yılı) condition
+  const dateFilter = buildReleaseDateFilter(year);
+  if (dateFilter) {
+    whereClause.releaseDate = dateFilter;
+  }
+
   // Discount condition
   if (minDiscNum > 0) {
     whereClause.discountPercent = { gte: minDiscNum };
@@ -87,11 +103,13 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
   } else if (sort === "priceDesc") {
     orderBy = [{ currentPrice: "desc" }];
   } else if (sort === "priceChange") {
+    // Only query games that actually have active discounts and price history
     const changedGameRows = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT g.id
       FROM "Game" g
       JOIN "PriceHistory" ph ON ph."gameId" = g.id
       WHERE g."isActive" = true
+        AND g."discountPercent" >= ${minDiscNum > 0 ? minDiscNum : 1}
       GROUP BY g.id
       HAVING COUNT(ph.id) >= 2
       ORDER BY MAX(ph."observedAt") DESC
@@ -99,12 +117,12 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     `;
     const changedGameIds = changedGameRows.map((r) => r.id);
     changedGameCount = changedGameIds.length;
-    if (changedGameIds.length > 0) {
+    if (changedGameIds.length >= 5) {
       whereClause.id = { in: changedGameIds };
       orderBy = [{ updatedAt: "desc" }];
     } else {
-      // Graceful fallback: If no game has >=2 price history entries yet,
-      // show games with active discounts ordered by most recently updated
+      // Graceful fallback: If fewer than 5 games have multiple price histories with active discount,
+      // show all actively discounted games ordered by most recently updated
       if (!whereClause.discountPercent) {
         whereClause.discountPercent = { gt: 0 };
       }
@@ -114,7 +132,7 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     orderBy = [{ discountPercent: "desc" }, { popularityScore: "desc" }];
   }
 
-  const deals = await prisma.game.findMany({
+  let deals = await prisma.game.findMany({
     where: whereClause,
     include: {
       dealAnalysis: true,
@@ -122,6 +140,20 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     orderBy,
     take: 80,
   });
+
+  // Failsafe: if sort is priceChange and returned 0 deals due to strict ID restriction, fallback cleanly
+  if (deals.length === 0 && sort === "priceChange") {
+    const fallbackWhere = { ...whereClause };
+    delete fallbackWhere.id;
+    deals = await prisma.game.findMany({
+      where: fallbackWhere,
+      include: {
+        dealAnalysis: true,
+      },
+      orderBy: [{ updatedAt: "desc" }, { discountPercent: "desc" }],
+      take: 80,
+    });
+  }
 
   return (
     <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
@@ -161,7 +193,7 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
         {/* Dynamic Filter Bar */}
         <CatalogFilterBar
           basePath="/firsatlar"
-          filters={{ type, platform, minDiscount, maxPrice, sort, q: cleanQ }}
+          filters={{ type, platform, year, minDiscount, maxPrice, sort, q: cleanQ }}
           showTypeTabs={true}
         />
       </div>

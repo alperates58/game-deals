@@ -3,6 +3,7 @@ import { GameCard } from "@/components/game/game-card";
 import { Layers, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ProductClass } from "@prisma/client";
+import { buildReleaseDateFilter } from "@/lib/catalog/filters";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,21 @@ interface AddonsPageProps {
     q?: string;
     class?: string;
     platform?: string;
+    year?: string;
     sort?: string;
     minDiscount?: string;
   }>;
 }
 
 export default async function AddonsPage({ searchParams }: AddonsPageProps) {
-  const { q, class: classFilter, platform = "all", sort = "discount", minDiscount = "0" } = await searchParams;
+  const {
+    q,
+    class: classFilter,
+    platform = "all",
+    year = "all",
+    sort = "discount",
+    minDiscount = "0",
+  } = await searchParams;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
 
@@ -43,6 +52,12 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
     whereClause.platforms = { has: "XboxSeriesX" };
   } else if (platform === "one") {
     whereClause.platforms = { has: "XboxOne" };
+  }
+
+  // Release year (Yapım Yılı) condition
+  const dateFilter = buildReleaseDateFilter(year);
+  if (dateFilter) {
+    whereClause.releaseDate = dateFilter;
   }
 
   if (q && q.trim().length > 0) {
@@ -142,17 +157,48 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
           {/* Quick Discount Filters */}
           <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "0", ...(platform !== "all" ? { platform } : {}) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "0", ...(platform !== "all" ? { platform } : {}), ...(year !== "all" ? { year } : {}) })}`}
               className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 0 ? "bg-zinc-800 text-blue-300 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               Tüm Fiyatlar
             </Link>
             <Link
-              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "50", ...(platform !== "all" ? { platform } : {}) })}`}
+              href={`/eklentiler?${new URLSearchParams({ ...(q ? { q } : {}), ...(classFilter ? { class: classFilter } : {}), sort, minDiscount: "50", ...(platform !== "all" ? { platform } : {}), ...(year !== "all" ? { year } : {}) })}`}
               className={`px-2 py-1 rounded-md transition-colors ${minDiscNum === 50 ? "bg-zinc-800 text-blue-300 font-medium" : "text-zinc-400 hover:text-white"}`}
             >
               %50+ İndirim
             </Link>
+          </div>
+
+          {/* Release Year (Yapım Yılı) Filter */}
+          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-1 text-xs">
+            <span className="text-[11px] text-zinc-500 font-medium px-2 hidden sm:inline">Yıl:</span>
+            {[
+              { value: "all", label: "Tümü" },
+              { value: "2024", label: "2024+" },
+              { value: "2022-2023", label: "2022-2023" },
+              { value: "2020-2021", label: "2020-2021" },
+              { value: "pre2020", label: "2019 ve Öncesi" },
+            ].map((item) => (
+              <Link
+                key={item.value}
+                href={`/eklentiler?${new URLSearchParams({
+                  ...(q ? { q } : {}),
+                  ...(classFilter ? { class: classFilter } : {}),
+                  sort,
+                  minDiscount: String(minDiscNum),
+                  ...(platform !== "all" ? { platform } : {}),
+                  ...(item.value !== "all" ? { year: item.value } : {}),
+                })}`}
+                className={`px-2 py-1 rounded-md transition-colors ${
+                  year === item.value || (item.value === "all" && year === "all")
+                    ? "bg-blue-600 text-white font-bold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

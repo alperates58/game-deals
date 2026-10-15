@@ -4,6 +4,7 @@ import { Gamepad2, Package, Layers, TrendingDown, Sparkles, Clock, ArrowDownWide
 export interface CatalogFilterState {
   type?: string; // "all" | "game" | "bundle" | "addon"
   platform?: string; // "all" | "series" | "one"
+  year?: string; // "all" | "2024" | "2022-2023" | "2020-2021" | "pre2020"
   minDiscount?: string; // "0" | "50" | "75" | "90"
   maxPrice?: string; // "" | "100" | "250"
   sort?: string; // "dealScore" | "discount" | "priceChange" | "priceAsc" | "priceDesc"
@@ -23,6 +24,7 @@ export function CatalogFilterBar({
 }: CatalogFilterBarProps) {
   const currentType = filters.type || "all";
   const currentPlatform = filters.platform || "all";
+  const currentYear = filters.year || "all";
   const currentMinDisc = filters.minDiscount || "0";
   const currentMaxPrice = filters.maxPrice || "";
   const currentSort = filters.sort || "dealScore";
@@ -36,6 +38,7 @@ export function CatalogFilterBar({
     const merged = {
       type: currentType,
       platform: currentPlatform,
+      year: currentYear,
       minDiscount: currentMinDisc,
       maxPrice: currentMaxPrice,
       sort: currentSort,
@@ -44,6 +47,7 @@ export function CatalogFilterBar({
 
     if (merged.type && merged.type !== "all") params.set("type", merged.type);
     if (merged.platform && merged.platform !== "all") params.set("platform", merged.platform);
+    if (merged.year && merged.year !== "all") params.set("year", merged.year);
     if (merged.minDiscount && merged.minDiscount !== "0") params.set("minDiscount", merged.minDiscount);
     if (merged.maxPrice) params.set("maxPrice", merged.maxPrice);
     if (merged.sort && merged.sort !== "dealScore") params.set("sort", merged.sort);
@@ -238,6 +242,30 @@ export function CatalogFilterBar({
               className={`px-2.5 py-1 rounded-md transition-colors font-medium text-[11px] ${
                 currentMaxPrice === item.value
                   ? "bg-emerald-600 text-white font-bold"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Release Year (Yapım Yılı) Pills */}
+        <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/80 rounded-lg p-1">
+          <span className="text-[11px] text-zinc-500 font-medium px-2 hidden sm:inline">Yapım Yılı:</span>
+          {[
+            { value: "all", label: "Tüm Yıllar" },
+            { value: "2024", label: "2024+" },
+            { value: "2022-2023", label: "2022-2023" },
+            { value: "2020-2021", label: "2020-2021" },
+            { value: "pre2020", label: "2019 ve Öncesi" },
+          ].map((item) => (
+            <Link
+              key={item.value}
+              href={buildUrl({ year: item.value })}
+              className={`px-2.5 py-1 rounded-md transition-colors font-medium text-[11px] ${
+                currentYear === item.value
+                  ? "bg-emerald-600 text-white font-bold shadow-sm"
                   : "text-zinc-400 hover:text-white hover:bg-zinc-800"
               }`}
             >

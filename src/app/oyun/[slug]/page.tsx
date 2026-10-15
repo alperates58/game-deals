@@ -6,6 +6,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { GameActions } from "@/components/game/game-actions";
 import { RelationType, ProductClass } from "@prisma/client";
 import { KNOWN_BUNDLE_CHILDREN } from "@/lib/xbox/mapper";
+import { processNormalizedProduct } from "@/lib/pricing/price-sync";
+import { qualifyXboxSeriesPlatform } from "@/lib/xbox/platform-qualifier";
 import { DealBadge, ConfidenceBadge } from "@/components/game/deal-badge";
 import { PriceHistoryChart } from "@/components/game/price-history-chart";
 import { XboxStoreActions } from "@/components/game/xbox-store-button";
@@ -111,14 +113,29 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const existingChildBigIds = new Set(game.childRelations.map((r) => r.childGame.xboxProductId.toUpperCase()));
   const missingKnownKids = knownKids.filter((id) => !existingChildBigIds.has(id.toUpperCase()));
 
-  const isBundleCandidate =
+  const isRealBundle =
     game.productClass === "BUNDLE" ||
-    game.childRelations.length > 0 ||
     knownKids.length > 0 ||
-    game.title.toLowerCase().includes("trilogy") ||
-    game.title.toLowerCase().includes("bundle");
+    /(bundle|koleksiyon|collection|trilogy|saga|anthology|ikili paket|çift paket|\bpack\b)/i.test(game.title);
 
-  if (isBundleCandidate && (game.childRelations.length <= 1 || missingKnownKids.length > 0)) {
+  // If a single base game mistakenly has BUNDLE_CONTAINS relations in DB, clean them up
+  if (!isRealBundle && game.childRelations.length > 0) {
+    try {
+      await prisma.gameRelation.deleteMany({
+        where: {
+          parentGameId: game.id,
+          relationType: RelationType.BUNDLE_CONTAINS,
+        },
+      });
+      game.childRelations = [];
+    } catch {
+      // Ignore
+    }
+  }
+
+  const isBundleCandidate = isRealBundle;
+
+  if (isBundleCandidate && (game.childRelations.length < (knownKids.length || 2) || missingKnownKids.length > 0)) {
     try {
       let relationsUpdated = false;
 
@@ -279,7 +296,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const screenshots: string[] = Array.isArray(game.screenshots) ? (game.screenshots as string[]) : [];
 
   // Bundle economics calculation
-  const isBundle = game.productClass === "BUNDLE" || game.childRelations.length > 0;
+  const isBundle = isRealBundle && game.childRelations.length > 0;
   const bundleChildren = game.childRelations.map((r) => r.childGame).filter(Boolean);
   const totalBundleChildren = game.childRelations.length;
   const pricedChildren = bundleChildren.filter((c) => c != null);

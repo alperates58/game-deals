@@ -38,9 +38,15 @@ interface FeaturedDealsSliderProps {
   deals?: FeaturedDealItem[];
   topDeals?: FeaturedDealItem[];
   recentDrops?: FeaturedDealItem[];
+  dropTabLabel?: string;
 }
 
-export function FeaturedDealsSlider({ deals, topDeals, recentDrops }: FeaturedDealsSliderProps) {
+export function FeaturedDealsSlider({
+  deals,
+  topDeals,
+  recentDrops,
+  dropTabLabel = "Yeni Fiyatı Düşenler",
+}: FeaturedDealsSliderProps) {
   const [activeTab, setActiveTab] = useState<"top" | "drops">("top");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -180,7 +186,8 @@ export function FeaturedDealsSlider({ deals, topDeals, recentDrops }: FeaturedDe
     if (score && score >= 85) return "Mükemmel Fırsat";
     if (score && score >= 70) return "Çok İyi Fırsat";
     if (score && score >= 50) return "İyi Fırsat";
-    return "İndirimde";
+    if (score && score >= 40) return "Orta Fırsat";
+    return "Fırsat";
   };
 
   return (
@@ -244,7 +251,7 @@ export function FeaturedDealsSlider({ deals, topDeals, recentDrops }: FeaturedDe
               }`}
             >
               <TrendingDown className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Yeni Fiyatı Düşenler</span>
+              <span>{dropTabLabel}</span>
               <span className="text-[10px] opacity-80 font-mono">({effectiveDrops.length})</span>
             </button>
           </div>
@@ -322,9 +329,11 @@ export function FeaturedDealsSlider({ deals, topDeals, recentDrops }: FeaturedDe
               )}
 
               {/* Discount Ribbon on Poster */}
-              <div className="absolute top-2 left-2 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-black text-black shadow-md">
-                -%{current.discountPercent}
-              </div>
+              {current.discountPercent > 0 && (
+                <div className="absolute top-2 left-2 rounded-md bg-emerald-500 px-2 py-0.5 text-xs font-black text-black shadow-md">
+                  -%{current.discountPercent}
+                </div>
+              )}
             </Link>
           </div>
 
