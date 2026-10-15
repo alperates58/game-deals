@@ -17,7 +17,7 @@ export interface SyncStats {
 export interface ProcessProductOptions {
   franchise?: string;
   isCore?: boolean;
-  discoverySource?: "FULL_CATALOG" | "RELATED" | "MANUAL";
+  discoverySource?: "FULL_CATALOG" | "RELATED" | "MANUAL" | "BUNDLE_CHILD";
   platforms?: string[];
   isSeriesXCompatible?: boolean;
   now?: Date;
@@ -48,7 +48,9 @@ export async function processNormalizedProduct(
     Boolean((options as any).allowFree) ||
     product.productClass === "DLC" ||
     product.productClass === "EXPANSION" ||
-    product.productClass === "ADDON" ||
+    product.productClass === "ADD_ON" ||
+    product.productClass === "SEASON_PASS" ||
+    product.productClass === "CONTENT_PACK" ||
     (product.bundledProductIds && product.bundledProductIds.length > 0);
 
   if ((product.isFree || (product.currentPrice === 0 && product.listPrice === 0)) && !isBundleOrPackageItem) {
@@ -214,6 +216,7 @@ export async function processNormalizedProduct(
           historicalLow: lowDecimal,
           historicalLowAt: lowResult.historicalLowAt,
           lastSeenAt: effectiveNow,
+          productClass: product.productClass,
           imageUrl: product.imageUrl || existing.imageUrl,
           isCore: effectiveIsCore || existing.isCore,
           franchise: effectiveFranchise || existing.franchise,
@@ -266,6 +269,7 @@ export async function processNormalizedProduct(
         where: { id: existing.id },
         data: {
           lastSeenAt: effectiveNow,
+          productClass: product.productClass,
           imageUrl: product.imageUrl || existing.imageUrl,
           platforms: effectivePlatforms.length > 0 ? effectivePlatforms : existing.platforms,
           isSeriesXCompatible: effectiveSeriesX,

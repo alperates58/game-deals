@@ -36,6 +36,7 @@ export interface NormalizedXboxProduct {
   // Authoritative relationships from Display Catalog
   bundledProductIds: string[];
   parentProductId?: string;
+  relatedBundleIds?: string[];
 
   source: "MICROSOFT_DISPLAY_CATALOG";
 }

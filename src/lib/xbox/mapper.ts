@@ -3,8 +3,15 @@ import { NormalizedXboxProduct, ProductClass } from "./types";
 import { generateSlug } from "../pricing/slug";
 
 export const KNOWN_BUNDLE_CHILDREN: Record<string, string[]> = {
-  // Mafia: Trilogy (9NKG0X1MGQTX) -> Mafia 1 (9NX36W49M2GH), Mafia 2 (9N000033SQDR), Mafia 3 (C2M493H501ZG)
-  "9NKG0X1MGQTX": ["9NX36W49M2GH", "9N000033SQDR", "C2M493H501ZG"],
+  // Mafia: Trilogy (9NKG0X1MGQTX) official Display Catalog BundledSkus
+  "9NKG0X1MGQTX": [
+    "9NP3CC2X23BN",
+    "9N000033SQDR",
+    "9P4V2BGJFWW7",
+    "9NVSQXQR21WZ",
+    "9NZC09NNR93L",
+    "BVV8LHVGPBS3",
+  ],
   // Grand Theft Auto: The Trilogy – The Definitive Edition (9MXMJFNZMVWD) -> GTA 3 (9N3QFH749NBW), Vice City (9PC16M34CB91), San Andreas (9P7RSGG6Z699)
   "9MXMJFNZMVWD": ["9N3QFH749NBW", "9PC16M34CB91", "9P7RSGG6Z699"],
 };
@@ -17,10 +24,12 @@ export function determineProductClass(
   hasAddonParent = false
 ): ProductClass {
   const t = title.toLowerCase();
+  const pType = productType.toLowerCase();
+  const isDurableOrAddon = pType === "durable" || pType === "addon" || hasAddonParent;
 
   // 1. Currency & Consumable
   if (
-    productType.toLowerCase() === "consumable" ||
+    pType === "consumable" ||
     t.includes("para kartı") ||
     t.includes("shark kartı") ||
     t.includes("sanal para") ||
@@ -31,7 +40,32 @@ export function determineProductClass(
     return "CURRENCY";
   }
 
-  // 2. Bundles
+  // 2. Durable / Add-on items (checked before generic bundle flag so Expansion Passes & DLC Packs aren't misclassified as Game Bundles)
+  if (isDurableOrAddon) {
+    if (t.includes("season pass") || t.includes("sezon bileti") || t.includes("expansion pass")) {
+      return "SEASON_PASS";
+    }
+    if (t.includes("expansion") || t.includes("genişletme")) {
+      return "EXPANSION";
+    }
+    if (t.includes("dlc")) {
+      return "DLC";
+    }
+    if (
+      t.includes("pack") ||
+      t.includes("paketi") ||
+      t.includes("set") ||
+      t.includes("upgrade") ||
+      t.includes("yükseltme") ||
+      t.includes("outfit") ||
+      t.includes("skin")
+    ) {
+      return "CONTENT_PACK";
+    }
+    return "ADD_ON";
+  }
+
+  // 3. Game Bundles
   if (
     isBundle ||
     hasBundledSkus ||
@@ -45,8 +79,8 @@ export function determineProductClass(
     return "BUNDLE";
   }
 
-  // 3. Add-on sub-types
-  if (t.includes("season pass") || t.includes("sezon bileti")) {
+  // 4. Add-on sub-types by title fallback
+  if (t.includes("season pass") || t.includes("sezon bileti") || t.includes("expansion pass")) {
     return "SEASON_PASS";
   }
   if (t.includes("expansion") || t.includes("genişletme")) {
@@ -67,17 +101,16 @@ export function determineProductClass(
     return "CONTENT_PACK";
   }
 
-  // 4. Other Durable / AddOn items or items with an addOnParent
-  if (productType === "Durable" || productType.toLowerCase() === "addon" || hasAddonParent) {
-    return "ADD_ON";
-  }
-
   // Default to Base Game
   return "BASE_GAME";
 }
 
 export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxProduct | null {
+  const productId = (raw.ProductId || "").toUpperCase();
+  if (!productId) return null;
+
   const loc = raw.LocalizedProperties?.[0];
+  const marketProp = raw.MarketProperties?.[0];
   const title = loc?.ProductTitle || "İsimsiz Oyun";
   const slug = generateSlug(title);
   const publisher = loc?.PublisherName || "Bilinmiyor";
@@ -105,18 +138,23 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     }
   }
 
-  // Find authoritative purchase availability in TRY (select best deal if multiple availabilities exist)
+  // Find authoritative availability in TRY across 4 priority tiers:
+  // Tier 1: Active Availabilities with Purchase action & TRY ListPrice > 0
+  // Tier 2: HistoricalBestAvailabilities with TRY ListPrice > 0 (rescues wrapper editions whose active SKU is Redeem-only)
+  // Tier 3: Active or HistoricalBestAvailabilities with TRY ListPrice >= 0 (rescues 0 TL bundle-child SKUs)
+  // Tier 4: Any availability with a numeric ListPrice (rescues bundle-only DLCs with USD 0.0 license entries)
   let purchaseAvailability: any = null;
   let bestDiscount = -1;
   let lowestPrice = Infinity;
 
+  // Tier 1: Active TRY Purchase > 0
   for (const dsa of raw.DisplaySkuAvailabilities || []) {
     for (const avail of dsa.Availabilities || []) {
       const isPurchase = avail.Actions?.includes("Purchase");
       const priceObj = avail.OrderManagementData?.Price;
       const currency = priceObj?.CurrencyCode;
 
-      if (isPurchase && currency === "TRY" && typeof priceObj?.ListPrice === "number") {
+      if (isPurchase && currency === "TRY" && typeof priceObj?.ListPrice === "number" && priceObj.ListPrice > 0) {
         const cPrice = priceObj.ListPrice;
         const mPrice = priceObj.MSRP ?? cPrice;
         const disc = mPrice > cPrice && mPrice > 0 ? Math.round(((mPrice - cPrice) / mPrice) * 100) : 0;
@@ -130,10 +168,31 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     }
   }
 
-  // Fallback availability
+  // Tier 2: HistoricalBestAvailabilities TRY > 0
   if (!purchaseAvailability) {
     for (const dsa of raw.DisplaySkuAvailabilities || []) {
-      for (const avail of dsa.Availabilities || []) {
+      for (const avail of dsa.HistoricalBestAvailabilities || []) {
+        const priceObj = avail.OrderManagementData?.Price;
+        if (priceObj?.CurrencyCode === "TRY" && typeof priceObj?.ListPrice === "number" && priceObj.ListPrice > 0) {
+          const cPrice = priceObj.ListPrice;
+          const mPrice = priceObj.MSRP ?? cPrice;
+          const disc = mPrice > cPrice && mPrice > 0 ? Math.round(((mPrice - cPrice) / mPrice) * 100) : 0;
+
+          if (!purchaseAvailability || disc > bestDiscount || (disc === bestDiscount && cPrice < lowestPrice)) {
+            purchaseAvailability = avail;
+            bestDiscount = disc;
+            lowestPrice = cPrice;
+          }
+        }
+      }
+    }
+  }
+
+  // Tier 3: Active or HistoricalBestAvailabilities TRY >= 0
+  if (!purchaseAvailability) {
+    for (const dsa of raw.DisplaySkuAvailabilities || []) {
+      const allAvails = [...(dsa.Availabilities || []), ...(dsa.HistoricalBestAvailabilities || [])];
+      for (const avail of allAvails) {
         const priceObj = avail.OrderManagementData?.Price;
         if (priceObj?.CurrencyCode === "TRY" && typeof priceObj?.ListPrice === "number") {
           const cPrice = priceObj.ListPrice;
@@ -150,6 +209,21 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     }
   }
 
+  // Tier 4: Any availability with a numeric price (bundle-only license SKUs)
+  if (!purchaseAvailability) {
+    for (const dsa of raw.DisplaySkuAvailabilities || []) {
+      const allAvails = [...(dsa.Availabilities || []), ...(dsa.HistoricalBestAvailabilities || [])];
+      for (const avail of allAvails) {
+        const priceObj = avail.OrderManagementData?.Price;
+        if (typeof priceObj?.ListPrice === "number") {
+          purchaseAvailability = avail;
+          break;
+        }
+      }
+      if (purchaseAvailability) break;
+    }
+  }
+
   if (!purchaseAvailability) {
     return null;
   }
@@ -160,7 +234,7 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
 
   const currentPrice = Number(rawCurrent.toFixed(2));
   const listPrice = Number(rawMSRP.toFixed(2));
-  const currency = priceObj?.CurrencyCode || "TRY";
+  const currency = currentPrice === 0 ? "TRY" : (priceObj?.CurrencyCode || "TRY");
 
   const isFree = currentPrice === 0 && listPrice === 0;
   const isOnSale = listPrice > currentPrice && currentPrice > 0;
@@ -269,8 +343,9 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
 
   const bundledProductIds = Array.from(bundledProductIdsSet);
 
-  // Authoritative addOnParent ID
+  // Authoritative addOnParent ID & related parent bundle IDs
   let parentProductId: string | undefined = undefined;
+  const relatedBundleIdsSet = new Set<string>();
   if (marketProp?.RelatedProducts && Array.isArray(marketProp.RelatedProducts)) {
     const parentRel = marketProp.RelatedProducts.find(
       (r) => r.RelationshipType === "addOnParent"
@@ -278,7 +353,18 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     if (parentRel?.RelatedProductId) {
       parentProductId = parentRel.RelatedProductId.toUpperCase();
     }
+
+    for (const r of marketProp.RelatedProducts) {
+      if (
+        (r.RelationshipType === "Bundle" || r.RelationshipType === "Parent") &&
+        r.RelatedProductId &&
+        r.RelatedProductId.trim().length === 12
+      ) {
+        relatedBundleIdsSet.add(r.RelatedProductId.trim().toUpperCase());
+      }
+    }
   }
+  const relatedBundleIds = Array.from(relatedBundleIdsSet);
 
   // Determine ProductClass
   const isBundle = hasAnyBundleFlag || bundledProductIds.length > 0;
@@ -350,6 +436,7 @@ export function mapDisplayCatalogProduct(raw: XboxProductRaw): NormalizedXboxPro
     isFree,
     bundledProductIds,
     parentProductId,
+    relatedBundleIds,
     source: "MICROSOFT_DISPLAY_CATALOG",
   };
 }

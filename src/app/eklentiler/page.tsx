@@ -41,6 +41,7 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
 
   const whereClause: any = {
     isActive: true,
+    currentPrice: { gt: 0 },
     productClass: classFilter && allowedAddonClasses.includes(classFilter as any)
       ? (classFilter as ProductClass)
       : { in: allowedAddonClasses },

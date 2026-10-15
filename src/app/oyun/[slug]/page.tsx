@@ -6,8 +6,10 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { GameActions } from "@/components/game/game-actions";
 import { RelationType, ProductClass } from "@prisma/client";
 import { KNOWN_BUNDLE_CHILDREN } from "@/lib/xbox/mapper";
-import { processNormalizedProduct } from "@/lib/pricing/price-sync";
-import { qualifyXboxSeriesPlatform } from "@/lib/xbox/platform-qualifier";
+import {
+  enrichBundleChildrenFromCatalog,
+  BUNDLE_RELATION_SOURCE_V2,
+} from "@/lib/xbox/bundle-enricher";
 import { DealBadge, ConfidenceBadge } from "@/components/game/deal-badge";
 import { PriceHistoryChart } from "@/components/game/price-history-chart";
 import { XboxStoreActions } from "@/components/game/xbox-store-button";
@@ -108,171 +110,63 @@ export default async function GameDetailPage({ params }: GamePageProps) {
     notFound();
   }
 
-  // On-demand bundle content auto-recovery if bundle is missing children
+  // On-demand bundle content auto-recovery & verification from Microsoft Display Catalog
   const knownKids = KNOWN_BUNDLE_CHILDREN[game.xboxProductId.toUpperCase()] || [];
   const existingChildBigIds = new Set(game.childRelations.map((r) => r.childGame.xboxProductId.toUpperCase()));
   const missingKnownKids = knownKids.filter((id) => !existingChildBigIds.has(id.toUpperCase()));
 
-  // A real bundle must match known bundle criteria or title keywords
-  const isTitleBundle = /(bundle|koleksiyon|collection|trilogy|saga|anthology|ikili paket|çift paket|\bpack\b)/i.test(game.title);
+  // A bundle candidate matches bundle/edition keywords, known bundle registry, BUNDLE class, or existing relations
+  const isTitleBundle = /(bundle|koleksiyon|collection|trilogy|saga|anthology|ikili paket|çift paket|\bpack\b|gold edition|deluxe edition|ultimate edition|complete edition|definitive edition)/i.test(game.title);
   const isKnownBundle = knownKids.length > 0;
-  const isRealBundle = isTitleBundle || isKnownBundle;
+  const isBundleCandidate =
+    isTitleBundle ||
+    isKnownBundle ||
+    game.productClass === "BUNDLE" ||
+    game.childRelations.length > 0;
 
-  // If a single game was mistakenly saved with productClass = "BUNDLE" (e.g. from legacy crawler bug), correct it to "GAME"
-  if (!isRealBundle && game.productClass === "BUNDLE") {
+  const isAlreadyV2Enriched =
+    game.childRelations.length > 0 &&
+    game.childRelations.every((r) => r.source === BUNDLE_RELATION_SOURCE_V2);
+
+  if (isBundleCandidate && (!isAlreadyV2Enriched || missingKnownKids.length > 0)) {
     try {
-      await prisma.game.update({
-        where: { id: game.id },
-        data: { productClass: "GAME" },
-      });
-      game.productClass = "GAME";
-    } catch {
-      // Ignore
-    }
-  }
+      const enrichResult = await enrichBundleChildrenFromCatalog(game.id, game.xboxProductId);
 
-  // Detect and purge any inverted relations:
-  // 1. If this is not a real bundle, it should have NO BUNDLE_CONTAINS child relations.
-  // 2. Even if it is a bundle, none of its children can be a bundle/trilogy/collection itself!
-  const invertedChildren = game.childRelations.filter((r) => {
-    if (!isRealBundle) return true;
-    const cTitle = r.childGame.title.toLowerCase();
-    return (
-      r.childGame.productClass === "BUNDLE" ||
-      cTitle.includes("trilogy") ||
-      cTitle.includes("koleksiyon") ||
-      cTitle.includes("collection") ||
-      cTitle.includes("bundle")
-    );
-  });
-
-  if (invertedChildren.length > 0) {
-    try {
-      await prisma.gameRelation.deleteMany({
-        where: {
-          id: { in: invertedChildren.map((r) => r.id) },
-        },
-      });
-      game.childRelations = game.childRelations.filter(
-        (r) => !invertedChildren.some((inv) => inv.id === r.id)
-      );
-    } catch {
-      // Ignore
-    }
-  }
-
-  const isBundleCandidate = isRealBundle;
-
-  if (isBundleCandidate && (game.childRelations.length < (knownKids.length || 2) || missingKnownKids.length > 0)) {
-    try {
-      let relationsUpdated = false;
-
-      // Ensure productClass is set to BUNDLE in database
-      if (game.productClass !== "BUNDLE") {
-        await prisma.game.update({
-          where: { id: game.id },
-          data: { productClass: "BUNDLE" },
-        });
-        game.productClass = "BUNDLE";
-      }
-
-      // 1. Immediately link any known children that already exist in our DB
-      for (let i = 0; i < knownKids.length; i++) {
-        const kidBigId = knownKids[i].toUpperCase();
-        if (!existingChildBigIds.has(kidBigId)) {
-          const existingInDb = await prisma.game.findUnique({ where: { xboxProductId: kidBigId } });
-          if (existingInDb) {
-            await prisma.gameRelation.upsert({
-              where: {
-                parentGameId_childGameId_relationType: {
-                  parentGameId: game.id,
-                  childGameId: existingInDb.id,
-                  relationType: RelationType.BUNDLE_CONTAINS,
-                },
-              },
-              create: {
-                parentGameId: game.id,
-                childGameId: existingInDb.id,
-                relationType: RelationType.BUNDLE_CONTAINS,
-                position: game.childRelations.length + i,
-                source: "KNOWN_REGISTRY",
-              },
-              update: {},
-            });
-            existingChildBigIds.add(kidBigId);
-            relationsUpdated = true;
-          }
-        }
-      }
-
-      // 2. Fetch fresh metadata from Microsoft Catalog to discover or pull missing children
-      const { catalogClient, XboxCatalogClient } = await import("@/lib/xbox/catalog-client");
-      const client = catalogClient || new XboxCatalogClient();
-
-      const [freshBundle] = await client.fetchProductsBatch([game.xboxProductId]);
-      const candidateIds = new Set<string>([
-        ...(freshBundle?.bundledProductIds || []),
-        ...knownKids,
-      ]);
-      const missingChildIds = Array.from(candidateIds).filter((id) => !existingChildBigIds.has(id.toUpperCase()));
-
-      if (missingChildIds.length > 0) {
-        const fetchedChildren = await client.fetchProductsBatch(missingChildIds);
-        for (let i = 0; i < fetchedChildren.length; i++) {
-          const cp = fetchedChildren[i];
-          const qual = qualifyXboxSeriesPlatform({
-            productId: cp.productId,
-            availableOn: cp.platforms,
-            currentPrice: cp.currentPrice,
-            listPrice: cp.listPrice,
-            isFree: cp.isFree,
-            productType: cp.productType,
-            parentIsSeriesCompatible: true,
+      if (enrichResult.childCount > 0) {
+        if (game.productClass !== "BUNDLE" && (isTitleBundle || isKnownBundle || enrichResult.childCount >= 2)) {
+          await prisma.game.update({
+            where: { id: game.id },
+            data: { productClass: "BUNDLE" },
           });
-
-          if (qual.isQualified) {
-            await processNormalizedProduct(cp, {
-              discoverySource: "BUNDLE_CHILD",
-              platforms: qual.platforms,
-              isSeriesXCompatible: qual.platforms.includes("XboxSeriesX"),
-            });
-            const childInDb = await prisma.game.findUnique({ where: { xboxProductId: cp.productId } });
-            if (childInDb) {
-              await prisma.gameRelation.upsert({
-                where: {
-                  parentGameId_childGameId_relationType: {
-                    parentGameId: game.id,
-                    childGameId: childInDb.id,
-                    relationType: RelationType.BUNDLE_CONTAINS,
-                  },
-                },
-                create: {
-                  parentGameId: game.id,
-                  childGameId: childInDb.id,
-                  relationType: RelationType.BUNDLE_CONTAINS,
-                  position: game.childRelations.length + i,
-                  source: "MICROSOFT_DISPLAY_CATALOG",
-                },
-                update: {},
-              });
-              relationsUpdated = true;
-            }
-          }
+          game.productClass = "BUNDLE";
         }
-      }
-
-      if (relationsUpdated) {
-        // Re-fetch updated child relations
         game.childRelations = await prisma.gameRelation.findMany({
           where: { parentGameId: game.id, relationType: RelationType.BUNDLE_CONTAINS },
           include: { childGame: true },
           orderBy: { position: "asc" },
         });
+      } else if (!isTitleBundle && !isKnownBundle) {
+        // Not a real bundle in Display Catalog: purge any legacy inverted relations and fix productClass
+        if (game.childRelations.length > 0) {
+          await prisma.gameRelation.deleteMany({
+            where: { parentGameId: game.id, relationType: RelationType.BUNDLE_CONTAINS },
+          });
+          game.childRelations = [];
+        }
+        if (game.productClass === "BUNDLE") {
+          await prisma.game.update({
+            where: { id: game.id },
+            data: { productClass: "BASE_GAME" },
+          });
+          game.productClass = "BASE_GAME";
+        }
       }
     } catch (enrichErr: any) {
       console.warn(`[GameDetail] On-demand bundle enrichment notice:`, enrichErr.message);
     }
   }
+
+  const isRealBundle = game.childRelations.length > 0;
 
   // Also query DLCs/Addons if this is a BASE_GAME or has child add-ons
   const addOnRelations = await prisma.gameRelation.findMany({
@@ -694,12 +588,20 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                         {child.title}
                       </h5>
                       <div className="mt-1 flex items-baseline gap-2 text-xs">
-                        <span className="font-bold text-white">
-                          {formatPrice(child.currentPrice.toNumber())} {child.currency}
-                        </span>
-                        {child.discountPercent > 0 && (
-                          <span className="text-[10px] text-emerald-400 font-semibold">
-                            -%{child.discountPercent}
+                        {child.currentPrice.toNumber() > 0 ? (
+                          <>
+                            <span className="font-bold text-white">
+                              {formatPrice(child.currentPrice.toNumber())} {child.currency}
+                            </span>
+                            {child.discountPercent > 0 && (
+                              <span className="text-[10px] text-emerald-400 font-semibold">
+                                -%{child.discountPercent}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="inline-flex items-center rounded bg-purple-500/15 px-1.5 py-0.5 text-[10px] font-medium text-purple-300 border border-purple-500/30">
+                            Pakete Dahil
                           </span>
                         )}
                       </div>

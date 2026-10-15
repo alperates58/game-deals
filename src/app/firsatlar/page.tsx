@@ -80,9 +80,11 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     whereClause.discountPercent = { gte: 1 };
   }
 
-  // Budget / max price condition
+  // Budget / max price condition (always exclude 0 TL bundle-only leaf SKUs from standalone deals list)
   if (maxPriceNum !== null && !isNaN(maxPriceNum)) {
-    whereClause.currentPrice = { lte: maxPriceNum };
+    whereClause.currentPrice = { gt: 0, lte: maxPriceNum };
+  } else {
+    whereClause.currentPrice = { gt: 0 };
   }
 
   if (hasQuery) {

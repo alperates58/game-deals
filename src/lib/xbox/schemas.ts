@@ -72,6 +72,7 @@ export const XboxDisplaySkuAvailabilitySchema = z.object({
     Properties: XboxSkuPropertiesSchema.optional(),
   }).optional(),
   Availabilities: z.array(XboxAvailabilitySchema).optional(),
+  HistoricalBestAvailabilities: z.array(XboxAvailabilitySchema).optional(),
 });
 
 export const XboxRelatedProductSchema = z.object({
