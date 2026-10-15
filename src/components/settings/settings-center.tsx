@@ -25,10 +25,39 @@ import {
   Sparkles,
   Loader2,
   Terminal,
+  Gamepad2,
+  ChevronDown,
+  ChevronUp,
+  History,
+  Activity,
+  Check,
 } from "lucide-react";
 import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
 import type { SyncProgressState } from "@/lib/xbox/sync-progress-tracker";
 import Link from "next/link";
+
+export interface EnrichedGameItem {
+  title: string;
+  slug?: string;
+  price?: number;
+  discount?: number;
+}
+
+export interface SyncRunLogItem {
+  id: string;
+  type: string;
+  status: string;
+  startedAt: string | Date;
+  finishedAt: string | Date | null;
+  productsFound: number;
+  productsChecked: number;
+  productsAdded: number;
+  pricesChanged: number;
+  errorCount: number;
+  summaryText: string;
+  addedGames?: EnrichedGameItem[];
+  updatedGames?: EnrichedGameItem[];
+}
 
 interface SystemStats {
   totalGames: number;
@@ -46,6 +75,7 @@ interface SystemStats {
     pricesChanged: number;
     errorCount: number;
   } | null;
+  recentSyncRuns?: SyncRunLogItem[];
   relationsByType: { type: string; count: number }[];
   gamesByType: { type: string; count: number }[];
 }
@@ -94,6 +124,38 @@ export function SettingsCenter({
   const [syncProgress, setSyncProgress] = useState<SyncProgressState | null>(null);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const progressPollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Audit log & Sync Runs history state
+  const [syncRuns, setSyncRuns] = useState<SyncRunLogItem[]>(initialStats.recentSyncRuns || []);
+  const [isLoadingSyncRuns, setIsLoadingSyncRuns] = useState(false);
+  const [syncRunFilter, setSyncRunFilter] = useState<"ALL" | "CHANGES_ONLY" | "ERRORS_ONLY">("ALL");
+  const [expandedRunIds, setExpandedRunIds] = useState<Set<string>>(new Set());
+
+  const toggleExpandRun = (runId: string) => {
+    setExpandedRunIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(runId)) next.delete(runId);
+      else next.add(runId);
+      return next;
+    });
+  };
+
+  const fetchSyncRuns = async () => {
+    setIsLoadingSyncRuns(true);
+    try {
+      const res = await fetch("/api/settings/sync-runs?limit=25");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.syncRuns) {
+          setSyncRuns(data.syncRuns);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsLoadingSyncRuns(false);
+    }
+  };
 
   // Manual Add state
   const [manualInput, setManualInput] = useState("");
@@ -174,6 +236,7 @@ export function SettingsCenter({
           } else {
             setIsTriggering(false);
             setTriggerAction(null);
+            fetchSyncRuns();
             if (progressPollingRef.current) {
               clearInterval(progressPollingRef.current);
               progressPollingRef.current = null;
@@ -188,6 +251,7 @@ export function SettingsCenter({
 
   useEffect(() => {
     pollProgress();
+    fetchSyncRuns();
     return () => {
       if (progressPollingRef.current) clearInterval(progressPollingRef.current);
     };
@@ -224,6 +288,7 @@ export function SettingsCenter({
       });
 
       await pollProgress();
+      await fetchSyncRuns();
 
       // Refresh settings & stats
       const sRes = await fetch("/api/settings");
@@ -231,11 +296,13 @@ export function SettingsCenter({
         const sData = await sRes.json();
         setSettings(sData.settings);
         setStats(sData.stats);
+        if (sData.stats?.recentSyncRuns) setSyncRuns(sData.stats.recentSyncRuns);
         if (sData.scheduleInfo) setScheduleInfo(sData.scheduleInfo);
       }
     } catch (err: any) {
       setTriggerMessage({ success: false, message: err.message });
       await pollProgress();
+      await fetchSyncRuns();
     } finally {
       // Polling continues until progress reports completed
     }
@@ -754,6 +821,382 @@ export function SettingsCenter({
                 {scheduleInfo?.nextPriceSyncAt ? new Date(scheduleInfo.nextPriceSyncAt).toLocaleString("tr-TR") : "Devre Dışı"}
               </p>
             </div>
+          </div>
+
+          {/* TARAMA & DEĞİŞİKLİK GEÇMİŞİ (DENETİM LOG TABLOSU) */}
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800/80 pb-3">
+              <div>
+                <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                  <History className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Tarama & Değişiklik Geçmişi</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">
+                    {filteredSyncRuns.length} Kayıt
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Ne tarandı, yeni oyun eklendi mi, hangi fiyatlar güncellendi satır satır denetim dökümü.
+                </p>
+              </div>
+
+              {/* Filters & Refresh */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center rounded-lg bg-zinc-950 p-0.5 border border-zinc-800 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setSyncRunFilter("ALL")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      syncRunFilter === "ALL"
+                        ? "bg-zinc-800 text-white font-medium shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSyncRunFilter("CHANGES_ONLY")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      syncRunFilter === "CHANGES_ONLY"
+                        ? "bg-emerald-950/80 text-emerald-300 font-medium border border-emerald-800/40"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Değişenler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSyncRunFilter("ERRORS_ONLY")}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${
+                      syncRunFilter === "ERRORS_ONLY"
+                        ? "bg-red-950/80 text-red-300 font-medium border border-red-800/40"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Hatalar
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchSyncRuns}
+                  disabled={isLoadingSyncRuns}
+                  title="Geçmişi Yenile"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isLoadingSyncRuns ? "animate-spin text-emerald-400" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            {filteredSyncRuns.length === 0 ? (
+              <div className="text-center py-8 text-xs text-zinc-500 flex flex-col items-center gap-2">
+                <Activity className="h-6 w-6 text-zinc-600" />
+                <span>Henüz listelenecek bir tarama veya senkronizasyon kaydı bulunmuyor.</span>
+              </div>
+            ) : (
+              <>
+                {/* Desktop View Table */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-800 text-[11px] font-medium text-zinc-400">
+                        <th className="pb-2.5 pl-1">İşlem & Zaman</th>
+                        <th className="pb-2.5">Kapsam</th>
+                        <th className="pb-2.5">Değişiklik Tespiti</th>
+                        <th className="pb-2.5">Kısa Özet & Eklenen Oyunlar</th>
+                        <th className="pb-2.5">Durum</th>
+                        <th className="pb-2.5 pr-1 text-right">Detay</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {filteredSyncRuns.map((run) => {
+                        const isExpanded = expandedRunIds.has(run.id);
+                        const hasAdded = run.productsAdded > 0;
+                        const hasChanged = run.pricesChanged > 0;
+                        const durationSec = run.finishedAt
+                          ? Math.max(1, Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000))
+                          : null;
+
+                        return (
+                          <tr key={run.id} className="group hover:bg-zinc-850/40 transition-colors">
+                            {/* İşlem & Zaman */}
+                            <td className="py-3 pl-1 align-top">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide ${
+                                      run.type === "DISCOVERY"
+                                        ? "bg-emerald-950 text-emerald-300 border border-emerald-800/60"
+                                        : run.type === "PRICE_SYNC"
+                                        ? "bg-blue-950 text-blue-300 border border-blue-800/60"
+                                        : "bg-purple-950 text-purple-300 border border-purple-800/60"
+                                    }`}
+                                  >
+                                    {run.type === "DISCOVERY"
+                                      ? "Katalog Keşfi"
+                                      : run.type === "PRICE_SYNC"
+                                      ? "Fiyat Senkronizasyonu"
+                                      : run.type}
+                                  </span>
+                                  {durationSec && (
+                                    <span className="text-[10px] font-mono text-zinc-500">
+                                      {durationSec}sn
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[11px] text-zinc-400 font-mono" suppressHydrationWarning>
+                                  {new Date(run.startedAt).toLocaleString("tr-TR")}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Kapsam */}
+                            <td className="py-3 align-top font-mono text-zinc-300 text-xs">
+                              {run.productsChecked || run.productsFound || 0} Ürün
+                            </td>
+
+                            {/* Değişiklik Tespiti */}
+                            <td className="py-3 align-top">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {hasAdded ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-semibold">
+                                    +{run.productsAdded} Yeni Oyun
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-zinc-500">0 Yeni</span>
+                                )}
+
+                                {hasChanged ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40 text-[11px] font-semibold">
+                                    {run.pricesChanged} Güncellendi
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-zinc-500">• Fiyat Aynı</span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Kısa Özet & Eklenen Oyunlar */}
+                            <td className="py-3 align-top max-w-md">
+                              <div className="text-[11px] text-zinc-300 leading-relaxed font-normal">
+                                {run.summaryText}
+                              </div>
+
+                              {/* Eklenen Oyun İsimleri Listesi (Desktop) */}
+                              {run.addedGames && run.addedGames.length > 0 && (
+                                <div className="mt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandRun(run.id)}
+                                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                                  >
+                                    <Gamepad2 className="h-3 w-3" />
+                                    <span>
+                                      {isExpanded
+                                        ? "Oyun İsimlerini Gizle"
+                                        : `Eklenen Oyunları Göster (${run.addedGames.length} Oyun)`}
+                                    </span>
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3" />
+                                    )}
+                                  </button>
+
+                                  {isExpanded && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5 p-2 rounded-lg bg-zinc-950/80 border border-zinc-800/80">
+                                      {run.addedGames.map((game, gIdx) => (
+                                        <span
+                                          key={gIdx}
+                                          className="inline-flex items-center gap-1 rounded bg-zinc-900 border border-zinc-700/80 px-2 py-0.5 text-[10px] text-zinc-200"
+                                        >
+                                          {game.slug ? (
+                                            <Link
+                                              href={`/oyun/${game.slug}`}
+                                              target="_blank"
+                                              className="font-medium text-emerald-300 hover:underline"
+                                            >
+                                              {game.title}
+                                            </Link>
+                                          ) : (
+                                            <span className="font-medium text-emerald-300">{game.title}</span>
+                                          )}
+                                          {game.price !== undefined && (
+                                            <span className="text-zinc-400 font-mono">
+                                              ({game.price} ₺)
+                                            </span>
+                                          )}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Durum */}
+                            <td className="py-3 align-top">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                  run.status === "COMPLETED"
+                                    ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50"
+                                    : run.status === "RUNNING"
+                                    ? "bg-blue-950 text-blue-400 border border-blue-800/50 animate-pulse"
+                                    : "bg-red-950 text-red-400 border border-red-800/50"
+                                }`}
+                              >
+                                {run.status === "COMPLETED" ? (
+                                  <Check className="h-3 w-3" />
+                                ) : (
+                                  <AlertTriangle className="h-3 w-3" />
+                                )}
+                                <span>{run.status === "COMPLETED" ? "Başarılı" : run.status}</span>
+                              </span>
+                            </td>
+
+                            {/* Detay Tıklama */}
+                            <td className="py-3 pr-1 align-top text-right">
+                              {run.addedGames && run.addedGames.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpandRun(run.id)}
+                                  className="text-[11px] text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors"
+                                  title="Detayları aç/kapat"
+                                >
+                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </button>
+                              ) : (
+                                <span className="text-zinc-600 text-[11px]">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View Card Feed (For phones & small screens) */}
+                <div className="block sm:hidden space-y-3">
+                  {filteredSyncRuns.map((run) => {
+                    const isExpanded = expandedRunIds.has(run.id);
+                    const hasAdded = run.productsAdded > 0;
+                    const hasChanged = run.pricesChanged > 0;
+                    const durationSec = run.finishedAt
+                      ? Math.max(1, Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000))
+                      : null;
+
+                    return (
+                      <div
+                        key={run.id}
+                        className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 space-y-2.5"
+                      >
+                        {/* Header: Action Badge + Status + Time */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              run.type === "DISCOVERY"
+                                ? "bg-emerald-950 text-emerald-300 border border-emerald-800/60"
+                                : run.type === "PRICE_SYNC"
+                                ? "bg-blue-950 text-blue-300 border border-blue-800/60"
+                                : "bg-purple-950 text-purple-300 border border-purple-800/60"
+                            }`}
+                          >
+                            {run.type === "DISCOVERY" ? "Katalog Keşfi" : "Fiyat Kontrolü"}
+                          </span>
+
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                run.status === "COMPLETED"
+                                  ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/50"
+                                  : "bg-red-950/80 text-red-400 border border-red-800/50"
+                              }`}
+                            >
+                              {run.status === "COMPLETED" ? "Başarılı" : run.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Date and Duration */}
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                          <span suppressHydrationWarning>{new Date(run.startedAt).toLocaleString("tr-TR")}</span>
+                          {durationSec && <span>{durationSec} sn</span>}
+                        </div>
+
+                        {/* Metrics Bar */}
+                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-zinc-800/60">
+                          <div className="rounded bg-zinc-900 p-1.5 text-center">
+                            <span className="text-[10px] text-zinc-500 block">Taranan</span>
+                            <span className="text-xs font-bold text-zinc-200">
+                              {run.productsChecked || run.productsFound || 0} Ürün
+                            </span>
+                          </div>
+
+                          <div className="rounded bg-zinc-900 p-1.5 text-center">
+                            <span className="text-[10px] text-zinc-500 block">Değişiklik</span>
+                            <span className="text-xs font-bold text-emerald-400">
+                              {hasAdded ? `+${run.productsAdded} Yeni` : hasChanged ? `${run.pricesChanged} Fiyat` : "Aynı"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Summary sentence */}
+                        <p className="text-[11px] text-zinc-300 leading-snug">
+                          {run.summaryText}
+                        </p>
+
+                        {/* Eklenen Oyun İsimleri (Mobile) */}
+                        {run.addedGames && run.addedGames.length > 0 && (
+                          <div className="pt-2 border-t border-zinc-800/60">
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandRun(run.id)}
+                              className="flex items-center justify-between w-full text-[11px] font-medium text-emerald-400 py-1"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <Gamepad2 className="h-3.5 w-3.5" />
+                                Eklenen Oyun İsimleri ({run.addedGames.length})
+                              </span>
+                              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                            </button>
+
+                            {isExpanded && (
+                              <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-zinc-900/90 border border-zinc-800">
+                                {run.addedGames.map((game, gIdx) => (
+                                  <div
+                                    key={gIdx}
+                                    className="flex items-center justify-between gap-2 w-full py-1 border-b border-zinc-800/40 last:border-0 text-[11px]"
+                                  >
+                                    {game.slug ? (
+                                      <Link
+                                        href={`/oyun/${game.slug}`}
+                                        target="_blank"
+                                        className="font-medium text-white truncate hover:text-emerald-400"
+                                      >
+                                        {game.title}
+                                      </Link>
+                                    ) : (
+                                      <span className="font-medium text-white truncate">{game.title}</span>
+                                    )}
+                                    {game.price !== undefined && (
+                                      <span className="text-[10px] text-emerald-400 font-mono shrink-0">
+                                        {game.price} ₺
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Configuration Form */}

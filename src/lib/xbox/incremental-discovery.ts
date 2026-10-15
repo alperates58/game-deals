@@ -74,6 +74,8 @@ export async function runIncrementalDiscovery(
     const discoveredIds = new Set<string>();
     const pendingBatch: string[] = [];
     const enrichedList: NormalizedXboxProduct[] = [];
+    const addedGames: { title: string; productId: string; currentPrice: number; discount: number }[] = [];
+    const updatedGames: { title: string; productId: string; currentPrice: number; discount: number }[] = [];
 
     // Helper to process and upsert a batch
     const flushBatch = async (ids: string[]) => {
@@ -103,8 +105,29 @@ export async function runIncrementalDiscovery(
             isSeriesXCompatible: true,
           });
 
-          if (res.added) productsAdded++;
-          else if (res.priceChanged || !res.skipped) productsUpdated++;
+          if (res.added) {
+            productsAdded++;
+            addedGames.push({
+              title: prod.title,
+              productId: prod.productId,
+              currentPrice: prod.currentPrice,
+              discount: prod.discountPercent,
+            });
+            syncProgressTracker.addLog(
+              `Yeni oyun eklendi: "${prod.title}" (${prod.currentPrice} ${prod.currency})`,
+              "info"
+            );
+          } else if (res.priceChanged || !res.skipped) {
+            productsUpdated++;
+            if (res.priceChanged) {
+              updatedGames.push({
+                title: prod.title,
+                productId: prod.productId,
+                currentPrice: prod.currentPrice,
+                discount: prod.discountPercent,
+              });
+            }
+          }
 
           enrichedList.push(prod);
         } catch (err: any) {
@@ -235,6 +258,24 @@ export async function runIncrementalDiscovery(
       },
     });
 
+    const summaryText = productsAdded > 0
+      ? `${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). +${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`
+      : `${pagesScanned} sayfa tarandı (${rawDiscovered} ürün). Yeni oyun eklenmedi, ${productsUpdated} oyun güncellendi.`;
+
+    const summaryPayload = JSON.stringify({
+      text: summaryText,
+      addedGames: addedGames.slice(0, 100).map((g) => ({
+        title: g.title,
+        price: g.currentPrice,
+        discount: g.discount,
+      })),
+      updatedGames: updatedGames.slice(0, 50).map((g) => ({
+        title: g.title,
+        price: g.currentPrice,
+        discount: g.discount,
+      })),
+    });
+
     // Update SyncRun
     await prisma.syncRun.update({
       where: { id: syncRun.id },
@@ -244,11 +285,12 @@ export async function runIncrementalDiscovery(
         productsFound: rawDiscovered,
         productsChecked: rawDiscovered,
         productsAdded,
+        pricesChanged: productsUpdated,
+        errorSummary: summaryPayload,
       },
     });
 
-    const finalMessage = `Artımlı katalog taraması tamamlandı. ${pagesScanned} sayfa tarandı, ${productsAdded} yeni oyun eklendi, ${productsUpdated} oyun güncellendi.`;
-    syncProgressTracker.finishSync(finalMessage, { productsAdded, productsUpdated, relationsCreated });
+    syncProgressTracker.finishSync(summaryText, { productsAdded, productsUpdated, relationsCreated });
 
     return {
       success: true,

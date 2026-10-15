@@ -65,6 +65,7 @@ export async function GET() {
       totalAlerts,
       totalPendingNotifications,
       lastSyncRun,
+      recentSyncRuns,
     ] = await Promise.all([
       prisma.game.count(),
       prisma.priceHistory.count(),
@@ -74,6 +75,10 @@ export async function GET() {
       prisma.priceAlert.count({ where: { isEnabled: true } }),
       prisma.notificationEvent.count({ where: { status: "PENDING" } }),
       prisma.syncRun.findFirst({ orderBy: { startedAt: "desc" } }),
+      prisma.syncRun.findMany({
+        orderBy: { startedAt: "desc" },
+        take: 20,
+      }),
     ]);
 
     // Breakdown of game relations
@@ -100,6 +105,7 @@ export async function GET() {
         activeAlerts: totalAlerts,
         pendingNotifications: totalPendingNotifications,
         lastSyncRun,
+        recentSyncRuns,
         relationsByType: relationsByType.map((r) => ({ type: r.relationType, count: r._count.relationType })),
         gamesByClass: gamesByClass.map((g) => ({ class: g.productClass, count: g._count.productClass })),
       },

@@ -7,6 +7,7 @@ import {
   Bell,
   Settings,
   LogIn,
+  Gamepad2,
 } from "lucide-react";
 import { LiveSearch } from "./live-search";
 import { BrandLogo } from "./brand-logo";
