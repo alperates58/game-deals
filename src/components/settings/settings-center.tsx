@@ -33,6 +33,10 @@ import {
   Check,
   Square,
   Zap,
+  Search,
+  X,
+  Package,
+  Puzzle,
 } from "lucide-react";
 import { SystemSettingsData, SchedulerScheduleInfo } from "@/lib/settings/system-settings";
 import type { SyncProgressState } from "@/lib/xbox/sync-progress-tracker";
@@ -178,6 +182,112 @@ export function SettingsCenter({
       setIsLoadingSyncRuns(false);
     }
   };
+
+  // Cancel Sync Run handler (for stopping stuck or active runs)
+  const [cancellingRunId, setCancellingRunId] = useState<string | null>(null);
+  const handleCancelSyncRun = async (runId?: string, clearAllStuck?: boolean) => {
+    if (runId) setCancellingRunId(runId);
+    else setIsUnlocking(true);
+
+    try {
+      const res = await fetch("/api/settings/sync-runs/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId, clearAllStuck }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTriggerMessage({ success: true, message: data.message });
+        await fetchSyncRuns();
+      } else {
+        setTriggerMessage({ success: false, message: data.error || "Görev durdurulamadı." });
+      }
+    } catch (err: any) {
+      setTriggerMessage({ success: false, message: err.message });
+    } finally {
+      setCancellingRunId(null);
+      setIsUnlocking(false);
+    }
+  };
+
+  // Inspect Modal State & Fetcher for granular games & DLCs
+  const [inspectModalOpen, setInspectModalOpen] = useState(false);
+  const [inspectRunId, setInspectRunId] = useState<string | null>(null);
+  const [inspectType, setInspectType] = useState<"added" | "updated">("added");
+  const [inspectCategory, setInspectCategory] = useState<"all" | "games" | "dlcs" | "bundles">("all");
+  const [inspectSearch, setInspectSearch] = useState("");
+  const [inspectPage, setInspectPage] = useState(1);
+  const [inspectLoading, setInspectLoading] = useState(false);
+  const [inspectError, setInspectError] = useState<string | null>(null);
+  const [inspectData, setInspectData] = useState<{
+    run?: any;
+    counts: { total: number; games: number; dlcs: number; bundles: number };
+    items: any[];
+    page: number;
+    totalPages: number;
+    totalItems: number;
+  }>({
+    counts: { total: 0, games: 0, dlcs: 0, bundles: 0 },
+    items: [],
+    page: 1,
+    totalPages: 1,
+    totalItems: 0,
+  });
+
+  const openInspectModal = (runId: string, type: "added" | "updated" = "added") => {
+    setInspectRunId(runId);
+    setInspectType(type);
+    setInspectCategory("all");
+    setInspectSearch("");
+    setInspectPage(1);
+    setInspectModalOpen(true);
+  };
+
+  useEffect(() => {
+    if (!inspectModalOpen || !inspectRunId) return;
+
+    let isMounted = true;
+    setInspectLoading(true);
+    setInspectError(null);
+
+    const timer = setTimeout(async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          type: inspectType,
+          category: inspectCategory,
+          q: inspectSearch,
+          page: String(inspectPage),
+          limit: "36",
+        });
+
+        const res = await fetch(`/api/settings/sync-runs/${inspectRunId}/items?${queryParams.toString()}`);
+        if (!res.ok) {
+          throw new Error("Veriler alınamadı");
+        }
+        const data = await res.json();
+        if (isMounted) {
+          setInspectData({
+            run: data.run,
+            counts: data.counts || { total: 0, games: 0, dlcs: 0, bundles: 0 },
+            items: data.items || [],
+            page: data.page || 1,
+            totalPages: data.totalPages || 1,
+            totalItems: data.totalItems || 0,
+          });
+        }
+      } catch (err: any) {
+        if (isMounted) setInspectError(err.message);
+      } finally {
+        if (isMounted) setInspectLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [inspectModalOpen, inspectRunId, inspectType, inspectCategory, inspectSearch, inspectPage]);
+
 
   // Manual Add state
   const [manualInput, setManualInput] = useState("");
@@ -983,6 +1093,19 @@ export function SettingsCenter({
                   </button>
                 </div>
 
+                {syncRuns.some((r) => r.status === "RUNNING") && (
+                  <button
+                    type="button"
+                    onClick={() => handleCancelSyncRun(undefined, true)}
+                    disabled={isUnlocking}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-red-800/70 bg-red-950/60 text-red-300 text-[11px] font-semibold hover:bg-red-900/60 transition-colors shadow-sm disabled:opacity-50"
+                    title="Asılı kalan veya devam eden tüm tarama görevlerini sonlandırır"
+                  >
+                    <Square className="h-3 w-3 fill-current text-red-400" />
+                    <span>Takılanları Temizle</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={fetchSyncRuns}
@@ -1200,38 +1323,65 @@ export function SettingsCenter({
 
                             {/* Durum */}
                             <td className="py-3 align-top">
-                              <span
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                  run.status === "COMPLETED"
-                                    ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50"
-                                    : run.status === "RUNNING"
-                                    ? "bg-blue-950 text-blue-400 border border-blue-800/50 animate-pulse"
-                                    : "bg-red-950 text-red-400 border border-red-800/50"
-                                }`}
-                              >
-                                {run.status === "COMPLETED" ? (
-                                  <Check className="h-3 w-3" />
-                                ) : (
-                                  <AlertTriangle className="h-3 w-3" />
+                              <div className="flex flex-col gap-1.5 items-start">
+                                <span
+                                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                    run.status === "COMPLETED"
+                                      ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50"
+                                      : run.status === "RUNNING"
+                                      ? "bg-blue-950 text-blue-400 border border-blue-800/50 animate-pulse"
+                                      : "bg-red-950 text-red-400 border border-red-800/50"
+                                  }`}
+                                >
+                                  {run.status === "COMPLETED" ? (
+                                    <Check className="h-3 w-3" />
+                                  ) : (
+                                    <AlertTriangle className="h-3 w-3" />
+                                  )}
+                                  <span>{run.status === "COMPLETED" ? "Başarılı" : run.status === "RUNNING" ? "Çalışıyor" : run.status}</span>
+                                </span>
+
+                                {run.status === "RUNNING" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelSyncRun(run.id)}
+                                    disabled={cancellingRunId === run.id}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-950/80 border border-red-800/70 text-red-300 text-[10px] font-semibold hover:bg-red-900 transition-colors disabled:opacity-50 shadow-sm"
+                                    title="Bu tarama görevini güvenle sonlandırır"
+                                  >
+                                    <Square className="h-2.5 w-2.5 fill-current text-red-400" />
+                                    <span>{cancellingRunId === run.id ? "Durduruluyor..." : "Durdur"}</span>
+                                  </button>
                                 )}
-                                <span>{run.status === "COMPLETED" ? "Başarılı" : run.status}</span>
-                              </span>
+                              </div>
                             </td>
 
-                            {/* Detay Tıklama */}
+                            {/* Detay Tıklama & İnceleme */}
                             <td className="py-3 pr-1 align-top text-right">
-                              {run.addedGames && run.addedGames.length > 0 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpandRun(run.id)}
-                                  className="text-[11px] text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors"
-                                  title="Detayları aç/kapat"
-                                >
-                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                </button>
-                              ) : (
-                                <span className="text-zinc-600 text-[11px]">-</span>
-                              )}
+                              <div className="flex items-center justify-end gap-1.5">
+                                {(hasAdded || hasChanged || run.productsChecked > 0) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openInspectModal(run.id, hasAdded ? "added" : "updated")}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded bg-zinc-900 border border-zinc-700/80 text-[10px] font-medium text-emerald-300 hover:text-white hover:bg-zinc-800 transition-colors shadow-sm"
+                                    title="Bu taramadaki tüm oyun, paket ve DLC'leri satır satır filtrele & incele"
+                                  >
+                                    <Search className="h-3 w-3 text-emerald-400" />
+                                    <span>İncele</span>
+                                  </button>
+                                )}
+
+                                {run.addedGames && run.addedGames.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleExpandRun(run.id)}
+                                    className="text-[11px] text-zinc-400 hover:text-white p-1 rounded hover:bg-zinc-800 transition-colors"
+                                    title="Hızlı listeyi aç/kapat"
+                                  >
+                                    {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1275,11 +1425,36 @@ export function SettingsCenter({
                               className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                 run.status === "COMPLETED"
                                   ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800/50"
+                                  : run.status === "RUNNING"
+                                  ? "bg-blue-950 text-blue-400 border border-blue-800/50 animate-pulse"
                                   : "bg-red-950/80 text-red-400 border border-red-800/50"
                               }`}
                             >
-                              {run.status === "COMPLETED" ? "Başarılı" : run.status}
+                              {run.status === "COMPLETED" ? "Başarılı" : run.status === "RUNNING" ? "Çalışıyor" : run.status}
                             </span>
+
+                            {run.status === "RUNNING" && (
+                              <button
+                                type="button"
+                                onClick={() => handleCancelSyncRun(run.id)}
+                                disabled={cancellingRunId === run.id}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-950/90 border border-red-800/80 text-red-300 text-[10px] font-semibold hover:bg-red-900 transition-colors disabled:opacity-50"
+                              >
+                                <Square className="h-2.5 w-2.5 fill-current text-red-400" />
+                                <span>{cancellingRunId === run.id ? "..." : "Durdur"}</span>
+                              </button>
+                            )}
+
+                            {(hasAdded || hasChanged || run.productsChecked > 0) && (
+                              <button
+                                type="button"
+                                onClick={() => openInspectModal(run.id, hasAdded ? "added" : "updated")}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700/80 text-[10px] font-medium text-emerald-300 hover:text-white"
+                              >
+                                <Search className="h-2.5 w-2.5" />
+                                <span>İncele</span>
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -1980,6 +2155,267 @@ export function SettingsCenter({
               <span>{manualResult.message}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* MODAL: Run Items Inspection with Filters */}
+      {inspectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex flex-col w-full max-w-4xl max-h-[90vh] rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-800 p-4 sm:px-6 bg-zinc-900/50">
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <History className="h-4 w-4 text-emerald-400" />
+                  <span>Tarama İçeriği İnceleme & Filtreleme</span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Bu tarama sırasında veritabanına eklenen ve güncellenen tüm içeriklerin detaylı dökümü.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectModalOpen(false)}
+                className="p-1.5 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Tabs & Search Filter Bar */}
+            <div className="p-4 sm:px-6 border-b border-zinc-800 space-y-3 bg-zinc-900/20">
+              {/* Type selector (Eklenenler vs Fiyatı Değişenler) */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-1.5 p-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectType("added");
+                      setInspectPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-md font-medium transition-colors ${
+                      inspectType === "added"
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    ✨ Eklenen Ürünler ({inspectData.counts.total || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectType("updated");
+                      setInspectPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-md font-medium transition-colors ${
+                      inspectType === "updated"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    📉 Fiyatı Değişenler
+                  </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={inspectSearch}
+                    onChange={(e) => {
+                      setInspectSearch(e.target.value);
+                      setInspectPage(1);
+                    }}
+                    placeholder="Oyun veya DLC ara..."
+                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                  />
+                  {inspectSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setInspectSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Category Pills (Tümü, Oyunlar, DLC / Eklentiler, Paketler) */}
+              {inspectType === "added" && (
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-[11px] text-zinc-500 font-medium mr-1">Kategori:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectCategory("all");
+                      setInspectPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md border text-[11px] transition-colors ${
+                      inspectCategory === "all"
+                        ? "bg-zinc-800 text-white border-zinc-700 font-semibold"
+                        : "bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-zinc-200"
+                    }`}
+                  >
+                    Tümü ({inspectData.counts.total})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectCategory("games");
+                      setInspectPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md border text-[11px] transition-colors ${
+                      inspectCategory === "games"
+                        ? "bg-emerald-950 text-emerald-300 border-emerald-700 font-semibold"
+                        : "bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-emerald-400"
+                    }`}
+                  >
+                    🎮 Oyunlar ({inspectData.counts.games})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectCategory("dlcs");
+                      setInspectPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md border text-[11px] transition-colors ${
+                      inspectCategory === "dlcs"
+                        ? "bg-purple-950 text-purple-300 border-purple-700 font-semibold"
+                        : "bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-purple-400"
+                    }`}
+                  >
+                    🧩 DLC / Eklentiler ({inspectData.counts.dlcs})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectCategory("bundles");
+                      setInspectPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md border text-[11px] transition-colors ${
+                      inspectCategory === "bundles"
+                        ? "bg-amber-950 text-amber-300 border-amber-700 font-semibold"
+                        : "bg-zinc-900/60 text-zinc-400 border-zinc-800/80 hover:text-amber-400"
+                    }`}
+                  >
+                    📦 Paketler ({inspectData.counts.bundles})
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Items Scrollable Container */}
+            <div className="flex-1 overflow-y-auto p-4 sm:px-6">
+              {inspectLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-zinc-400">
+                  <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+                  <span className="text-xs">Ürünler yükleniyor...</span>
+                </div>
+              ) : inspectError ? (
+                <div className="py-12 text-center text-xs text-red-400">
+                  {inspectError}
+                </div>
+              ) : inspectData.items.length === 0 ? (
+                <div className="py-16 text-center text-xs text-zinc-500">
+                  Bu filtreye uygun herhangi bir ürün bulunamadı.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {inspectData.items.map((item: any, idx: number) => {
+                    const isGame = item.productClass === "BASE_GAME";
+                    const isBundle = item.productClass === "BUNDLE";
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className="flex items-center gap-3 p-2 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 transition-colors"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-zinc-800 flex items-center justify-center">
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <Gamepad2 className="h-5 w-5 text-zinc-500" />
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider ${
+                                isGame
+                                  ? "bg-emerald-950 text-emerald-400 border border-emerald-800/50"
+                                  : isBundle
+                                  ? "bg-amber-950 text-amber-400 border border-amber-800/50"
+                                  : "bg-purple-950 text-purple-400 border border-purple-800/50"
+                              }`}
+                            >
+                              {isGame ? "Oyun" : isBundle ? "Paket" : "DLC"}
+                            </span>
+                          </div>
+
+                          <Link
+                            href={item.slug ? `/oyun/${item.slug}` : "#"}
+                            target="_blank"
+                            className="text-xs font-semibold text-white truncate block hover:text-emerald-400 transition-colors mt-0.5"
+                            title={item.title}
+                          >
+                            {item.title}
+                          </Link>
+
+                          <div className="flex items-center gap-1.5 text-[11px] mt-1">
+                            <span className="font-bold text-white font-mono">
+                              {item.currentPrice > 0 ? `${item.currentPrice} ₺` : "Ücretsiz / Dahil"}
+                            </span>
+                            {item.discountPercent > 0 && (
+                              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/80 px-1 rounded">
+                                -%{item.discountPercent}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Pagination Footer */}
+            {inspectData.totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3 bg-zinc-900/40 text-xs text-zinc-400">
+                <span>
+                  Toplam {inspectData.totalItems} ürün (Sayfa {inspectData.page} / {inspectData.totalPages})
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setInspectPage((p) => Math.max(1, p - 1))}
+                    disabled={inspectData.page <= 1}
+                    className="px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 disabled:opacity-40 hover:bg-zinc-800 transition-colors"
+                  >
+                    Önceki
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInspectPage((p) => Math.min(inspectData.totalPages, p + 1))}
+                    disabled={inspectData.page >= inspectData.totalPages}
+                    className="px-2.5 py-1 rounded border border-zinc-800 bg-zinc-900 text-zinc-300 disabled:opacity-40 hover:bg-zinc-800 transition-colors"
+                  >
+                    Sonraki
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

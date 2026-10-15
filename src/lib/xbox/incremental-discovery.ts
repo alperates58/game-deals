@@ -196,11 +196,13 @@ export async function runIncrementalDiscovery(
 
     // Auto-enrich any missing bundled child products from Microsoft Catalog
     const missingChildIds = new Set<string>();
+    const bigIdPattern = /^[A-Z0-9]{12}$/i;
     for (const prod of enrichedList) {
       if (prod.bundledProductIds && prod.bundledProductIds.length > 0) {
         for (const childId of prod.bundledProductIds) {
-          if (!dbMap.has(childId)) {
-            missingChildIds.add(childId);
+          const cleanId = childId.trim().toUpperCase();
+          if (bigIdPattern.test(cleanId) && !dbMap.has(cleanId)) {
+            missingChildIds.add(cleanId);
           }
         }
       }
@@ -212,9 +214,16 @@ export async function runIncrementalDiscovery(
         "info"
       );
       const missingList = Array.from(missingChildIds);
-      const childBatchSize = 20;
+      const childBatchSize = 25;
       for (let i = 0; i < missingList.length; i += childBatchSize) {
-        if (syncProgressTracker.isCancelled()) break;
+        if (syncProgressTracker.isCancelled()) {
+          syncProgressTracker.addLog(
+            "Paket içeriği tamamlama durduruldu. Mevcut veriler kaydedilerek işlem tamamlanıyor...",
+            "warn"
+          );
+          break;
+        }
+
         const chunk = missingList.slice(i, i + childBatchSize);
         try {
           const childProducts = await catalogClient.fetchProductsBatch(chunk);
@@ -230,11 +239,22 @@ export async function runIncrementalDiscovery(
             });
 
             if (qual.isQualified) {
-              await processNormalizedProduct(cp, {
+              const res = await processNormalizedProduct(cp, {
                 discoverySource: "BUNDLE_CHILD",
                 platforms: qual.platforms,
                 isSeriesXCompatible: true,
               });
+
+              if (res.added) {
+                productsAdded++;
+                addedGames.push({
+                  title: cp.title,
+                  productId: cp.productId,
+                  currentPrice: cp.currentPrice,
+                  discount: cp.discountPercent,
+                });
+              }
+
               const newChild = await prisma.game.findUnique({
                 where: { xboxProductId: cp.productId },
                 select: { id: true, xboxProductId: true, productClass: true },
@@ -246,6 +266,25 @@ export async function runIncrementalDiscovery(
           }
         } catch (err: any) {
           console.error(`[IncrementalDiscovery] Error auto-enriching bundle children:`, err.message);
+        }
+
+        const processedCount = Math.min(i + chunk.length, missingList.length);
+        const percentComplete = Math.round((processedCount / missingList.length) * 100);
+
+        syncProgressTracker.updatePageProgress({
+          page: pagesScanned,
+          maxPages: dynamicMaxPages,
+          rawCount: 0,
+          addedCount: productsAdded,
+          updatedCount: productsUpdated,
+          relationsCount: relationsCreated,
+        });
+
+        if (i % 100 === 0 || processedCount === missingList.length) {
+          syncProgressTracker.addLog(
+            `Paket içerikleri taranıyor: ${processedCount}/${missingList.length} (%${percentComplete}) - Toplam yeni: ${productsAdded}`,
+            "info"
+          );
         }
       }
     }

@@ -7,6 +7,7 @@ export interface EnrichedGameItem {
   slug?: string;
   price?: number;
   discount?: number;
+  productClass?: string;
 }
 
 export async function GET(req: Request) {
@@ -61,10 +62,10 @@ export async function GET(req: Request) {
         // look up games created during that run's timeframe
         if (run.productsAdded > 0 && addedGames.length === 0) {
           try {
-            const windowStart = new Date(run.startedAt.getTime() - 2000);
+            const windowStart = new Date(run.startedAt.getTime() - 5000);
             const windowEnd = run.finishedAt
-              ? new Date(run.finishedAt.getTime() + 2000)
-              : new Date(run.startedAt.getTime() + 10 * 60 * 1000);
+              ? new Date(run.finishedAt.getTime() + 5000)
+              : new Date();
 
             const dbAddedGames = await prisma.game.findMany({
               where: {
@@ -78,6 +79,7 @@ export async function GET(req: Request) {
                 slug: true,
                 currentPrice: true,
                 discountPercent: true,
+                productClass: true,
               },
               take: 50,
             });
@@ -88,6 +90,7 @@ export async function GET(req: Request) {
                 slug: g.slug,
                 price: Number(g.currentPrice),
                 discount: g.discountPercent,
+                productClass: g.productClass,
               }));
             }
           } catch (queryErr) {
