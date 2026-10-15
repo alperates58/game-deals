@@ -671,7 +671,7 @@ export function SettingsCenter({
                   { pages: 20, label: "20 Sayfa", desc: "~500 Oyun", badge: "Standart" },
                   { pages: 40, label: "40 Sayfa", desc: "~1.000 Oyun", badge: "Önerilen" },
                   { pages: 80, label: "80 Sayfa", desc: "~2.000 Oyun", badge: "Geniş" },
-                  { pages: 0, label: "Tüm Mağaza", desc: "~3.500 Oyun", badge: "Tam Otomatik" },
+                  { pages: 0, label: "Tüm Mağaza", desc: "~17.000 İçerik", badge: "Tam Otomatik" },
                 ].map((tier) => (
                   <button
                     key={tier.pages}
@@ -820,25 +820,25 @@ export function SettingsCenter({
                   <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
                     <span className="text-[10px] text-zinc-500 block">Taranan Sayfa</span>
                     <span className="text-xs font-bold text-zinc-200">
-                      {syncProgress.currentPage} / {syncProgress.totalPages}
+                      {syncProgress.pagesScanned || 0} / {syncProgress.maxPages || 0}
                     </span>
                   </div>
                   <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
                     <span className="text-[10px] text-zinc-500 block">Keşfedilen Ürün</span>
                     <span className="text-xs font-bold text-white">
-                      {syncProgress.totalDiscovered}
+                      {syncProgress.rawDiscovered || 0}
                     </span>
                   </div>
                   <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
                     <span className="text-[10px] text-zinc-500 block">Yeni Eklenen</span>
                     <span className="text-xs font-bold text-emerald-400">
-                      +{syncProgress.newItemsAdded}
+                      +{syncProgress.productsAdded || 0}
                     </span>
                   </div>
                   <div className="rounded-lg bg-zinc-900 border border-zinc-800/80 p-2 text-center">
                     <span className="text-[10px] text-zinc-500 block">Güncellenen</span>
                     <span className="text-xs font-bold text-blue-400">
-                      {syncProgress.itemsUpdated}
+                      {syncProgress.productsUpdated || 0}
                     </span>
                   </div>
                 </div>
