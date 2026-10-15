@@ -29,7 +29,8 @@ async function getHomePageData() {
     historicalLows,
     popularGames,
     under150Deals,
-    recentPriceChanges,
+    deepDiscounts,
+    recentPriceChangesRaw,
     totalHistoricalLowsRaw,
   ] = await Promise.all([
     prisma.game.count({ where: { isActive: true } }),
