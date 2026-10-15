@@ -58,55 +58,83 @@ export async function runPriceSync(options: SyncRunnerOptions = {}): Promise<Syn
 
     const client = new XboxCatalogClient();
     const productIds = activeGames.map((g) => g.xboxProductId);
-
-    const products = await client.fetchAllInBatches(productIds);
-
-    let changed = 0;
-    let errors = 0;
     const gameMap = new Map(activeGames.map((g) => [g.xboxProductId, g]));
 
+    const batchSize = 25;
+    let changed = 0;
+    let errors = 0;
     let processedCount = 0;
-    for (const product of products) {
-      try {
-        const game = gameMap.get(product.productId);
-        const result = await processNormalizedProduct(
-          product,
-          game?.franchise || undefined,
-          game?.isCore || false
+
+    for (let i = 0; i < productIds.length; i += batchSize) {
+      if (syncProgressTracker.isCancelled()) {
+        syncProgressTracker.addLog(
+          "Fiyat güncellemesi kullanıcı talebiyle durduruldu. Mevcut veriler kaydedildi.",
+          "warn"
         );
-        if (result.priceChanged) {
-          changed++;
-          syncProgressTracker.addLog(
-            `Fiyat değişimi: ${product.title || product.productId} (Yeni Fiyat: ${product.currentPrice.amount} ${product.currentPrice.currency})`,
-            "info"
-          );
-        }
-      } catch (err: any) {
-        console.error(`[SyncRunner] Error updating game ${product.productId}:`, err.message);
-        errors++;
+        break;
       }
 
-      processedCount++;
-      if (processedCount % 25 === 0 || processedCount === products.length) {
-        syncProgressTracker.updatePageProgress({
-          page: Math.ceil(processedCount / 25),
-          maxPages: totalPages,
-          rawCount: processedCount,
-          totalCatalogItems: totalToSync,
-          addedCount: 0,
-          updatedCount: changed,
-          relationsCount: 0,
-        });
+      const chunkIds = productIds.slice(i, i + batchSize);
+      const currentPage = Math.floor(i / batchSize) + 1;
+
+      try {
+        const batchProducts = await client.fetchProductsBatch(chunkIds);
+        for (const product of batchProducts) {
+          try {
+            const game = gameMap.get(product.productId);
+            const result = await processNormalizedProduct(
+              product,
+              game?.franchise || undefined,
+              game?.isCore || false
+            );
+            if (result.priceChanged) {
+              changed++;
+              syncProgressTracker.addLog(
+                `💰 Fiyat değişimi: ${product.title || product.productId} (${product.currentPrice} ${product.currency} - %${product.discountPercent})`,
+                "info"
+              );
+            }
+          } catch (err: any) {
+            console.error(`[SyncRunner] Error updating game ${product.productId}:`, err.message);
+            errors++;
+          }
+          processedCount++;
+        }
+      } catch (batchErr: any) {
+        console.error(`[SyncRunner] Batch fetch error for page ${currentPage}:`, batchErr.message);
+        errors += chunkIds.length;
+        processedCount += chunkIds.length;
+      }
+
+      // Update progress after EVERY batch (live real-time update in UI)
+      const percentComplete = Math.round((processedCount / totalToSync) * 100);
+      syncProgressTracker.updatePageProgress({
+        page: currentPage,
+        maxPages: totalPages,
+        rawCount: processedCount,
+        totalCatalogItems: totalToSync,
+        addedCount: 0,
+        updatedCount: changed,
+        relationsCount: 0,
+      });
+
+      if (currentPage % 10 === 0 || processedCount >= totalToSync) {
+        syncProgressTracker.addLog(
+          `İlerleme: ${processedCount}/${totalToSync} oyun kontrol edildi (%${percentComplete}) - ${changed} fiyat değişimi`,
+          "info"
+        );
       }
     }
 
     const durationMs = Date.now() - startTime;
     const now = new Date();
+    const isCancelled = syncProgressTracker.isCancelled();
 
     // Summary sentence
+    const prefix = isCancelled ? "Kullanıcı talebiyle durduruldu: " : "";
     const summaryText = changed > 0
-      ? `${products.length} oyun kontrol edildi. ${changed} oyunda fiyat / indirim değişimi tespit edildi.`
-      : `${products.length} oyun kontrol edildi. Fiyat değişikliği tespit edilmedi (tüm fiyatlar güncel).`;
+      ? `${prefix}${processedCount} oyun kontrol edildi. ${changed} oyunda fiyat / indirim değişimi tespit edildi.`
+      : `${prefix}${processedCount} oyun kontrol edildi. Fiyat değişikliği tespit edilmedi (tüm fiyatlar güncel).`;
 
     // Update SystemSetting timestamp
     await prisma.systemSetting.upsert({
@@ -118,10 +146,10 @@ export async function runPriceSync(options: SyncRunnerOptions = {}): Promise<Syn
     await prisma.syncRun.update({
       where: { id: syncRun.id },
       data: {
-        status: errors > 0 ? "PARTIAL" : "COMPLETED",
+        status: isCancelled ? "PARTIAL" : errors > 0 ? "PARTIAL" : "COMPLETED",
         finishedAt: now,
         productsFound: activeGames.length,
-        productsChecked: products.length,
+        productsChecked: processedCount,
         pricesChanged: changed,
         errorCount: errors,
         errorSummary: errors > 0 ? `${errors} hata ile kısmen tamamlandı: ${summaryText}` : summaryText,
@@ -136,10 +164,10 @@ export async function runPriceSync(options: SyncRunnerOptions = {}): Promise<Syn
 
     return {
       success: true,
-      message: `Fiyat senkronizasyonu tamamlandı. ${products.length} oyun kontrol edildi, ${changed} fiyat değişimi tespit edildi.`,
+      message: `Fiyat senkronizasyonu tamamlandı. ${processedCount} oyun kontrol edildi, ${changed} fiyat değişimi tespit edildi.`,
       stats: {
         totalActive: activeGames.length,
-        checked: products.length,
+        checked: processedCount,
         pricesChanged: changed,
         errors,
         durationMs,
