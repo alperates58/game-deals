@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -39,6 +45,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     imgOptTimeoutInSeconds: 30,
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
 };
 

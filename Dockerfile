@@ -1,53 +1,53 @@
-# Multi-stage production-grade Dockerfile
+# Multi-stage production-grade Dockerfile (Optimized for fast Coolify redeploys)
 FROM node:24-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache libc6-compat postgresql16-client
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install dependencies (include devDependencies needed for build)
+# 1. Install dependencies & generate Prisma Client (Cached unless package.json or schema.prisma changes)
 FROM base AS deps
 WORKDIR /app
+ENV DATABASE_URL="postgresql://build_user:build_placeholder@127.0.0.1:5432/build_db?schema=public"
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
-RUN npm ci --include=dev
+COPY prisma/schema.prisma ./prisma/schema.prisma
+RUN npm ci --include=dev && ./node_modules/.bin/prisma generate
 
-# Build Next.js application
-FROM base AS builder
+# 2. Build Next.js application (Inherits node_modules directly from deps with zero copy overhead)
+FROM deps AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://build_user:build_placeholder@127.0.0.1:5432/build_db?schema=public"
 ENV SESSION_SECRET="build_time_placeholder_secret_minimum_64_characters_long_for_nextjs_build_phase"
-RUN npx prisma generate
+COPY . .
 RUN npm run build
 
-# Production runner
+# 3. Production runner (Ordered from least-frequently changed to most-frequently changed)
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    mkdir -p /app/backups /app/public && \
+    chown -R nextjs:nodejs /app/backups /app/public
 
-# Create protected server-side backups and public directory
-RUN mkdir -p /app/backups /app/public && chown -R nextjs:nodejs /app/backups /app/public
+# Cached across all code-only deploys because it comes from 'deps' BEFORE '.next'
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs package.json ./package.json
+COPY --chown=nextjs:nodejs next.config.* ./
+COPY --chown=nextjs:nodejs prisma ./prisma
+COPY --chown=nextjs:nodejs scripts ./scripts
+COPY --chown=nextjs:nodejs public ./public
 
-COPY --from=builder /app/public ./public
+# Only this lightweight layer updates on UI/code changes
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/next.config.* ./
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 USER nextjs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=6 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node scripts/auto-seed.js && npm start"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node scripts/auto-seed.js && exec ./node_modules/.bin/next start"]
