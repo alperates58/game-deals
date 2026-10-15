@@ -111,9 +111,25 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const existingChildBigIds = new Set(game.childRelations.map((r) => r.childGame.xboxProductId.toUpperCase()));
   const missingKnownKids = knownKids.filter((id) => !existingChildBigIds.has(id.toUpperCase()));
 
-  if (game.productClass === "BUNDLE" && (game.childRelations.length <= 1 || missingKnownKids.length > 0)) {
+  const isBundleCandidate =
+    game.productClass === "BUNDLE" ||
+    game.childRelations.length > 0 ||
+    knownKids.length > 0 ||
+    game.title.toLowerCase().includes("trilogy") ||
+    game.title.toLowerCase().includes("bundle");
+
+  if (isBundleCandidate && (game.childRelations.length <= 1 || missingKnownKids.length > 0)) {
     try {
       let relationsUpdated = false;
+
+      // Ensure productClass is set to BUNDLE in database
+      if (game.productClass !== "BUNDLE") {
+        await prisma.game.update({
+          where: { id: game.id },
+          data: { productClass: "BUNDLE" },
+        });
+        game.productClass = "BUNDLE";
+      }
 
       // 1. Immediately link any known children that already exist in our DB
       for (let i = 0; i < knownKids.length; i++) {
@@ -145,11 +161,10 @@ export default async function GameDetailPage({ params }: GamePageProps) {
       }
 
       // 2. Fetch fresh metadata from Microsoft Catalog to discover or pull missing children
-      const { catalogClient } = await import("@/lib/xbox/catalog-client");
-      const { processNormalizedProduct } = await import("@/lib/pricing/price-sync");
-      const { qualifyXboxSeriesPlatform } = await import("@/lib/xbox/platform-qualifier");
+      const { catalogClient, XboxCatalogClient } = await import("@/lib/xbox/catalog-client");
+      const client = catalogClient || new XboxCatalogClient();
 
-      const [freshBundle] = await catalogClient.fetchProductsBatch([game.xboxProductId]);
+      const [freshBundle] = await client.fetchProductsBatch([game.xboxProductId]);
       const candidateIds = new Set<string>([
         ...(freshBundle?.bundledProductIds || []),
         ...knownKids,
@@ -157,7 +172,7 @@ export default async function GameDetailPage({ params }: GamePageProps) {
       const missingChildIds = Array.from(candidateIds).filter((id) => !existingChildBigIds.has(id.toUpperCase()));
 
       if (missingChildIds.length > 0) {
-        const fetchedChildren = await catalogClient.fetchProductsBatch(missingChildIds);
+        const fetchedChildren = await client.fetchProductsBatch(missingChildIds);
         for (let i = 0; i < fetchedChildren.length; i++) {
           const cp = fetchedChildren[i];
           const qual = qualifyXboxSeriesPlatform({

@@ -108,3 +108,5 @@ export class XboxCatalogClient {
     return results;
   }
 }
+
+export const catalogClient = new XboxCatalogClient();
