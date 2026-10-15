@@ -233,12 +233,13 @@ export default async function HomePage() {
             >
               <div className="flex items-center justify-between">
                 <p className="text-xl font-black text-emerald-400 group-hover/card:text-emerald-300 transition-colors">
-                  %{Math.round((data.activeDealsCount / (data.totalGames || 1)) * 100)}
+                  {formatPrice(data.activeDealsCount)}
                 </p>
                 <ChevronRight className="h-3.5 w-3.5 text-zinc-600 group-hover/card:text-emerald-400 transition-colors" />
               </div>
-              <p className="text-[11px] text-zinc-400 font-medium mt-0.5">
-                {formatPrice(data.activeDealsCount)} Aktif İndirim
+              <p className="text-[11px] text-zinc-400 font-medium mt-0.5 flex items-center justify-between">
+                <span>Aktif İndirim</span>
+                <span className="text-[10px] text-zinc-500 font-normal">Kataloğun %{Math.round((data.activeDealsCount / (data.totalGames || 1)) * 100)}'u</span>
               </p>
             </Link>
 
