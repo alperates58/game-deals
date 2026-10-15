@@ -147,7 +147,7 @@ export async function processNormalizedProduct(
       },
     });
 
-    return { added: true, priceChanged: true, skipped: false };
+    return { added: true, priceChanged: false, skipped: false };
   }
 
   // Existing game: Check if price changed

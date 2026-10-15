@@ -96,26 +96,48 @@ async function getHomePageData() {
       ],
       take: 15,
     }),
-    // Recent Price Changes / Updates
+    // Deep Discounts (%70 and above)
     prisma.game.findMany({
       where: {
         isActive: true,
-        discountPercent: { gt: 0 },
+        discountPercent: { gte: 70 },
       },
       include: {
         dealAnalysis: true,
       },
-      orderBy: {
-        updatedAt: "desc",
-      },
+      orderBy: [
+        { discountPercent: "desc" },
+        { dealAnalysis: { dealScore: "desc" } },
+      ],
       take: 15,
     }),
+    // Games with ACTUAL recorded price changes (at least 2 price history entries)
+    prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT g.id
+      FROM "Game" g
+      JOIN "PriceHistory" ph ON ph."gameId" = g.id
+      WHERE g."isActive" = true
+      GROUP BY g.id
+      HAVING COUNT(ph.id) >= 2
+      ORDER BY MAX(ph."observedAt") DESC
+      LIMIT 15
+    `,
     // True dynamic count of all games currently at historical low
     prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int as count FROM "Game"
       WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
     `,
   ]);
+
+  // Fetch full game records for true price changes
+  const changedIds = recentPriceChangesRaw.map((r) => r.id);
+  const recentPriceChanges =
+    changedIds.length > 0
+      ? await prisma.game.findMany({
+          where: { id: { in: changedIds } },
+          include: { dealAnalysis: true },
+        })
+      : [];
 
   // Filter historical lows truthfully where currentPrice <= historicalLow
   const verifiedLows = historicalLows
@@ -133,6 +155,7 @@ async function getHomePageData() {
     verifiedLows,
     popularGames,
     under150Deals,
+    deepDiscounts,
     recentPriceChanges,
   };
 }
@@ -182,6 +205,7 @@ export default async function HomePage() {
   }));
 
   const historicalLowCarouselItems = data.verifiedLows.map(mapToCarouselItem);
+  const deepDiscountsCarouselItems = data.deepDiscounts.map(mapToCarouselItem);
   const recentChangesCarouselItems = data.recentPriceChanges.map(mapToCarouselItem);
   const under150CarouselItems = data.under150Deals.map(mapToCarouselItem);
 
@@ -300,11 +324,24 @@ export default async function HomePage() {
         />
       )}
 
-      {/* Slider Carousel 2: 📉 Son Fiyatı Düşenler & Değişenler Vitrini */}
+      {/* Slider Carousel 2: 💥 %70 ve Üzeri Dev İndirimler Vitrini */}
+      {deepDiscountsCarouselItems.length > 0 && (
+        <DealsCarousel
+          title="%70 ve Üzeri Dev İndirimler"
+          subtitle="Xbox Store'daki en yüksek indirim oranına sahip seçkin fırsatlar"
+          icon={<Flame className="h-4 w-4" />}
+          iconStyle="bg-rose-950 border-rose-500/40 text-rose-400"
+          seeAllHref="/firsatlar?minDiscount=70"
+          seeAllText="Dev İndirimler (%70+)"
+          games={deepDiscountsCarouselItems}
+        />
+      )}
+
+      {/* Slider Carousel 3: 📉 Son Fiyatı Düşenler & Değişenler Vitrini (Sadece gerçek 2+ gözlemli fiyat değişimi olanlar) */}
       {recentChangesCarouselItems.length > 0 && (
         <DealsCarousel
           title="Son Fiyatı Düşenler & Değişenler"
-          subtitle="En son katalog taramasında fiyatı güncellenen veya yeni indirime giren oyunlar"
+          subtitle="Sistemimiz tarafından doğrulanmış gerçek fiyat düşüşleri ve hareketleri"
           icon={<Clock className="h-4 w-4" />}
           iconStyle="bg-blue-950 border-blue-500/40 text-blue-400"
           seeAllHref="/firsatlar?sort=priceChange"

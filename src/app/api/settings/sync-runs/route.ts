@@ -110,6 +110,11 @@ export async function GET(req: Request) {
                   gte: windowStart,
                   lte: windowEnd,
                 },
+                game: {
+                  firstSeenAt: {
+                    lt: windowStart,
+                  },
+                },
               },
               include: {
                 game: {

@@ -78,6 +78,18 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
   } else if (sort === "priceDesc") {
     orderBy = [{ currentPrice: "desc" }];
   } else if (sort === "priceChange") {
+    const changedGameRows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT g.id
+      FROM "Game" g
+      JOIN "PriceHistory" ph ON ph."gameId" = g.id
+      WHERE g."isActive" = true
+      GROUP BY g.id
+      HAVING COUNT(ph.id) >= 2
+      ORDER BY MAX(ph."observedAt") DESC
+      LIMIT 80
+    `;
+    const changedGameIds = changedGameRows.map((r) => r.id);
+    whereClause.id = { in: changedGameIds };
     orderBy = [{ updatedAt: "desc" }];
   } else if (hasQuery && sort === "dealScore") {
     orderBy = [{ discountPercent: "desc" }, { popularityScore: "desc" }];
@@ -138,11 +150,17 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">
           <Gamepad2 className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
           <h3 className="text-base font-bold text-white">
-            {hasQuery ? `"${cleanQ}" için sonuç bulunamadı` : "Seçilen Kriterlere Uygun Fırsat Bulunamadı"}
+            {hasQuery
+              ? `"${cleanQ}" için sonuç bulunamadı`
+              : sort === "priceChange"
+              ? "Henüz Kayıtlı Fiyat Değişimi Bulunmuyor"
+              : "Seçilen Kriterlere Uygun Fırsat Bulunamadı"}
           </h3>
           <p className="mt-1.5 text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
             {hasQuery
               ? "Aradığınız oyun veya eklenti henüz kataloğa eklenmemiş olabilir. Ürün kodunu biliyorsanız Ayarlar > Manuel Ürün Ekle alanından doğrudan veritabanına aktarabilirsiniz."
+              : sort === "priceChange"
+              ? "Sistemimiz yeni kuruldu ve şu anda tüm oyunların başlangıç fiyatları kaydedildi. Periyodik fiyat senkronizasyonu çalıştıkça fiyatı düşen veya değişen oyunlar anlık olarak burada listelenecektir."
               : "Arama veya filtre kriterlerinizi (indirim oranı, bütçe veya kategori) değiştirerek tekrar deneyebilirsiniz."}
           </p>
         </div>

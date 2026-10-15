@@ -683,10 +683,16 @@ export default async function GameDetailPage({ params }: GamePageProps) {
 
       {/* Price History Table */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 space-y-4">
-        <h3 className="text-sm font-semibold text-white">Fiyat Değişim Kayıtları</h3>
-        <p className="text-xs text-zinc-400">
-          Yalnızca fiyat değişikliği gerçekleştiğinde açılan kayıtlar (toplam {game.priceHistories.length} gözlem)
-        </p>
+        <div>
+          <h3 className="text-sm font-semibold text-white">
+            {game.priceHistories.length > 1 ? "Fiyat Değişim Kayıtları" : "Fiyat Gözlem Kayıtları"}
+          </h3>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            {game.priceHistories.length > 1
+              ? `Sistemimiz tarafından tespit edilen gerçek fiyat hareketleri (toplam ${game.priceHistories.length} gözlem)`
+              : "Bu ürün takibe yeni alındı. Şu anda yalnızca başlangıç referans kaydı mevcuttur (Mağazada henüz yeni bir fiyat değişimi gerçekleşmedi)."}
+          </p>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-zinc-300">
@@ -694,41 +700,66 @@ export default async function GameDetailPage({ params }: GamePageProps) {
               <tr>
                 <th className="py-2.5 px-3">Gözlem Zamanı</th>
                 <th className="py-2.5 px-3">Satış Fiyatı</th>
+                <th className="py-2.5 px-3">Fiyat Değişimi</th>
                 <th className="py-2.5 px-3">Liste Fiyatı</th>
-                <th className="py-2.5 px-3">İndirim</th>
+                <th className="py-2.5 px-3">İndirim Oranı</th>
                 <th className="py-2.5 px-3">Kampanya Durumu</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-mono">
-              {game.priceHistories.map((h) => (
-                <tr key={h.id} className="hover:bg-zinc-800/30">
-                  <td className="py-2.5 px-3 font-sans text-zinc-300" suppressHydrationWarning>
-                    {formatDateTime(h.observedAt)}
-                  </td>
-                  <td className="py-2.5 px-3 font-bold text-emerald-400">
-                    {formatPrice(h.currentPrice.toNumber())} {h.currency}
-                  </td>
-                  <td className="py-2.5 px-3 text-zinc-400">
-                    {formatPrice(h.listPrice.toNumber())} {h.currency}
-                  </td>
-                  <td className="py-2.5 px-3">
-                    {h.discountPercent > 0 ? (
-                      <span className="text-emerald-400 font-semibold">%{h.discountPercent}</span>
-                    ) : (
-                      <span className="text-zinc-400">-%</span>
-                    )}
-                  </td>
-                  <td className="py-2.5 px-3 font-sans">
-                    {h.isOnSale ? (
-                      <span className="inline-flex rounded bg-emerald-950 px-2 py-0.5 text-[10px] text-emerald-300 border border-emerald-800/40">
-                        İndirimde
-                      </span>
-                    ) : (
-                      <span className="text-zinc-400">Normal</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {game.priceHistories.map((h, idx) => {
+                const prev = game.priceHistories[idx + 1];
+                const prevPrice = prev ? prev.currentPrice.toNumber() : null;
+                const currPrice = h.currentPrice.toNumber();
+                const diff = prevPrice !== null ? currPrice - prevPrice : null;
+
+                return (
+                  <tr key={h.id} className="hover:bg-zinc-800/30">
+                    <td className="py-2.5 px-3 font-sans text-zinc-300" suppressHydrationWarning>
+                      {formatDateTime(h.observedAt)}
+                    </td>
+                    <td className="py-2.5 px-3 font-bold text-white">
+                      {formatPrice(currPrice)} {h.currency}
+                    </td>
+                    <td className="py-2.5 px-3 font-sans">
+                      {diff === null ? (
+                        <span className="inline-flex rounded bg-zinc-800/80 px-2 py-0.5 text-[10px] text-zinc-400 border border-zinc-700/60">
+                          İlk Tespit (Referans)
+                        </span>
+                      ) : diff < 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-emerald-950/80 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-800/60">
+                          ↓ -{formatPrice(Math.abs(diff))} {h.currency} İndirim
+                        </span>
+                      ) : diff > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/60">
+                          ↑ +{formatPrice(diff)} {h.currency} Artış
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 text-[10px]">Değişim Yok</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-zinc-400">
+                      {formatPrice(h.listPrice.toNumber())} {h.currency}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {h.discountPercent > 0 ? (
+                        <span className="text-emerald-400 font-semibold">%{h.discountPercent}</span>
+                      ) : (
+                        <span className="text-zinc-400">-%</span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 font-sans">
+                      {h.isOnSale ? (
+                        <span className="inline-flex rounded bg-emerald-950 px-2 py-0.5 text-[10px] text-emerald-300 border border-emerald-800/40">
+                          İndirimde
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400">Normal</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
