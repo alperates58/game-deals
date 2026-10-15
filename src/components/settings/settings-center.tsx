@@ -351,69 +351,99 @@ export function SettingsCenter({
     }
   };
 
+  const navItems: {
+    id: "scheduler" | "backup" | "catalog" | "general" | "manual";
+    title: string;
+    subtitle: string;
+    icon: any;
+  }[] = [
+    {
+      id: "scheduler",
+      title: "Zamanlayıcı & Keşif",
+      subtitle: "Otomatik tarama & senkron",
+      icon: Clock,
+    },
+    {
+      id: "backup",
+      title: "Yedekleme & Veri",
+      subtitle: "pg_dump & geri yükleme",
+      icon: Database,
+    },
+    {
+      id: "catalog",
+      title: "Katalog & Kapsam",
+      subtitle: "Oyun, paket & DLC filtreleri",
+      icon: Layers,
+    },
+    {
+      id: "general",
+      title: "Genel Ayarlar",
+      subtitle: "Üyelik & sistem erişimi",
+      icon: Settings,
+    },
+    {
+      id: "manual",
+      title: "Manuel Ürün Ekle",
+      subtitle: "BigId ile hızlı aktarım",
+      icon: PlusCircle,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-zinc-800 space-x-1 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab("scheduler")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "scheduler"
-              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-          }`}
-        >
-          <Clock className="h-4 w-4" />
-          <span>Zamanlayıcı & Katalog Keşfi</span>
-        </button>
+      {/* Responsive Bento Grid Navigation Selector (No horizontal overflow) */}
+      <div
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"
+        role="tablist"
+        aria-label="Ayarlar Bölümleri"
+      >
+        {navItems.map((item, idx) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          const isLastOddOnMobile = idx === navItems.length - 1;
 
-        <button
-          onClick={() => setActiveTab("backup")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "backup"
-              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-          }`}
-        >
-          <Database className="h-4 w-4" />
-          <span>Veri Yönetimi (Yedekleme & Geri Yükleme)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("catalog")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "catalog"
-              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-          }`}
-        >
-          <Layers className="h-4 w-4" />
-          <span>Katalog & Kapsam Kuralları</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("general")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "general"
-              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-          }`}
-        >
-          <Settings className="h-4 w-4" />
-          <span>Genel Ayarlar</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("manual")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === "manual"
-              ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-              : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
-          }`}
-        >
-          <PlusCircle className="h-4 w-4" />
-          <span>Manuel Ürün Ekle</span>
-        </button>
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActiveTab(item.id)}
+              className={`group relative flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                isLastOddOnMobile ? "col-span-2 sm:col-span-1" : ""
+              } ${
+                isActive
+                  ? "border-emerald-500/60 bg-emerald-950/30 text-white shadow-md shadow-emerald-950/30"
+                  : "border-zinc-800/90 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-200"
+              }`}
+            >
+              <div
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${
+                  isActive
+                    ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-400"
+                    : "border-zinc-800 bg-zinc-950 text-zinc-400 group-hover:text-zinc-200"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`text-xs font-bold truncate ${
+                    isActive ? "text-emerald-400" : "text-zinc-200"
+                  }`}
+                >
+                  {item.title}
+                </p>
+                <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                  {item.subtitle}
+                </p>
+              </div>
+              {isActive && (
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Global Alerts */}
@@ -434,38 +464,38 @@ export function SettingsCenter({
       {activeTab === "scheduler" && (
         <div className="space-y-6">
           {/* Action Trigger Banner */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-            <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-emerald-400" />
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-5">
+            <h3 className="text-sm font-semibold text-white mb-2 flex items-start sm:items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
               <span>Anlık Tetikleme & Senkronizasyon (PostgreSQL Advisory Lock Korumalı)</span>
             </h3>
             <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
               Zamanlayıcıyı beklemeden mağaza katalog taramasını veya mevcut oyunların fiyat geçmişi güncellemesini hemen çalıştırabilirsiniz.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
               <button
                 onClick={() => handleTriggerAction("CATALOG_DISCOVERY")}
                 disabled={isTriggering}
-                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "CATALOG_DISCOVERY" ? "animate-spin" : ""}`} />
                 <span>Şimdi Yeni Oyunları Tara</span>
               </button>
 
               <button
                 onClick={() => handleTriggerAction("PRICE_SYNC")}
                 disabled={isTriggering}
-                className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
+                className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-4 py-2.5 sm:py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-50 transition-all border border-zinc-700"
               >
-                <TrendingDown className={`h-3.5 w-3.5 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
+                <TrendingDown className={`h-3.5 w-3.5 shrink-0 ${isTriggering && triggerAction === "PRICE_SYNC" ? "animate-spin" : ""}`} />
                 <span>Şimdi Fiyatları Güncelle</span>
               </button>
             </div>
 
             {triggerMessage && (
               <div className={`mt-4 rounded-lg p-3 text-xs flex items-center gap-2 ${triggerMessage.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
-                {triggerMessage.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                {triggerMessage.success ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
                 <span>{triggerMessage.message}</span>
               </div>
             )}
@@ -509,14 +539,14 @@ export function SettingsCenter({
             </h3>
 
             {/* Switch: autoDiscoverSeriesCatalog */}
-            <div className="flex items-center justify-between py-2">
+            <div className="flex items-center justify-between gap-4 py-2">
               <div>
                 <span className="text-sm font-medium text-white">Otomatik Xbox Series X|S Katalog Keşfi</span>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Türkiye Xbox Store&apos;daki yeni ve geri-katalog Series X|S oyunlarını periyodik olarak otomatik tarar.
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
                 <input
                   type="checkbox"
                   checked={settings.autoDiscoverSeriesCatalog}
@@ -611,7 +641,7 @@ export function SettingsCenter({
               <button
                 onClick={handleSaveSettings}
                 disabled={isSaving}
-                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
               >
                 <Save className="h-4 w-4" />
                 <span>{isSaving ? "Kaydediliyor..." : "Zamanlayıcı Ayarlarını Kaydet"}</span>
@@ -625,11 +655,11 @@ export function SettingsCenter({
       {activeTab === "backup" && (
         <div className="space-y-6">
           {/* Backup Creator Card */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-4">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div>
                 <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                  <Database className="h-4 w-4 text-emerald-400" />
+                  <Database className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span>PostgreSQL Veritabanı Yedeği Oluştur (pg_dump -Fc)</span>
                 </h3>
                 <p className="text-xs text-zinc-400 mt-0.5">
@@ -686,7 +716,7 @@ export function SettingsCenter({
               </label>
             </div>
 
-            <div className="flex items-center justify-between pt-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3">
               <span className="text-xs text-zinc-400">
                 Mevcut kayıt: <strong className="text-white">{stats.totalGames} Oyun</strong>,{" "}
                 <strong className="text-white">{stats.totalHistories} Fiyat Geçmişi</strong>,{" "}
@@ -696,23 +726,23 @@ export function SettingsCenter({
               <button
                 onClick={handleCreateBackup}
                 disabled={isCreatingBackup}
-                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition-all shadow-sm"
               >
-                <Download className={`h-4 w-4 ${isCreatingBackup ? "animate-bounce" : ""}`} />
+                <Download className={`h-4 w-4 shrink-0 ${isCreatingBackup ? "animate-bounce" : ""}`} />
                 <span>{isCreatingBackup ? "Yedek Alınıyor..." : "Veritabanı Yedeği Oluştur"}</span>
               </button>
             </div>
 
             {backupMessage && (
               <div className={`mt-3 rounded-lg p-3 text-xs flex items-center gap-2 ${backupMessage.success ? "bg-emerald-950/40 border border-emerald-800/80 text-emerald-300" : "bg-red-950/40 border border-red-800/80 text-red-300"}`}>
-                {backupMessage.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                {backupMessage.success ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
                 <span>{backupMessage.text}</span>
               </div>
             )}
           </div>
 
           {/* Backup History Table */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6 space-y-4">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 sm:p-6 space-y-4">
             <h3 className="text-base font-semibold text-white border-b border-zinc-800 pb-3">
               Kayıtlı Yedek Dosyaları ({backups.length})
             </h3>
@@ -780,10 +810,10 @@ export function SettingsCenter({
           </div>
 
           {/* Restore / Import Card */}
-          <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-6 space-y-4">
+          <div className="rounded-xl border border-amber-900/40 bg-zinc-900/50 p-4 sm:p-6 space-y-4">
             <div className="border-b border-amber-900/30 pb-3">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                <UploadCloud className="h-4 w-4 text-amber-400" />
+                <UploadCloud className="h-4 w-4 text-amber-400 shrink-0" />
                 <span>Yedekten Geri Yükle (pg_restore)</span>
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5">
@@ -801,7 +831,7 @@ export function SettingsCenter({
               <label className="block text-xs font-medium text-zinc-300">
                 1. Yedek Dosyası Seç (.dump veya .backup):
               </label>
-              <div className="flex gap-3 items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                 <input
                   type="file"
                   accept=".dump,.backup"
@@ -814,7 +844,7 @@ export function SettingsCenter({
                 <button
                   type="submit"
                   disabled={!uploadFile || isValidatingArchive}
-                  className="shrink-0 flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+                  className="shrink-0 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-2.5 sm:py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
                 >
                   <FileCheck className="h-4 w-4" />
                   <span>{isValidatingArchive ? "Doğrulanıyor..." : "Arşivi İncele"}</span>
@@ -851,18 +881,18 @@ export function SettingsCenter({
                   <label className="block text-xs font-medium text-amber-300">
                     2. Geri Yüklemeyi Onaylamak İçin Aşağıya <strong className="underline font-mono">RESTORE</strong> Yazın:
                   </label>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <input
                       type="text"
                       placeholder="RESTORE"
                       value={restoreConfirmation}
                       onChange={(e) => setRestoreConfirmation(e.target.value)}
-                      className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs text-white font-mono uppercase tracking-widest focus:border-amber-500 focus:outline-none w-48"
+                      className="rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 sm:py-1.5 text-xs text-white font-mono uppercase tracking-widest focus:border-amber-500 focus:outline-none w-full sm:w-48"
                     />
                     <button
                       onClick={handleExecuteRestore}
                       disabled={restoreConfirmation !== "RESTORE" || isRestoring}
-                      className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-40 transition-all shadow-sm"
+                      className="flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 sm:py-2 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-40 transition-all shadow-sm"
                     >
                       <Database className={`h-4 w-4 ${isRestoring ? "animate-spin" : ""}`} />
                       <span>{isRestoring ? "Geri Yükleniyor (Bekleyiniz)..." : "Geri Yüklemeyi Başlat"}</span>

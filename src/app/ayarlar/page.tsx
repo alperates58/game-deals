@@ -111,16 +111,16 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-6">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-5 sm:pb-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1">
-            <ShieldAlert className="h-4 w-4" />
+            <ShieldAlert className="h-4 w-4 shrink-0" />
             <span>Sistem Yöneticisi Paneli</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Ayarlar ve Kontrol Merkezi</h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Ayarlar ve Kontrol Merkezi</h1>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-400">
             Katalog takibi, otomatik keşif kuralları, senkronizasyon zamanlaması, veritabanı yedeği ve telemetrisi.
           </p>
         </div>
