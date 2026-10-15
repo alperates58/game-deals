@@ -28,6 +28,7 @@ export interface LiveSearchProps {
   className?: string;
   placeholder?: string;
   autoFocus?: boolean;
+  dropdownAlign?: "auto" | "full" | "right";
 }
 
 export function LiveSearch({
@@ -35,6 +36,7 @@ export function LiveSearch({
   className,
   placeholder = "Oyun veya DLC ara...",
   autoFocus = false,
+  dropdownAlign = "auto",
 }: LiveSearchProps = {}) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -175,12 +177,18 @@ export function LiveSearch({
         )}
       </div>
 
-      {/* Dropdown Menu - Widen for desktop to prevent truncating titles */}
+      {/* Dropdown Menu - Solid opaque background, perfectly aligned */}
       {isOpen && query.trim().length >= 2 && (
-        <div className="absolute top-full right-0 mt-2 z-50 w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-w-[92vw] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/98 shadow-2xl backdrop-blur-md">
+        <div
+          className={`absolute top-full mt-2 z-50 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl ${
+            dropdownAlign === "full"
+              ? "left-0 right-0 w-full"
+              : "right-0 w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-w-[92vw]"
+          }`}
+        >
           {results.length > 0 ? (
             <div className="divide-y divide-zinc-800/60 max-h-[460px] overflow-y-auto">
-              <div className="px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-950/60 flex items-center justify-between">
+              <div className="px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 bg-zinc-900/90 flex items-center justify-between">
                 <span>Arama Sonuçları ({results.length})</span>
                 <span className="text-zinc-500">↑↓ seç, Enter git</span>
               </div>
@@ -197,17 +205,17 @@ export function LiveSearch({
                     }}
                     onMouseEnter={() => setSelectedIndex(index)}
                     className={`flex items-center gap-3 p-2.5 sm:p-3 cursor-pointer transition-colors ${
-                      isSelected ? "bg-zinc-800/90" : "hover:bg-zinc-800/50"
+                      isSelected ? "bg-zinc-850" : "hover:bg-zinc-900"
                     }`}
                   >
                     {/* Thumbnail */}
-                    <div className="relative h-14 w-10.5 shrink-0 overflow-hidden rounded-lg bg-zinc-950 border border-zinc-800">
+                    <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-zinc-900 border border-zinc-800">
                       {item.imageUrl ? (
                         <Image
                           src={getOptimizedImageUrl(item.imageUrl, "thumb")}
                           alt={item.title}
                           fill
-                          sizes="42px"
+                          sizes="40px"
                           className="object-cover"
                         />
                       ) : (

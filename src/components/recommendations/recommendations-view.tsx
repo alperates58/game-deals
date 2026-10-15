@@ -115,7 +115,7 @@ export function RecommendationsView({
                     <div className="flex gap-3">
                       <Link
                         href={`/oyun/${game.slug}`}
-                        className="relative h-24 w-18 shrink-0 overflow-hidden rounded-lg bg-zinc-950"
+                        className="relative h-24 w-[72px] shrink-0 overflow-hidden rounded-lg bg-zinc-950 border border-zinc-800/80"
                       >
                         {game.imageUrl ? (
                           <Image
@@ -254,7 +254,7 @@ export function RecommendationsView({
                   <div className="flex gap-3">
                     <Link
                       href={`/oyun/${dlc.slug}`}
-                      className="relative h-18 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950"
+                      className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950 border border-zinc-800/80"
                     >
                       {dlc.imageUrl ? (
                         <Image src={getOptimizedImageUrl(dlc.imageUrl, "thumb")} alt={dlc.title} fill className="object-cover" />

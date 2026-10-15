@@ -62,7 +62,7 @@ export async function Header() {
 
         {/* Center / Right: Live Search (Desktop only, mobile search is in sidebar drawer) */}
         <div className="hidden md:flex flex-1 justify-end max-w-sm md:max-w-md lg:max-w-lg min-w-0">
-          <LiveSearch />
+          <LiveSearch dropdownAlign="right" />
         </div>
 
         {/* Right: User / Auth Navigation */}

@@ -156,7 +156,7 @@ export function AlertsView({ initialAlerts, recentEvents }: AlertsViewProps) {
                   <div className="flex gap-3">
                     <Link
                       href={`/oyun/${game.slug}`}
-                      className="relative h-18 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950"
+                      className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-950 border border-zinc-800/80"
                     >
                       {game.imageUrl ? (
                         <Image src={getOptimizedImageUrl(game.imageUrl, "thumb")} alt={game.title} fill className="object-cover" />

@@ -243,6 +243,7 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             onItemSelect={onClose}
             placeholder="Oyun veya DLC ara..."
             className="relative w-full"
+            dropdownAlign="full"
           />
         </div>
 

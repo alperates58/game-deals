@@ -77,9 +77,9 @@ class SyncProgressTracker {
       progressPercent: 2,
       currentPhase:
         isFullCrawl || action === "FULL_CATALOG_CRAWL"
-          ? "Tüm Xbox Series X|S kataloğunu taramak için mağaza yayınına bağlanılıyor..."
+          ? "Tüm Xbox kataloğunu (Series X|S & Xbox One) taramak için mağaza yayınına bağlanılıyor..."
           : action === "CATALOG_DISCOVERY"
-          ? "Microsoft Store Series X|S kanalına bağlanılıyor..."
+          ? "Microsoft Store Xbox kanalına bağlanılıyor..."
           : "Fiyat güncelleme kuyruğu hazırlanıyor...",
       pagesScanned: 0,
       maxPages,
@@ -93,7 +93,7 @@ class SyncProgressTracker {
           timestamp: this.getTimestamp(),
           message:
             isFullCrawl || action === "FULL_CATALOG_CRAWL"
-              ? "🚀 Tam Mağaza Taraması başlatıldı. Tüm Series X|S kataloğu bitene kadar otomatik çekilecek."
+              ? "🚀 Tam Mağaza Taraması başlatıldı. Tüm Xbox (Series X|S & Xbox One) kataloğu bitene kadar otomatik çekilecek."
               : action === "CATALOG_DISCOVERY"
               ? `Katalog taraması başlatıldı (Hedef: ${maxPages} sayfa, ~${maxPages * 25} ürün).`
               : "Fiyat güncellemesi başlatıldı.",

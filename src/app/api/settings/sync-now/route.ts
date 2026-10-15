@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         action: "FULL_CATALOG_CRAWL",
-        message: "🚀 Tüm Xbox Series X|S mağaza taraması arka planda başlatıldı. İlerleme panelinden anlık takip edebilirsiniz.",
+        message: "🚀 Tüm Xbox (Series X|S & Xbox One) mağaza taraması arka planda başlatıldı. İlerleme panelinden anlık takip edebilirsiniz.",
       });
     }
 
