@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Role, AuthProvider, User } from "@prisma/client";
+import { NextRequest } from "next/server";
 import {
   resolveGoogleUser,
   sanitizeReturnTo,
@@ -7,6 +8,7 @@ import {
   verifyOAuthStateToken,
   getGoogleOAuthConfig,
 } from "../../src/lib/auth/google";
+import { POST as logoutPost, GET as logoutGet } from "../../src/app/api/auth/logout/route";
 
 // In-memory mock database state for testing Google OAuth security rules
 interface MockUser {
@@ -470,5 +472,31 @@ describe("Google OAuth Security & Account Resolution Hardening", () => {
     delete process.env.GOOGLE_CLIENT_SECRET;
     const unconfigured = getGoogleOAuthConfig();
     expect(unconfigured.isConfigured).toBe(false);
+  });
+
+  // Test 12: Logout UX redirects to /login and clears session cookie
+  it("12. Logout redirects browser requests to /login and clears session cookie", async () => {
+    // Mock NextRequest for standard browser navigation / form post
+    const req = new NextRequest("http://localhost:3000/api/auth/logout", {
+      method: "POST",
+      headers: {
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    const res = await logoutPost(req);
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/login");
+    const cookieHeader = res.headers.get("set-cookie") || "";
+    expect(cookieHeader).toContain("game_deals_session=");
+    expect(cookieHeader).toContain("Max-Age=0");
+
+    // Also verify GET /api/auth/logout
+    const getReq = new NextRequest("http://localhost:3000/api/auth/logout", {
+      method: "GET",
+    });
+    const getRes = await logoutGet(getReq);
+    expect(getRes.status).toBe(303);
+    expect(getRes.headers.get("location")).toBe("http://localhost:3000/login");
   });
 });

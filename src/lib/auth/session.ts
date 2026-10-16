@@ -91,14 +91,18 @@ export async function setSessionCookieOnResponse(
  * Clears session cookie on logout.
  */
 export async function clearSessionCookie() {
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+  } catch {
+    // Graceful fallback when executed outside Next.js request scope (e.g. In unit tests)
+  }
 }
 
 /**
