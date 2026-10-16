@@ -61,12 +61,15 @@ export async function POST(req: Request) {
       data: { lastLoginAt: new Date() },
     });
 
-    await setSessionCookie({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
+    await setSessionCookie(
+      {
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      req
+    );
 
     return NextResponse.json({
       success: true,

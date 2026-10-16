@@ -8,6 +8,7 @@ import {
   GOOGLE_OAUTH_COOKIE_NAME,
   OAUTH_COOKIE_DURATION_SECONDS,
 } from "@/lib/auth/google";
+import { shouldUseSecureCookies } from "@/lib/auth/session";
 
 export async function GET(req: NextRequest) {
   const { isConfigured, redirectUri, appUrl } = getGoogleOAuthConfig(req);
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     const response = NextResponse.redirect(authUrl.href);
     response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, stateToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldUseSecureCookies(req),
       sameSite: "lax",
       path: "/",
       maxAge: OAUTH_COOKIE_DURATION_SECONDS,

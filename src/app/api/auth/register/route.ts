@@ -108,12 +108,15 @@ export async function POST(req: Request) {
       return { user: newUser, isFirstUser };
     });
 
-    await setSessionCookie({
-      userId: result.user.id,
-      email: result.user.email,
-      name: result.user.name,
-      role: result.user.role,
-    });
+    await setSessionCookie(
+      {
+        userId: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.user.role,
+      },
+      req
+    );
 
     return NextResponse.json({
       success: true,

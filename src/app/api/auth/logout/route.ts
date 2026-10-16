@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { clearSessionCookie, SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { clearSessionCookie, SESSION_COOKIE_NAME, shouldUseSecureCookies } from "@/lib/auth/session";
 import { getGoogleOAuthConfig } from "@/lib/auth/google";
 
 export async function POST(req: NextRequest) {
-  await clearSessionCookie();
+  await clearSessionCookie(req);
 
   const acceptHeader = req.headers.get("accept") || "";
   if (acceptHeader.includes("application/json") && !acceptHeader.includes("text/html")) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.redirect(new URL("/login", appUrl), { status: 303 });
   response.cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(req),
     sameSite: "lax",
     path: "/",
     maxAge: 0,
@@ -23,12 +23,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  await clearSessionCookie();
+  await clearSessionCookie(req);
   const { appUrl } = getGoogleOAuthConfig(req);
   const response = NextResponse.redirect(new URL("/login", appUrl), { status: 303 });
   response.cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(req),
     sameSite: "lax",
     path: "/",
     maxAge: 0,

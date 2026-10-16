@@ -56,14 +56,57 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 /**
+ * Determines whether cookies should have the Secure attribute.
+ *
+ * Rules:
+ * 1. If valid APP_URL is configured, use its protocol:
+ *    https: -> true
+ *    http:  -> false
+ * 2. If APP_URL is absent, inspect request forwarded protocol (x-forwarded-proto) if provided.
+ * 3. Fail-safe / fallback:
+ *    production -> true
+ *    development/test -> false
+ */
+export function shouldUseSecureCookies(req?: Request | { headers: Headers }): boolean {
+  const isProduction = process.env.NODE_ENV === "production";
+  const appUrlStr = process.env.APP_URL?.trim();
+
+  if (appUrlStr) {
+    try {
+      const parsed = new URL(appUrlStr);
+      if (parsed.protocol === "https:") {
+        return true;
+      }
+      if (parsed.protocol === "http:") {
+        return false;
+      }
+    } catch {
+      // Invalid URL format in APP_URL -> fail-safe in production
+      return isProduction;
+    }
+  }
+
+  if (req) {
+    const forwardedProto = req.headers.get("x-forwarded-proto");
+    if (forwardedProto) {
+      const proto = forwardedProto.split(",")[0].trim().toLowerCase();
+      if (proto === "https") return true;
+      if (proto === "http") return false;
+    }
+  }
+
+  return isProduction;
+}
+
+/**
  * Sets session cookie on HTTP response.
  */
-export async function setSessionCookie(payload: SessionPayload) {
+export async function setSessionCookie(payload: SessionPayload, req?: Request | { headers: Headers }) {
   const token = await createSessionToken(payload);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(req),
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_DURATION_SECONDS,
@@ -75,12 +118,13 @@ export async function setSessionCookie(payload: SessionPayload) {
  */
 export async function setSessionCookieOnResponse(
   response: { cookies: { set: (name: string, val: string, opts: any) => void } },
-  payload: SessionPayload
+  payload: SessionPayload,
+  req?: Request | { headers: Headers }
 ) {
   const token = await createSessionToken(payload);
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(req),
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_DURATION_SECONDS,
@@ -90,12 +134,12 @@ export async function setSessionCookieOnResponse(
 /**
  * Clears session cookie on logout.
  */
-export async function clearSessionCookie() {
+export async function clearSessionCookie(req?: Request | { headers: Headers }) {
   try {
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldUseSecureCookies(req),
       sameSite: "lax",
       path: "/",
       maxAge: 0,

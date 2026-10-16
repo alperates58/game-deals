@@ -8,7 +8,17 @@ import {
   sanitizeReturnTo,
   GOOGLE_OAUTH_COOKIE_NAME,
 } from "@/lib/auth/google";
-import { setSessionCookieOnResponse } from "@/lib/auth/session";
+import { setSessionCookieOnResponse, shouldUseSecureCookies } from "@/lib/auth/session";
+
+function clearOAuthCookie(response: NextResponse, req?: NextRequest) {
+  response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", {
+    httpOnly: true,
+    secure: shouldUseSecureCookies(req),
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+}
 
 export async function GET(req: NextRequest) {
   const { redirectUri, appUrl } = getGoogleOAuthConfig(req);
@@ -24,7 +34,7 @@ export async function GET(req: NextRequest) {
       const sanitizedParam =
         oauthError === "access_denied" ? "google_access_denied" : "google_failed";
       const response = NextResponse.redirect(new URL(`/login?error=${sanitizedParam}`, appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
@@ -32,14 +42,14 @@ export async function GET(req: NextRequest) {
     const stateCookie = req.cookies.get(GOOGLE_OAUTH_COOKIE_NAME)?.value;
     if (!stateCookie) {
       const response = NextResponse.redirect(new URL("/login?error=invalid_state", appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
     const stateData = await verifyOAuthStateToken(stateCookie);
     if (!stateData || !state || stateData.state !== state || !code) {
       const response = NextResponse.redirect(new URL("/login?error=invalid_state", appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
@@ -59,14 +69,14 @@ export async function GET(req: NextRequest) {
     const claims = tokens.claims();
     if (!claims || !claims.sub || !claims.email) {
       const response = NextResponse.redirect(new URL("/login?error=google_failed", appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
     // 4. Enforce email_verified
     if (!claims.email_verified) {
       const response = NextResponse.redirect(new URL("/login?error=email_not_verified", appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
@@ -93,7 +103,7 @@ export async function GET(req: NextRequest) {
         errCode = "account_suspended";
       }
       const response = NextResponse.redirect(new URL(`/login?error=${errCode}`, appUrl));
-      response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+      clearOAuthCookie(response, req);
       return response;
     }
 
@@ -104,21 +114,25 @@ export async function GET(req: NextRequest) {
     const response = NextResponse.redirect(redirectUrl);
 
     // Clear temporary OAuth cookie
-    response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+    clearOAuthCookie(response, req);
 
     // Issue standard game_deals_session cookie
-    await setSessionCookieOnResponse(response, {
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
+    await setSessionCookieOnResponse(
+      response,
+      {
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      req
+    );
 
     return response;
   } catch (error: any) {
     console.error("[Google OAuth Callback Error]", error?.message || "Unknown error");
     const response = NextResponse.redirect(new URL("/login?error=google_failed", appUrl));
-    response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+    clearOAuthCookie(response, req);
     return response;
   }
 }
