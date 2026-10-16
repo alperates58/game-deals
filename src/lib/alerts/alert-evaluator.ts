@@ -90,32 +90,43 @@ export async function evaluateGamePriceAlerts(
     }
 
     // Create NotificationEvent contract (Future Telegram/Email delivery pipeline)
-    await prisma.notificationEvent.create({
-      data: {
-        userId: alert.userId,
-        gameId: alert.gameId,
-        type: NotificationEventType.ALERT_MATCHED,
-        status: NotificationStatus.PENDING,
-        payload: {
-          alertId: alert.id,
-          alertType: alert.type,
-          gameTitle: alert.game.title,
-          gameSlug: alert.game.slug,
-          currentPrice: context.currentPrice,
-          listPrice: context.listPrice,
-          discountPercent: context.discountPercent,
-          dealScore: context.dealScore,
-          currency: alert.game.currency,
-          matchReason,
-          triggeredAt: now.toISOString(),
+    const dedupeKey = `ALERT_MATCHED:${alert.userId}:${alert.gameId}:${context.currentPrice.toFixed(2)}:${now.toISOString().split("T")[0]}`;
+    try {
+      const event = await prisma.notificationEvent.create({
+        data: {
+          userId: alert.userId,
+          gameId: alert.gameId,
+          type: NotificationEventType.ALERT_MATCHED,
+          status: NotificationStatus.PENDING,
+          dedupeKey,
+          payload: {
+            alertId: alert.id,
+            alertType: alert.type,
+            gameTitle: alert.game.title,
+            gameSlug: alert.game.slug,
+            currentPrice: context.currentPrice,
+            listPrice: context.listPrice,
+            discountPercent: context.discountPercent,
+            dealScore: context.dealScore,
+            currency: alert.game.currency,
+            matchReason,
+            triggeredAt: now.toISOString(),
+          },
         },
-      },
-    });
+      });
+
+      // Enqueue channel deliveries idempotently
+      const { enqueueEventDeliveries } = await import("../notifications/dispatcher");
+      await enqueueEventDeliveries(event.id);
+    } catch {
+      // Safe ignore duplicate dedupeKey
+    }
 
     await prisma.priceAlert.update({
       where: { id: alert.id },
       data: { lastTriggeredAt: now },
     });
+
 
     triggered++;
   }

@@ -6,7 +6,10 @@
     "scope": "API",
     "severity": "CRITICAL",
     "verificationMethod": "SECURITY_SCAN",
-    "relatedTests": [],
+    "relatedTests": [
+      "src/app/api/auth/register/register-security.test.ts",
+      "tests/unit/google-auth.test.ts"
+    ],
     "source": "Default Security Baseline"
   },
   {
@@ -20,193 +23,39 @@
     "source": "Domain Data Integrity Standard"
   },
   {
-    "id": "NO_FAKE_PRICE_DATA",
-    "description": "Production UI and database must never contain synthetic, mocked or fake price data. If price is unknown or unverified, display empty/unverified state.",
-    "category": "DATA_INTEGRITY",
-    "scope": "database, ui, adapter",
-    "severity": "CRITICAL",
-    "verificationMethod": "Code review, DB inspection, audit_truthful_ui test",
-    "relatedTests": [],
-    "source": "brief section 5 & 6"
-  },
-  {
-    "id": "NO_MICROSOFT_AUTH_BYPASS",
-    "description": "No bypassing of Microsoft authentication or tokens. Only use public unauthenticated Display Catalog / discovery endpoints.",
+    "id": "INV-001",
+    "description": "The system must strictly prevent the last OWNER account from demoting themselves to USER or suspending their account. Any attempt must return 400 Bad Request with a clear safety error.",
     "category": "SECURITY",
-    "scope": "xbox-source adapter",
+    "scope": "User Management & Role Mutation",
     "severity": "CRITICAL",
-    "verificationMethod": "Source audit and code inspection",
-    "relatedTests": [],
-    "source": "brief section 6 & 11"
+    "verificationMethod": "Automated unit tests validating self-demotion and last-owner protection rejection",
+    "relatedTests": [
+      "tests/unit/admin-user-security.test.ts"
+    ],
+    "source": "FAZ 1.5 Specification Milestone D"
   },
   {
-    "id": "NO_AGGRESSIVE_SCRAPING",
-    "description": "Strict rate-limiting, jitter backoff, max concurrency 2, batch size 25, no anti-bot bypass or proxy rotation.",
-    "category": "API_CONTRACT",
-    "scope": "collector, rate-limiter",
-    "severity": "HIGH",
-    "verificationMethod": "Rate limiter unit test and collector configuration inspection",
-    "relatedTests": [],
-    "source": "brief section 6 & 11"
-  },
-  {
-    "id": "TR_MARKET_ONLY_PHASE1",
-    "description": "Phase 1 focuses exclusively on the Xbox Microsoft Store Turkey market (market=TR, language=tr-TR, currency TRY).",
-    "category": "BUSINESS_LOGIC",
-    "scope": "catalog, adapter, pricing",
-    "severity": "HIGH",
-    "verificationMethod": "Catalog query parameters inspection",
-    "relatedTests": [],
-    "source": "brief section 1, 6 & 19"
-  },
-  {
-    "id": "POPULAR_PAID_GAMES_ONLY",
-    "description": "Track only 300-600 popular and important paid games. Exclude free games, DLCs, add-ons, skins, consumables, sound-tracks.",
-    "category": "BUSINESS_LOGIC",
-    "scope": "game-discovery, catalog-seed",
-    "severity": "HIGH",
-    "verificationMethod": "Free-game and product-type filter unit tests",
-    "relatedTests": [],
-    "source": "brief section 2 & 6"
-  },
-  {
-    "id": "FAZ0_RESEARCH_BEFORE_IMPLEMENTATION",
-    "description": "Do not write production implementation before validating Xbox Display Catalog endpoints, TR pricing paths, SKU handling, and batch behavior with real API evidence.",
-    "category": "API_CONTRACT",
-    "scope": "phase 0 research gate",
-    "severity": "CRITICAL",
-    "verificationMethod": "Docs and evidence files verification",
-    "relatedTests": [],
-    "source": "brief section 6 & 14"
-  },
-  {
-    "id": "FAZ1_SCOPE_GUARD",
-    "description": "Strictly stop at Phase 1 scope. Do not implement Phase 2 items like Telegram, Auth, Watchlists, Redis, microservices.",
-    "category": "BUSINESS_LOGIC",
-    "scope": "full project scope",
-    "severity": "CRITICAL",
-    "verificationMethod": "Scope audit and acceptance report review",
-    "relatedTests": [],
-    "source": "brief section 3, 6 & 41"
-  },
-  {
-    "id": "NO_REDIS_PHASE1",
-    "description": "Phase 1 uses only PostgreSQL for storage, sync locks, and cache if needed. Redis is strictly forbidden in Phase 1.",
-    "category": "BUSINESS_LOGIC",
-    "scope": "infrastructure, data storage",
-    "severity": "HIGH",
-    "verificationMethod": "Package.json and Docker Compose inspection",
-    "relatedTests": [],
-    "source": "brief section 2, 3 & 6"
-  },
-  {
-    "id": "NO_AUTH_PHASE1",
-    "description": "No user authentication, sessions, logins or user accounts in Phase 1. Open public data portal only.",
+    "id": "INV-002",
+    "description": "Secrets (SESSION_SECRET, DATABASE_URL, passwordHash, GOOGLE_CLIENT_SECRET, SMTP_PASSWORD, TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET) must never be returned in API payloads, serialized to browser HTML, or logged into AdminAuditLog.",
     "category": "SECURITY",
-    "scope": "api, pages, auth",
-    "severity": "HIGH",
-    "verificationMethod": "Route audit and dependency inspection",
-    "relatedTests": [],
-    "source": "brief section 3 & 6"
-  },
-  {
-    "id": "NO_TELEGRAM_IMPLEMENTATION_PHASE1",
-    "description": "No Telegram bot token, message sender, bot webhook or subscription code in Phase 1. Only architecture readiness allowed.",
-    "category": "BUSINESS_LOGIC",
-    "scope": "notifications, bot",
-    "severity": "HIGH",
-    "verificationMethod": "Dependency and code scan",
-    "relatedTests": [],
-    "source": "brief section 3 & 6"
-  },
-  {
-    "id": "NO_ADDON_AS_BASE_GAME",
-    "description": "DLC, add-on, expansion, currency, or consumable products must never be classified or displayed as base games in the default deals catalog.",
-    "category": "DATA_INTEGRITY",
-    "scope": "catalog, deals page, search, mapper",
+    "scope": "API Responses, Client Serialization & Audit Logs",
     "severity": "CRITICAL",
-    "verificationMethod": "Product classification unit test and deals query inspection",
-    "relatedTests": [],
-    "source": "Faz 1.1 brief section 1 & 2"
+    "verificationMethod": "Static AST audit, sanitized audit logger test, and API response schema validation",
+    "relatedTests": [
+      "tests/unit/admin-security-scrub.test.ts"
+    ],
+    "source": "FAZ 1.5 Specification Milestone U & Audit Logger"
   },
   {
-    "id": "NO_UNVERIFIED_GAME_ADDON_RELATION",
-    "description": "No guessing or fuzzy title parsing for game-addon or bundle-child relationships. Relationships must be strictly grounded in Microsoft Display Catalog metadata.",
+    "id": "INV-003",
+    "description": "Database migrations must be completely non-destructive: no DROP TABLE, no DROP COLUMN, safe nullable/default columns, and idempotent PostgreSQL DDL protected with IF NOT EXISTS and DO EXCEPTION blocks.",
     "category": "DATA_INTEGRITY",
-    "scope": "relation-mapper, database, detail page",
+    "scope": "Prisma Schema & PostgreSQL Migrations",
     "severity": "CRITICAL",
-    "verificationMethod": "Relationship source audit and relation mapper unit tests",
-    "relatedTests": [],
-    "source": "Faz 1.1 brief section 5 & 11"
-  },
-  {
-    "id": "NO_PLAINTEXT_PASSWORDS",
-    "description": "Kullanıcı şifreleri veritabanında asla düz metin olarak saklanamaz; modern güçlü salt ve hash algoritması kullanılmalıdır.",
-    "category": "SECURITY",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Automated auth unit tests and code inspection",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "OWNER_SETTINGS_REQUIRE_SERVER_AUTHORIZATION",
-    "description": "Sistem ayarları ve katalog yönetim aksiyonları yalnızca sunucu tarafında doğrulanmış OWNER rolü tarafından yürütülebilir. İstemci taraflı rol kontrolü güvenlik kontrolü sayılamaz.",
-    "category": "SECURITY",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Automated unauthorized access tests",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "NO_FAKE_PERSONAL_PREFERENCE",
-    "description": "Kullanıcı tercihleri ve öneri açıklamaları yalnızca gerçek kullanıcı aksiyonlarından türetilmelidir; yapay veya sentetik ilgi alanı üretilemez.",
-    "category": "BUSINESS_LOGIC",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Recommendation unit tests verifying explanation provenance",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "NO_DUPLICATE_NOTIFICATION_EVENT",
-    "description": "Aynı fiyat durumu ve aynı alarm için mükerrer bildirim eventi üretilemez; her tetiklenme tekil ve kayıtlı olmalıdır.",
-    "category": "DATA_INTEGRITY",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Alert evaluation engine unit tests",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "NO_FAKE_ALERT_DELIVERY",
-    "description": "Bu fazda Telegram veya harici kanal entegrasyonu bulunmadığından sahte teslimat yapıldı bildirimi verilemez; eventler PENDING durumunda sözleşme olarak kaydedilir.",
-    "category": "UX_ERGONOMICS",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Truthful event status unit tests",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "REGISTRATION_CONFIGURABLE",
-    "description": "Kullanıcı kaydı ALLOW_REGISTRATION ortam değişkeni veya SystemSetting üzerinden kapatılabilmeli; kapalıyken /register sayfası açık kayıt kabul etmemelidir.",
-    "category": "SECURITY",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Registration toggle unit tests",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
-  },
-  {
-    "id": "NO_DESTRUCTIVE_USER_DATA_MIGRATION",
-    "description": "Yeni kullanıcı, alarm ve kişisel kütüphane tabloları eklenirken mevcut 1.619 oyun ve fiyat geçmişi verisi korunmalı; migration non-destructive olmalıdır.",
-    "category": "DATA_INTEGRITY",
-    "scope": "PROJECT",
-    "severity": "HIGH",
-    "verificationMethod": "Row count snapshot comparison",
-    "relatedTests": [],
-    "source": "FAZ 1.2 Brief"
+    "verificationMethod": "Static SQL migration review, dry-run schema validation, and prisma client generation verification",
+    "relatedTests": [
+      "tests/unit/migration-integrity.test.ts"
+    ],
+    "source": "FAZ 1.5 Specification Milestone Y"
   }
 ]

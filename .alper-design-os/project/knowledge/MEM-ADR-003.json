@@ -1,27 +1,26 @@
 {
   "id": "MEM-ADR-003",
   "type": "TECHNICAL_DECISION",
-  "title": "Microsoft Display Catalog API as Authoritative TR Price Source",
-  "summary": "Use Microsoft Display Catalog API (displaycatalog.mp.microsoft.com/v7.0/products) as authoritative price and metadata source for TR market.",
-  "details": "Identifying the most accurate, authorized, and maintainable data source for Xbox Turkey prices.",
-  "source": "RESEARCH_FINDING",
+  "title": "Safe Catalog Manual Overrides with Actor Provenance",
+  "summary": "Create GameManualOverride table holding explicit typed overrides (title, publisher, developer, franchise, releaseDate, productClass, imageUrl, isActive) with actor and reason provenance, preserving raw Game source data.",
+  "details": "Collector syncs periodically overwrite Game fields. If an administrator manually corrects a title or product class directly on Game, subsequent syncs overwrite it unless separated.",
+  "source": "USER_DECISION",
   "sourceRefs": [
     "decisions/ADR-003.json"
   ],
-  "createdAt": "2026-10-14T19:00:39.434Z",
-  "updatedAt": "2026-10-14T19:00:39.434Z",
+  "createdAt": "2026-10-16T11:08:59.134Z",
+  "updatedAt": "2026-10-16T11:08:59.134Z",
   "status": "ACTIVE",
   "confidence": 1,
   "freshness": "CURRENT",
   "scope": "PROJECT",
   "relatedEntities": [
-    "xbox-source",
-    "catalog",
-    "pricing"
+    "src/app/admin/catalog",
+    "src/lib/xbox/mapper.ts"
   ],
   "tags": [
     "ADR",
     "ACCEPTED",
-    "RESEARCH_FINDING"
+    "USER_DECISION"
   ]
 }

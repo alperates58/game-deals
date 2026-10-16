@@ -264,7 +264,27 @@ export async function processNormalizedProduct(
       isNewLow: lowResult.isNewLow,
     });
 
+    // Trigger domain NotificationEvents for wishlist/favorites/deals
+    try {
+      const { producePriceChangeEvents } = await import("../notifications/event-producer");
+      await producePriceChangeEvents({
+        gameId: existing.id,
+        gameTitle: existing.title,
+        gameSlug: existing.slug,
+        currentPrice: product.currentPrice,
+        listPrice: product.listPrice,
+        discountPercent: product.discountPercent,
+        historicalLow: lowResult.historicalLow,
+        dealScore: analysis.dealScore,
+        isNewLow: lowResult.isNewLow,
+        currency: existing.currency,
+      });
+    } catch (err: any) {
+      console.error("[PriceSync EventProducer Error]", err?.message || err);
+    }
+
     return { added: false, priceChanged: true, skipped: false };
+
   } else {
     // Price did NOT change: Idempotent update of lastSeenAt & DealAnalysis only
     await prisma.$transaction([

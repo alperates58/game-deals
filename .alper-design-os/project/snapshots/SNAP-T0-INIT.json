@@ -1,15 +1,15 @@
 {
   "snapshotId": "SNAP-T0-INIT",
   "commitSha": "UNVERIFIED_WORKING_TREE",
-  "timestamp": "2026-10-14T18:56:00.709Z",
-  "stack": "nextjs-typescript-postgresql-prisma-tailwind",
+  "timestamp": "2026-10-16T11:08:38.494Z",
+  "stack": "Next.js 15, Prisma ORM, PostgreSQL, Tailwind CSS",
   "architectureHash": "NOT_VERIFIED",
   "requirementHash": "NOT_VERIFIED",
   "routeInventory": [],
   "apiInventory": [],
-  "databaseFingerprint": "NOT_VERIFIED",
-  "dependencyFingerprint": "NOT_VERIFIED",
-  "designSystemFingerprint": "NOT_VERIFIED",
-  "uiTokenFingerprint": "NOT_VERIFIED",
+  "databaseFingerprint": "fp-db-781a677e9e1e7258",
+  "dependencyFingerprint": "fp-dep-4e2f26d0be6d0a6d",
+  "designSystemFingerprint": "fp-ds-9374bea9440c3003",
+  "uiTokenFingerprint": "fp-ds-9374bea9440c3003",
   "verificationStatus": "NOT_VERIFIED"
 }

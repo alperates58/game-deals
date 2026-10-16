@@ -17,9 +17,12 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
     "Google hesabınızın e-posta adresi doğrulanmamış. Güvenlik nedeniyle yalnızca doğrulanmış hesaplar kabul edilir.",
   registration_disabled:
     "Kullanıcı kaydı şu anda sistem yöneticisi tarafından durdurulmuştur. Yalnızca mevcut hesap sahipleri giriş yapabilir.",
+  account_suspended:
+    "Hesabınız sistem yöneticisi tarafından askıya alınmıştır. Detaylar ve yeniden etkinleştirme için yöneticiyle iletişime geçiniz.",
   google_failed: "Google ile giriş yapılırken bir sunucu hatası oluştu. Lütfen tekrar deneyin.",
   google_not_configured: "Google ile giriş sistemi henüz yapılandırılmamıştır.",
 };
+
 
 export function LoginForm({ googleConfigured = false }: LoginFormProps) {
   const router = useRouter();

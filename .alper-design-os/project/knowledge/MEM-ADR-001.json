@@ -1,24 +1,24 @@
 {
   "id": "MEM-ADR-001",
   "type": "TECHNICAL_DECISION",
-  "title": "Modular Monolith Architecture for Game Deals Tracking",
-  "summary": "Adopt a single-repository Modular Monolith built with Next.js App Router, TypeScript, Prisma ORM, and PostgreSQL.",
-  "details": "Building a reliable price tracking system for 300-600 games with periodic sync and public web presentation.",
+  "title": "Separate User Settings from Owner System Administration",
+  "summary": "Establish /ayarlar as universal user settings (Profile, Security, Notification preferences, Telegram, Email, Quiet Hours, Appearance) and /admin as Owner Control Center (Dashboard, Users, Catalog, Integrations, Operations, System).",
+  "details": "Previously, /ayarlar was restricted strictly to OWNER users and contained all system controls, while regular logged-in users had no settings page. Phase 1.5 mandates clear separation: /ayarlar for all users' personal preferences and /admin for owner control.",
   "source": "USER_DECISION",
   "sourceRefs": [
     "decisions/ADR-001.json"
   ],
-  "createdAt": "2026-10-14T19:00:29.683Z",
-  "updatedAt": "2026-10-14T19:00:29.683Z",
+  "createdAt": "2026-10-16T11:08:50.824Z",
+  "updatedAt": "2026-10-16T11:08:50.824Z",
   "status": "ACTIVE",
   "confidence": 1,
   "freshness": "CURRENT",
   "scope": "PROJECT",
   "relatedEntities": [
-    "web",
-    "worker",
-    "sync",
-    "database"
+    "src/app/ayarlar",
+    "src/app/admin",
+    "src/components/layout/header.tsx",
+    "src/components/layout/sidebar.tsx"
   ],
   "tags": [
     "ADR",

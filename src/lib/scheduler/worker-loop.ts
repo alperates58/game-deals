@@ -135,7 +135,19 @@ export class AutonomousWorker {
       }
     }
 
+    // Process due notification deliveries (Email, Telegram, In-App)
+    try {
+      const { processNotificationDeliveries } = await import("../notifications/dispatcher");
+      const deliveryStats = await processNotificationDeliveries(25);
+      if (deliveryStats.processed > 0) {
+        console.log(`[Worker] Dispatched ${deliveryStats.processed} notifications (sent: ${deliveryStats.sent}, retried: ${deliveryStats.retried}, failed: ${deliveryStats.failed})`);
+      }
+    } catch (deliveryErr: any) {
+      console.error("[Worker] Notification delivery processing error:", deliveryErr?.message || deliveryErr);
+    }
+
     return executedJobs;
+
   }
 
   /**

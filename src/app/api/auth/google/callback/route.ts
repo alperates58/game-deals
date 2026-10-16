@@ -86,12 +86,17 @@ export async function GET(req: NextRequest) {
         picture,
       });
     } catch (err: any) {
-      const errCode =
-        err?.message === "REGISTRATION_DISABLED" ? "registration_disabled" : "google_failed";
+      let errCode = "google_failed";
+      if (err?.message === "REGISTRATION_DISABLED") {
+        errCode = "registration_disabled";
+      } else if (err?.message === "ACCOUNT_SUSPENDED") {
+        errCode = "account_suspended";
+      }
       const response = NextResponse.redirect(new URL(`/login?error=${errCode}`, appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
+
 
     // 6. Set session cookie and redirect to sanitized returnTo using public appUrl
     const targetPath = sanitizeReturnTo(stateData.returnTo);

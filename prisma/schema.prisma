@@ -122,6 +122,13 @@ model Game {
   priceAlerts        PriceAlert[]
   notificationEvents NotificationEvent[]
 
+  // Admin and Extended foundations
+  manualOverride     GameManualOverride?
+  ratings            ExternalRating[]
+  subscriptions      GameSubscription[]
+  languageSupports   GameLanguageSupport[]
+  mediaItems         GameMedia[]
+
   @@index([isCore, isActive])
   @@index([productClass, isActive])
   @@index([isSeriesXCompatible, isActive])
@@ -194,25 +201,50 @@ enum Role {
   USER
 }
 
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum MembershipTier {
+  FREE
+  PRO
+}
+
 enum AuthProvider {
   GOOGLE
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  name               String
-  passwordHash       String?
-  role               Role                @default(USER)
-  avatarUrl          String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  lastLoginAt        DateTime?
+  id                     String                      @id @default(cuid())
+  email                  String                      @unique
+  name                   String
+  passwordHash           String?
+  role                   Role                        @default(USER)
+  accountStatus          AccountStatus               @default(ACTIVE)
+  membershipTier         MembershipTier              @default(FREE)
+  emailVerifiedAt        DateTime?
+  avatarUrl              String?
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  lastLoginAt            DateTime?
 
-  accounts           AuthAccount[]
-  userGames          UserGame[]
-  priceAlerts        PriceAlert[]
-  notificationEvents NotificationEvent[]
+  accounts               AuthAccount[]
+  userGames              UserGame[]
+  priceAlerts            PriceAlert[]
+  notificationEvents     NotificationEvent[]
+  notificationPreferences UserNotificationPreference[]
+  notificationSettings   UserNotificationSettings?
+  telegramConnection     TelegramConnection?
+  telegramLinkTokens     TelegramLinkToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  userNotifications      UserNotification[]
+  notificationDeliveries NotificationDelivery[]
+  adminAuditLogsCreated  AdminAuditLog[]             @relation("ActorUser")
+  adminAuditLogsTargeted AdminAuditLog[]             @relation("TargetUser")
+  gameManualOverrides    GameManualOverride[]
+
+  @@index([role, accountStatus])
 }
 
 model AuthAccount {
@@ -289,11 +321,27 @@ enum NotificationEventType {
   NEW_OBSERVED_LOW
   DEAL_SCORE_THRESHOLD
   OWNED_GAME_DLC_DEAL
+  WISHLIST_DEAL
+  FAVORITE_PRICE_CHANGE
 }
 
 enum NotificationStatus {
   PENDING
   PROCESSED
+  FAILED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  TELEGRAM
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  RETRYING
   FAILED
 }
 
@@ -307,17 +355,158 @@ model NotificationEvent {
   type        NotificationEventType
   payload     Json
   status      NotificationStatus    @default(PENDING)
+  dedupeKey   String?               @unique
+  readAt      DateTime?
 
   createdAt   DateTime              @default(now())
   processedAt DateTime?
 
+  deliveries  NotificationDelivery[]
+
   @@index([userId, status])
   @@index([createdAt])
+  @@index([type])
+}
+
+model NotificationDelivery {
+  id                String                     @id @default(cuid())
+  eventId           String
+  event             NotificationEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel           NotificationChannel
+  status            NotificationDeliveryStatus @default(PENDING)
+
+  attemptCount      Int                        @default(0)
+  maxAttempts       Int                        @default(5)
+  nextAttemptAt     DateTime                   @default(now())
+  lastAttemptAt     DateTime?
+  sentAt            DateTime?
+
+  providerMessageId String?
+  lastErrorSummary  String?
+
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([eventId, channel])
+  @@index([status, nextAttemptAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([channel, status])
+}
+
+model UserNotificationPreference {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType NotificationEventType
+  channel   NotificationChannel
+  enabled   Boolean               @default(true)
+
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([userId, eventType, channel])
+  @@index([userId])
+}
+
+model UserNotificationSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  quietHoursEnabled Boolean  @default(false)
+  quietHoursStart   String?  // HH:MM e.g. "23:00"
+  quietHoursEnd     String?  // HH:MM e.g. "08:00"
+  timezone          String   @default("Europe/Istanbul")
+
+  defaultAlertType  PriceAlertType @default(ANY_DISCOUNT)
+  defaultLanguage   String   @default("tr-TR")
+  defaultCurrency   String   @default("TRY")
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model UserNotification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String?
+  title     String
+  message   String
+  linkUrl   String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model TelegramConnection {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  telegramChatId String    @unique
+  telegramUsername String?
+  displayName    String?
+  linkedAt       DateTime  @default(now())
+  lastVerifiedAt DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([telegramChatId])
+}
+
+model TelegramLinkToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tokenHash])
+  @@index([userId])
 }
 
 model SystemSetting {
   id                               String    @id @default("global")
+  siteName                         String    @default("Game Deals")
+  maintenanceMode                  Boolean   @default(false)
   allowRegistration                Boolean   @default(true)
+
+  // Feature flags
+  showDeals                        Boolean   @default(true)
+  showHistoricalLow                Boolean   @default(true)
+  showDlc                          Boolean   @default(true)
+  showRatings                      Boolean   @default(true)
+  showSubscriptions                Boolean   @default(true)
+
+  // Global Notification master switches
+  inAppNotificationsEnabled        Boolean   @default(true)
+  emailNotificationsEnabled        Boolean   @default(false)
+  telegramNotificationsEnabled     Boolean   @default(false)
+
+  // SEO Defaults
+  defaultTitle                     String    @default("Game Deals | Türkiye Xbox Oyun İndirimleri ve Fırsat Takibi")
+  defaultDescription               String    @default("Xbox Series X|S oyun indirimleri, tarihi dip fiyatlar, DLC fırsatları ve yapay zeka destekli fiyat analizi.")
+  robotsIndex                      Boolean   @default(true)
 
   // Xbox Series X|S Scheduler & Discovery Settings
   autoDiscoverSeriesCatalog        Boolean   @default(true)
@@ -354,18 +543,6 @@ model SystemSetting {
   updatedAt                        DateTime  @updatedAt
 }
 
-enum BackupMode {
-  FULL
-  CATALOG
-}
-
-enum BackupStatus {
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-  RESTORING
-}
-
 model DatabaseBackup {
   id                String       @id @default(cuid())
   filename          String       @unique
@@ -380,6 +557,18 @@ model DatabaseBackup {
   completedAt       DateTime?
 
   @@index([startedAt(sort: Desc)])
+}
+
+enum BackupMode {
+  FULL
+  CATALOG
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RESTORING
 }
 
 enum ScheduledJobType {
@@ -422,3 +611,136 @@ model ScheduledJobState {
   @@index([nextRunAt])
 }
 
+// ============================================================
+// ADMIN AUDIT LOG & SAFE OVERRIDES & EXTENDED FOUNDATIONS
+// ============================================================
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  actorUser    User?    @relation("ActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+  action       String   // ROLE_CHANGE, SUSPEND_USER, REACTIVATE_USER, RESTORE_BACKUP, MANUAL_OVERRIDE, etc.
+  entityType   String   // User, Game, SystemSetting, DatabaseBackup, etc.
+  entityId     String?
+  targetUserId String?
+  targetUser   User?    @relation("TargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  beforeJson   Json?
+  afterJson    Json?
+  reason       String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action, createdAt(sort: Desc)])
+}
+
+model GameManualOverride {
+  id              String        @id @default(cuid())
+  gameId          String        @unique
+  game            Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  title           String?
+  publisher       String?
+  developer       String?
+  franchise       String?
+  releaseDate     DateTime?
+  productClass    ProductClass?
+  imageUrl        String?
+  isActive        Boolean?
+
+  updatedByUserId String?
+  updatedByUser   User?         @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  reason          String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([gameId])
+}
+
+enum RatingProvider {
+  METACRITIC
+  OPENCRITIC
+}
+
+model ExternalRating {
+  id          String         @id @default(cuid())
+  gameId      String
+  game        Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  provider    RatingProvider
+  criticScore Float?
+  userScore   Float?
+  reviewCount Int?
+  url         String?
+  source      String         @default("MANUAL") // MANUAL | SCRAPER
+  observedAt  DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([gameId, provider])
+  @@index([gameId])
+}
+
+enum SubscriptionService {
+  GAME_PASS
+  PS_PLUS
+  EA_PLAY
+  UBISOFT_PLUS
+}
+
+model GameSubscription {
+  id         String              @id @default(cuid())
+  gameId     String
+  game       Game                @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  service    SubscriptionService
+  tier       String?             // Core, Ultimate, Standard
+  startedAt  DateTime?
+  endedAt    DateTime?
+  isActive   Boolean             @default(true)
+  source     String              @default("MICROSOFT_STORE")
+  observedAt DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([gameId, service])
+  @@index([service, isActive])
+  @@index([gameId])
+}
+
+model GameLanguageSupport {
+  id                 String   @id @default(cuid())
+  gameId             String
+  game               Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  languageCode       String   // TR, EN, DE, FR, etc.
+  interfaceSupported Boolean  @default(false)
+  subtitlesSupported Boolean  @default(false)
+  audioSupported     Boolean  @default(false)
+  source             String   @default("MANUAL")
+  observedAt         DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([gameId, languageCode])
+  @@index([gameId])
+  @@index([languageCode])
+}
+
+enum MediaType {
+  TRAILER
+  GAMEPLAY
+  REVIEW
+}
+
+model GameMedia {
+  id        String    @id @default(cuid())
+  gameId    String
+  game      Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  type      MediaType @default(TRAILER)
+  title     String
+  url       String
+  provider  String    @default("YOUTUBE")
+  source    String    @default("MANUAL")
+  position  Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([gameId, isActive])
+}

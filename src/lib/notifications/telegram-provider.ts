@@ -1,0 +1,127 @@
+export interface SendTelegramResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  isTransient?: boolean;
+  retryAfterSeconds?: number;
+  isBlockedOrInactive?: boolean;
+}
+
+export interface TelegramConfigStatus {
+  configured: boolean;
+  botUsername: string | null;
+}
+
+/**
+ * Returns safe Telegram configuration status.
+ * NEVER exposes bot token or webhook secret.
+ */
+export function getTelegramConfigStatus(): TelegramConfigStatus {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || null;
+  const username = process.env.TELEGRAM_BOT_USERNAME?.trim() || null;
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || null;
+
+  const configured = Boolean(token && username && secret);
+
+  return {
+    configured,
+    botUsername: username,
+  };
+}
+
+export function isTelegramConfigured(): boolean {
+  return getTelegramConfigStatus().configured;
+}
+
+/**
+ * Sends a message via Telegram Bot API with robust error classification.
+ */
+export async function sendTelegramMessage(
+  chatId: string,
+  text: string,
+  fetchFn: typeof fetch = fetch
+): Promise<SendTelegramResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (!token) {
+    return {
+      success: false,
+      error: "TELEGRAM_BOT_TOKEN is not configured.",
+      isTransient: false,
+    };
+  }
+
+  const endpoint = `https://api.telegram.org/bot${token}/sendMessage`;
+
+  try {
+    const response = await fetchFn(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "MarkdownV2",
+        disable_web_page_preview: false,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (response.ok && data?.ok) {
+      return {
+        success: true,
+        messageId: String(data.result?.message_id || Date.now()),
+      };
+    }
+
+    const description = data?.description || `HTTP ${response.status} from Telegram`;
+    const statusCode = response.status;
+
+    // Rate Limiting (HTTP 429)
+    if (statusCode === 429) {
+      const retryAfter = data?.parameters?.retry_after || 60;
+      return {
+        success: false,
+        isTransient: true,
+        retryAfterSeconds: retryAfter,
+        error: `Rate limited by Telegram. Retry after ${retryAfter}s: ${description}`,
+      };
+    }
+
+    // Bot blocked by user or Chat Not Found (HTTP 403 / 400)
+    if (
+      statusCode === 403 ||
+      description.toLowerCase().includes("bot was blocked by the user") ||
+      description.toLowerCase().includes("chat not found") ||
+      description.toLowerCase().includes("user is deactivated")
+    ) {
+      return {
+        success: false,
+        isTransient: false,
+        isBlockedOrInactive: true,
+        error: `Permanent Telegram error: ${description}`,
+      };
+    }
+
+    // 5xx Server Errors are transient
+    if (statusCode >= 500) {
+      return {
+        success: false,
+        isTransient: true,
+        error: `Telegram server error (HTTP ${statusCode}): ${description}`,
+      };
+    }
+
+    return {
+      success: false,
+      isTransient: false,
+      error: `Telegram error (HTTP ${statusCode}): ${description}`,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      isTransient: true,
+      error: `Network/Timeout sending Telegram message: ${err?.message || "Unknown error"}`,
+    };
+  }
+}

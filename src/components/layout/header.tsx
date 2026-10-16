@@ -8,15 +8,23 @@ import {
   Settings,
   LogIn,
   Gamepad2,
+  ShieldCheck,
 } from "lucide-react";
 import { LiveSearch } from "./live-search";
 import { BrandLogo } from "./brand-logo";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Role } from "@prisma/client";
 import { MobileNav } from "./mobile-nav";
+import { prisma } from "@/lib/db/prisma";
 
 export async function Header() {
   const user = await getCurrentUser();
+  const unreadNotificationsCount = user
+    ? await prisma.userNotification.count({
+        where: { userId: user.userId, readAt: null },
+      })
+    : 0;
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-800/90 bg-zinc-950/85 backdrop-blur-md">
@@ -70,11 +78,17 @@ export async function Header() {
           {user ? (
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Link
-                href="/alarmlar"
-                className="hidden md:flex items-center gap-1.5 rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-                title="Fiyat Alarmları"
+                href="/bildirimler"
+                className="relative flex items-center justify-center rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                title="Bildirim Kutusu"
               >
                 <Bell className="h-4 w-4" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                )}
               </Link>
               <Link
                 href="/kutuphane"
@@ -83,13 +97,21 @@ export async function Header() {
                 <Gamepad2 className="h-3.5 w-3.5 text-emerald-400" />
                 Kütüphanem
               </Link>
+              <Link
+                href="/ayarlar"
+                className="hidden md:flex items-center gap-1.5 rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                title="Kişisel Ayarlar"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
               {user.role === Role.OWNER && (
                 <Link
-                  href="/ayarlar"
-                  className="hidden md:flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-amber-400/90 hover:bg-zinc-800 transition-colors"
-                  title="Ayarlar & Kontrol Merkezi"
+                  href="/admin"
+                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold text-red-400 bg-red-950/40 border border-red-800/40 hover:bg-red-900/60 transition-colors"
+                  title="Admin Kontrol Merkezi"
                 >
-                  <Settings className="h-3.5 w-3.5" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-red-400" />
+                  <span className="hidden sm:inline">Admin</span>
                 </Link>
               )}
               <Link

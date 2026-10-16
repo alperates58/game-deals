@@ -214,11 +214,18 @@ export async function resolveGoogleUser(
 
     if (existingAccount) {
       const user = existingAccount.user;
-      const updateData: { lastLoginAt: Date; avatarUrl?: string } = {
+      if (user.accountStatus === "SUSPENDED") {
+        throw new Error("ACCOUNT_SUSPENDED");
+      }
+
+      const updateData: { lastLoginAt: Date; avatarUrl?: string; emailVerifiedAt?: Date } = {
         lastLoginAt: new Date(),
       };
       if (!user.avatarUrl && identity.picture) {
         updateData.avatarUrl = identity.picture;
+      }
+      if (!user.emailVerifiedAt) {
+        updateData.emailVerifiedAt = new Date();
       }
       return tx.user.update({
         where: { id: user.id },
@@ -232,6 +239,10 @@ export async function resolveGoogleUser(
     });
 
     if (existingUserByEmail) {
+      if (existingUserByEmail.accountStatus === "SUSPENDED") {
+        throw new Error("ACCOUNT_SUSPENDED");
+      }
+
       // Link Google AuthAccount to this existing user!
       // IMPORTANT: Preserve existing role (especially OWNER) and passwordHash!
       await tx.authAccount.create({
@@ -242,11 +253,14 @@ export async function resolveGoogleUser(
         },
       });
 
-      const updateData: { lastLoginAt: Date; avatarUrl?: string } = {
+      const updateData: { lastLoginAt: Date; avatarUrl?: string; emailVerifiedAt?: Date } = {
         lastLoginAt: new Date(),
       };
       if (!existingUserByEmail.avatarUrl && identity.picture) {
         updateData.avatarUrl = identity.picture;
+      }
+      if (!existingUserByEmail.emailVerifiedAt) {
+        updateData.emailVerifiedAt = new Date();
       }
 
       return tx.user.update({
@@ -284,6 +298,9 @@ export async function resolveGoogleUser(
         email: normalizedEmail,
         passwordHash: null,
         role: Role.USER, // Google signup: ALWAYS USER!
+        accountStatus: "ACTIVE",
+        membershipTier: "FREE",
+        emailVerifiedAt: new Date(),
         avatarUrl: identity.picture || null,
         lastLoginAt: new Date(),
         accounts: {

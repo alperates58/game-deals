@@ -173,10 +173,11 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       items: [
         { href: "/profil", label: "Profil & Dashboard", icon: User, authRequired: true },
         { href: "/kutuphane", label: "Kütüphanem", icon: Gamepad2, authRequired: true },
+        { href: "/bildirimler", label: "Bildirim Kutusu", icon: Bell, authRequired: true },
+        { href: "/alarmlar", label: "Fiyat Alarmları", icon: Clock, authRequired: true },
         { href: "/favoriler", label: "Favorilerim", icon: Heart, authRequired: true },
         { href: "/istek-listem", label: "İstek Listesi", icon: Bookmark, authRequired: true },
-        { href: "/alarmlar", label: "Fiyat Alarmları", icon: Bell, authRequired: true },
-        { href: "/sana-ozel", label: "Sana Özel", icon: Sparkles, authRequired: true },
+        { href: "/ayarlar", label: "Hesap & Bildirim Ayarları", icon: Settings, authRequired: true },
       ],
     },
     ...(user?.role === Role.OWNER
@@ -185,10 +186,10 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             title: "SİSTEM YÖNETİMİ",
             items: [
               {
-                href: "/ayarlar",
-                label: "Ayarlar & Kontrol Merkezi",
-                icon: Settings,
-                badge: "Yönetici",
+                href: "/admin",
+                label: "Admin Kontrol Merkezi",
+                icon: ShieldCheck,
+                badge: "Admin",
                 badgeColor: "bg-red-500/20 text-red-300 border border-red-500/30",
                 isOwner: true,
               },

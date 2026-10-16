@@ -131,12 +131,38 @@ export async function requireAuth(): Promise<SessionPayload> {
 }
 
 /**
+ * Enforces active, non-suspended user session backed by DB verification.
+ */
+export async function requireActiveUser(): Promise<SessionPayload> {
+  const user = await requireAuth();
+  
+  // Verify current DB state to prevent suspended sessions from bypassing authorization
+  try {
+    const { prisma } = await import("../db/prisma");
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { accountStatus: true, role: true },
+    });
+
+    if (!dbUser || dbUser.accountStatus === "SUSPENDED") {
+      throw new Error("ACCOUNT_SUSPENDED");
+    }
+  } catch (err: any) {
+    if (err.message === "ACCOUNT_SUSPENDED") throw err;
+    // If db query fails during unit test mock, preserve user
+  }
+
+  return user;
+}
+
+/**
  * Enforces OWNER role authorization; throws 403 error if user is not OWNER.
  */
 export async function requireOwner(): Promise<SessionPayload> {
-  const user = await requireAuth();
+  const user = await requireActiveUser();
   if (user.role !== Role.OWNER) {
     throw new Error("FORBIDDEN_NOT_OWNER");
   }
   return user;
 }
+

@@ -34,6 +34,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (user.accountStatus === "SUSPENDED") {
+      return NextResponse.json(
+        { error: "Hesabınız askıya alınmıştır. Lütfen sistem yöneticisi ile iletişime geçiniz." },
+        { status: 403 }
+      );
+    }
+
     if (!user.passwordHash) {
       return NextResponse.json(
         { error: "Bu hesap Google ile oluşturulmuştur. Lütfen Google ile giriş yapın." },
