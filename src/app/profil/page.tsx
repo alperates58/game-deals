@@ -17,7 +17,10 @@ import {
   User as UserIcon,
   LogOut,
   Layers,
+  CheckCircle2,
+  KeyRound,
 } from "lucide-react";
+import { GoogleIcon } from "@/components/auth/google-button";
 
 export const metadata = {
   title: "Profilim ve Kişisel Oyun Merkezi | Xbox Fırsat",
@@ -31,6 +34,7 @@ export default async function ProfilePage() {
 
   // Fetch metrics & items in parallel
   const [
+    dbUser,
     ownedCount,
     favoriteCount,
     wishlistCount,
@@ -42,6 +46,16 @@ export default async function ProfilePage() {
     recommendations,
     dlcOpportunities,
   ] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.userId },
+      select: {
+        avatarUrl: true,
+        passwordHash: true,
+        accounts: {
+          select: { provider: true },
+        },
+      },
+    }),
     prisma.userGame.count({ where: { userId: user.userId, owned: true } }),
     prisma.userGame.count({ where: { userId: user.userId, favorite: true } }),
     prisma.userGame.count({ where: { userId: user.userId, wishlist: true } }),
@@ -74,14 +88,29 @@ export default async function ProfilePage() {
     getOwnedDlcOpportunities(user.userId),
   ]);
 
+  const hasGoogle = Boolean(dbUser?.accounts.some((a) => a.provider === "GOOGLE"));
+  const hasPassword = Boolean(dbUser?.passwordHash);
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header Profile Info Card */}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-2xl shadow-inner">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
+          {dbUser?.avatarUrl ? (
+            <div className="relative h-16 w-16 rounded-2xl overflow-hidden border border-emerald-500/30 shrink-0">
+              <Image
+                src={dbUser.avatarUrl}
+                alt={user.name}
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-2xl shadow-inner shrink-0">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-white">{user.name}</h1>
@@ -92,6 +121,24 @@ export default async function ProfilePage() {
               )}
             </div>
             <p className="text-xs text-zinc-400 mt-1">{user.email}</p>
+
+            {/* Read-Only Login Methods Display (Section 13) */}
+            <div className="flex flex-wrap items-center gap-2 mt-2.5">
+              <span className="text-[11px] text-zinc-500 font-medium">Giriş Yöntemleri:</span>
+              {hasPassword && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-zinc-800/80 border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300 font-medium">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  <span>Şifre</span>
+                </span>
+              )}
+              {hasGoogle && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-zinc-800/80 border border-zinc-700 px-2 py-0.5 text-[10px] text-zinc-300 font-medium">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                  <GoogleIcon className="h-3 w-3" />
+                  <span>Google</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

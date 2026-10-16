@@ -32,6 +32,8 @@ services:
       - BACKUP_DIR=/app/backups
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET is required}
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-true}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - backups_data:/app/backups
     depends_on:

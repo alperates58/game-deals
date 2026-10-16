@@ -2,6 +2,7 @@ import Link from "next/link";
 import { isRegistrationAllowed } from "@/lib/settings/system-settings";
 import { RegisterForm } from "@/components/auth/register-form";
 import { ShieldAlert, Gamepad2 } from "lucide-react";
+import { getGoogleOAuthConfig } from "@/lib/auth/google";
 
 export const metadata = {
   title: "Kayıt Ol | Xbox Fırsat",
@@ -41,7 +42,7 @@ export default async function RegisterPage() {
             </Link>
           </div>
         ) : (
-          <RegisterForm />
+          <RegisterForm googleConfigured={getGoogleOAuthConfig().isConfigured} />
         )}
       </div>
     </div>

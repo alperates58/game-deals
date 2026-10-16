@@ -4,8 +4,8 @@ import { Role } from "@prisma/client";
 
 import { assertServerEnv } from "../config/env-validation";
 
-const SESSION_COOKIE_NAME = "game_deals_session";
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const SESSION_COOKIE_NAME = "game_deals_session";
+export const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 /**
  * Returns the validated session secret key. Throws if missing or invalid.
@@ -62,6 +62,23 @@ export async function setSessionCookie(payload: SessionPayload) {
   const token = await createSessionToken(payload);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_DURATION_SECONDS,
+  });
+}
+
+/**
+ * Attaches session cookie directly to a NextResponse instance (e.g. For redirects).
+ */
+export async function setSessionCookieOnResponse(
+  response: { cookies: { set: (name: string, val: string, opts: any) => void } },
+  payload: SessionPayload
+) {
+  const token = await createSessionToken(payload);
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

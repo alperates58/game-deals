@@ -106,6 +106,7 @@ interface SettingsCenterProps {
   initialStats: SystemStats;
   initialScheduleInfo?: SchedulerScheduleInfo;
   initialBackups?: BackupItem[];
+  isGoogleConfigured?: boolean;
 }
 
 export function SettingsCenter({
@@ -113,6 +114,7 @@ export function SettingsCenter({
   initialStats,
   initialScheduleInfo,
   initialBackups = [],
+  isGoogleConfigured = false,
 }: SettingsCenterProps) {
   const [settings, setSettings] = useState<SystemSettingsData>(initialSettings);
   const [stats, setStats] = useState<SystemStats>(initialStats);
@@ -2143,6 +2145,29 @@ export function SettingsCenter({
               />
               <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
             </label>
+          </div>
+
+          {/* Google Sign-In Status Diagnostic Display (Section 17) */}
+          <div className="flex items-center justify-between py-3 border-t border-zinc-800/80">
+            <div>
+              <span className="text-sm font-medium text-white">Google ile Giriş (OAuth 2.0 / OIDC)</span>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Google Client ID ve Client Secret ortam değişkenlerinin yapılandırma durumu.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isGoogleConfigured ? (
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>CONFIGURED (Aktif)</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 text-xs font-semibold text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <span>NOT_CONFIGURED (Yapılandırılmadı)</span>
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="pt-4 border-t border-zinc-800 flex justify-end">

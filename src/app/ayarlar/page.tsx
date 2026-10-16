@@ -8,6 +8,7 @@ import { SettingsCenter } from "@/components/settings/settings-center";
 import { ShieldAlert, Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Role } from "@prisma/client";
+import { getGoogleOAuthConfig } from "@/lib/auth/google";
 
 export const metadata: Metadata = {
   title: "Ayarlar ve Kontrol Merkezi | game.alperates.com.tr",
@@ -137,6 +138,7 @@ export default async function SettingsPage() {
         initialStats={initialStats}
         initialScheduleInfo={scheduleInfo}
         initialBackups={initialBackups as any}
+        isGoogleConfigured={getGoogleOAuthConfig().isConfigured}
       />
     </div>
   );

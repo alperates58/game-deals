@@ -194,20 +194,38 @@ enum Role {
   USER
 }
 
+enum AuthProvider {
+  GOOGLE
+}
+
 model User {
   id                 String              @id @default(cuid())
   email              String              @unique
   name               String
-  passwordHash       String
+  passwordHash       String?
   role               Role                @default(USER)
   avatarUrl          String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   lastLoginAt        DateTime?
 
+  accounts           AuthAccount[]
   userGames          UserGame[]
   priceAlerts        PriceAlert[]
   notificationEvents NotificationEvent[]
+}
+
+model AuthAccount {
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          AuthProvider
+  providerAccountId String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model UserGame {

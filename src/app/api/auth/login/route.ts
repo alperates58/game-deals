@@ -34,6 +34,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { error: "Bu hesap Google ile oluşturulmuştur. Lütfen Google ile giriş yapın." },
+        { status: 400 }
+      );
+    }
+
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
       return NextResponse.json(

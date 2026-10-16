@@ -1,6 +1,7 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
-import { LogIn } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
+import { getGoogleOAuthConfig } from "@/lib/auth/google";
 
 export const metadata = {
   title: "Giriş Yap | Xbox Fırsat",
@@ -8,6 +9,8 @@ export const metadata = {
 };
 
 export default function LoginPage() {
+  const { isConfigured } = getGoogleOAuthConfig();
+
   return (
     <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 sm:p-8 backdrop-blur-md shadow-2xl">
@@ -23,7 +26,15 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <LoginForm />
+        <Suspense
+          fallback={
+            <div className="py-8 flex justify-center text-zinc-500">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          }
+        >
+          <LoginForm googleConfigured={isConfigured} />
+        </Suspense>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import {
   updateSystemSettings,
   calculateScheduleInfo,
 } from "@/lib/settings/system-settings";
+import { getGoogleOAuthConfig } from "@/lib/auth/google";
 
 const UpdateSettingsSchema = z.object({
   allowRegistration: z.boolean().optional(),
@@ -96,6 +97,7 @@ export async function GET() {
     return NextResponse.json({
       settings,
       scheduleInfo,
+      isGoogleConfigured: getGoogleOAuthConfig().isConfigured,
       stats: {
         totalGames,
         totalHistories,
