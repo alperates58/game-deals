@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   User,
   Shield,
@@ -14,6 +14,7 @@ import {
   AlertCircle,
   ExternalLink,
   Loader2,
+  RefreshCw,
   Clock,
   Sparkles,
   Lock,
@@ -103,7 +104,10 @@ export function UserSettingsCenter({
   // Telegram state
   const [telegram, setTelegram] = useState<TelegramConnectionInfo | null>(initialTelegram);
   const [isLinkingTelegram, setIsLinkingTelegram] = useState(false);
+  const [isRefreshingTelegram, setIsRefreshingTelegram] = useState(false);
+  const [telegramFallbackUrl, setTelegramFallbackUrl] = useState<string | null>(null);
   const [telegramMessage, setTelegramMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   // Email verification state
   const [emailVerified, setEmailVerified] = useState(Boolean(initialUser.emailVerifiedAt));
@@ -190,26 +194,125 @@ export function UserSettingsCenter({
     }
   };
 
+  // Clean up polling interval on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
+
+  const checkTelegramStatus = async (notifyOnSuccess = true): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/notifications/telegram/status");
+      const data = await res.json();
+      if (res.ok && data.connected && data.telegram?.isActive) {
+        setTelegram(data.telegram);
+        setTelegramFallbackUrl(null);
+        if (notifyOnSuccess) {
+          setTelegramMessage({
+            success: true,
+            text: `Tebrikler! Telegram hesabınız bağlandı: @${data.telegram.telegramUsername || data.telegram.displayName || "Kullanıcı"}`,
+          });
+        }
+        return true;
+      }
+    } catch {
+      // Ignore background fetch failure
+    }
+    return false;
+  };
+
+  const startBoundedTelegramPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+    let attempts = 0;
+    const maxAttempts = 6; // 6 attempts * 3s = 18s bounded polling
+
+    pollingRef.current = setInterval(async () => {
+      attempts += 1;
+      const connected = await checkTelegramStatus(true);
+      if (connected || attempts >= maxAttempts) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      }
+    }, 3000);
+  };
+
+  // Re-check status on window focus if awaiting connection
+  useEffect(() => {
+    const handleFocus = () => {
+      if (telegramFallbackUrl && !telegram?.isActive) {
+        checkTelegramStatus(true);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [telegramFallbackUrl, telegram?.isActive]);
+
   // Telegram Connect Link
   const handleConnectTelegram = async () => {
     setIsLinkingTelegram(true);
     setTelegramMessage(null);
+    setTelegramFallbackUrl(null);
+
+    // Synchronously pre-open blank window to overcome browser popup blockers
+    let popupWindow: Window | null = null;
+    try {
+      popupWindow = window.open("about:blank", "_blank");
+    } catch {
+      popupWindow = null;
+    }
+
     try {
       const res = await fetch("/api/notifications/telegram/link-token", { method: "POST" });
       const data = await res.json();
       if (res.ok && data.linkUrl) {
-        window.open(data.linkUrl, "_blank");
+        setTelegramFallbackUrl(data.linkUrl);
+
+        if (popupWindow && !popupWindow.closed) {
+          popupWindow.location.href = data.linkUrl;
+        }
+
         setTelegramMessage({
           success: true,
-          text: "Telegram botu açıldı. Lütfen bot penceresinde 'Başlat' (Start) butonuna basarak bağlantıyı tamamlayınız.",
+          text: "Telegram botu hazırlandı. Açılan pencerede veya aşağıdaki bağlantıdan 'Başlat' (Start) butonuna basarak bağlantıyı tamamlayınız.",
         });
+
+        startBoundedTelegramPolling();
       } else {
+        if (popupWindow && !popupWindow.closed) {
+          popupWindow.close();
+        }
         setTelegramMessage({ success: false, text: data.error || "Bağlantı başlatılamadı." });
       }
     } catch {
+      if (popupWindow && !popupWindow.closed) {
+        popupWindow.close();
+      }
       setTelegramMessage({ success: false, text: "Ağ hatası oluştu." });
     } finally {
       setIsLinkingTelegram(false);
+    }
+  };
+
+  const handleRefreshTelegramStatus = async () => {
+    setIsRefreshingTelegram(true);
+    setTelegramMessage(null);
+    try {
+      const connected = await checkTelegramStatus(true);
+      if (!connected) {
+        setTelegramMessage({
+          success: false,
+          text: "Telegram bağlantısı henüz doğrulanmadı. Lütfen bot penceresinde 'Başlat' (Start) butonuna bastığınızdan emin olun.",
+        });
+      }
+    } finally {
+      setIsRefreshingTelegram(false);
     }
   };
 
@@ -219,7 +322,12 @@ export function UserSettingsCenter({
     try {
       const res = await fetch("/api/notifications/telegram/disconnect", { method: "POST" });
       if (res.ok) {
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
         setTelegram(null);
+        setTelegramFallbackUrl(null);
         setTelegramMessage({ success: true, text: "Telegram bağlantınız kesildi." });
       }
     } catch {
@@ -654,6 +762,39 @@ export function UserSettingsCenter({
                 </div>
               )}
 
+              {telegramFallbackUrl && !telegram?.isActive && (
+                <div className="rounded-xl p-3 bg-sky-950/40 border border-sky-800/60 text-xs space-y-2">
+                  <div className="flex items-center gap-2 text-sky-300 font-medium">
+                    <ExternalLink className="h-4 w-4 shrink-0 text-sky-400" />
+                    <span>Telegram bot sayfası otomatik açılmadıysa aşağıdaki bağlantıya tıklayabilirsiniz:</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <a
+                      href={telegramFallbackUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Telegram&apos;da Aç →</span>
+                    </a>
+                    <button
+                      type="button"
+                      disabled={isRefreshingTelegram}
+                      onClick={handleRefreshTelegramStatus}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
+                    >
+                      {isRefreshingTelegram ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      <span>Durumu Yenile</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
                 {telegram?.isActive ? (
                   <>
@@ -671,17 +812,47 @@ export function UserSettingsCenter({
                     >
                       Bağlantıyı Kes
                     </button>
+                    <button
+                      type="button"
+                      disabled={isRefreshingTelegram}
+                      onClick={handleRefreshTelegramStatus}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3.5 py-2 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
+                    >
+                      {isRefreshingTelegram ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      <span>Durumu Yenile</span>
+                    </button>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    disabled={isLinkingTelegram || !isTelegramConfigured}
-                    onClick={handleConnectTelegram}
-                    className="rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isLinkingTelegram ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    <span>Telegram&apos;ı Bağla</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      disabled={isLinkingTelegram || !isTelegramConfigured}
+                      onClick={handleConnectTelegram}
+                      className="rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isLinkingTelegram ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      <span>Telegram&apos;ı Bağla</span>
+                    </button>
+                    {isTelegramConfigured && (
+                      <button
+                        type="button"
+                        disabled={isRefreshingTelegram}
+                        onClick={handleRefreshTelegramStatus}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3.5 py-2 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
+                      >
+                        {isRefreshingTelegram ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        <span>Durumu Yenile</span>
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
