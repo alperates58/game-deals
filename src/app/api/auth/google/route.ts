@@ -10,18 +10,18 @@ import {
 } from "@/lib/auth/google";
 
 export async function GET(req: NextRequest) {
-  try {
-    const { isConfigured, redirectUri } = getGoogleOAuthConfig();
+  const { isConfigured, redirectUri, appUrl } = getGoogleOAuthConfig(req);
 
+  try {
     if (!isConfigured) {
-      return NextResponse.redirect(new URL("/login?error=google_not_configured", req.url));
+      return NextResponse.redirect(new URL("/login?error=google_not_configured", appUrl));
     }
 
     const searchParams = req.nextUrl.searchParams;
     const rawReturnTo = searchParams.get("returnTo");
     const returnTo = sanitizeReturnTo(rawReturnTo);
 
-    const oidcConfig = getGoogleOidcClientConfig();
+    const oidcConfig = getGoogleOidcClientConfig(req);
 
     const codeVerifier = client.randomPKCECodeVerifier();
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
@@ -57,6 +57,6 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("[Google OAuth Init Error]", error?.message || "Unknown error");
-    return NextResponse.redirect(new URL("/login?error=google_failed", req.url));
+    return NextResponse.redirect(new URL("/login?error=google_failed", appUrl));
   }
 }

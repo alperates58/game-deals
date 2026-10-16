@@ -37,12 +37,45 @@ const GOOGLE_USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userin
 const GOOGLE_JWKS_URI = "https://www.googleapis.com/oauth2/v3/certs";
 
 /**
+ * Resolves the public canonical base URL of the application.
+ * Respects APP_URL env variable and reverse proxy headers (x-forwarded-host, x-forwarded-proto),
+ * ensuring internal Docker/container hostnames (e.g. localhost:3000 or web:3000) are never leaked to user browsers.
+ */
+export function getPublicBaseUrl(req?: Request | { headers: Headers }): string {
+  if (process.env.APP_URL && process.env.APP_URL.trim() !== "") {
+    return process.env.APP_URL.trim().replace(/\/$/, "");
+  }
+
+  if (req) {
+    const forwardedHost = req.headers.get("x-forwarded-host");
+    const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+    if (forwardedHost) {
+      return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, "");
+    }
+
+    const host = req.headers.get("host");
+    if (
+      host &&
+      !host.includes("localhost") &&
+      !host.includes("127.0.0.1") &&
+      !host.startsWith("web:") &&
+      !host.startsWith("0.0.0.0")
+    ) {
+      const proto = forwardedProto || "https";
+      return `${proto}://${host}`.replace(/\/$/, "");
+    }
+  }
+
+  return "http://localhost:3000";
+}
+
+/**
  * Returns Google OAuth configuration status. Never logs or leaks secrets.
  */
-export function getGoogleOAuthConfig(): GoogleOAuthConfig {
+export function getGoogleOAuthConfig(req?: Request | { headers: Headers }): GoogleOAuthConfig {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim() || "";
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || "";
-  const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const appUrl = getPublicBaseUrl(req);
   const isConfigured = Boolean(clientId && clientSecret);
   const redirectUri = `${appUrl}/api/auth/google/callback`;
 
@@ -56,10 +89,18 @@ export function getGoogleOAuthConfig(): GoogleOAuthConfig {
 }
 
 /**
+ * Generates an absolute public URL using canonical appUrl for redirects.
+ */
+export function getPublicRedirectUrl(path: string, req?: Request | { headers: Headers }): URL {
+  const { appUrl } = getGoogleOAuthConfig(req);
+  return new URL(path, appUrl);
+}
+
+/**
  * Creates the OpenID Client configuration for Google.
  */
-export function getGoogleOidcClientConfig(): client.Configuration {
-  const { clientId, clientSecret, isConfigured } = getGoogleOAuthConfig();
+export function getGoogleOidcClientConfig(req?: Request | { headers: Headers }): client.Configuration {
+  const { clientId, clientSecret, isConfigured } = getGoogleOAuthConfig(req);
   if (!isConfigured) {
     throw new Error("GOOGLE_OAUTH_NOT_CONFIGURED");
   }

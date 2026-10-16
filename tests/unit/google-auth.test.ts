@@ -486,7 +486,8 @@ describe("Google OAuth Security & Account Resolution Hardening", () => {
 
     const res = await logoutPost(req);
     expect(res.status).toBe(303);
-    expect(res.headers.get("location")).toBe("http://localhost:3000/login");
+    // Respects public APP_URL rather than internal container host
+    expect(res.headers.get("location")).toBe("https://game.alperates.com.tr/login");
     const cookieHeader = res.headers.get("set-cookie") || "";
     expect(cookieHeader).toContain("game_deals_session=");
     expect(cookieHeader).toContain("Max-Age=0");
@@ -497,6 +498,28 @@ describe("Google OAuth Security & Account Resolution Hardening", () => {
     });
     const getRes = await logoutGet(getReq);
     expect(getRes.status).toBe(303);
-    expect(getRes.headers.get("location")).toBe("http://localhost:3000/login");
+    expect(getRes.headers.get("location")).toBe("https://game.alperates.com.tr/login");
+  });
+
+  // Test 13: Reverse proxy & container host isolation
+  it("13. getGoogleOAuthConfig avoids leaking internal container host (localhost:3000) when APP_URL or headers are present", () => {
+    // 1. With APP_URL explicitly configured
+    process.env.APP_URL = "https://game.alperates.com.tr";
+    const internalReq = new NextRequest("http://localhost:3000/api/auth/google/callback?code=abc&state=xyz");
+    const configWithAppUrl = getGoogleOAuthConfig(internalReq);
+    expect(configWithAppUrl.appUrl).toBe("https://game.alperates.com.tr");
+    expect(configWithAppUrl.redirectUri).toBe("https://game.alperates.com.tr/api/auth/google/callback");
+
+    // 2. Without APP_URL, respects x-forwarded-host & x-forwarded-proto
+    delete process.env.APP_URL;
+    const proxiedReq = new NextRequest("http://localhost:3000/api/auth/google/callback", {
+      headers: {
+        "x-forwarded-host": "game.alperates.com.tr",
+        "x-forwarded-proto": "https",
+      },
+    });
+    const configProxied = getGoogleOAuthConfig(proxiedReq);
+    expect(configProxied.appUrl).toBe("https://game.alperates.com.tr");
+    expect(configProxied.redirectUri).toBe("https://game.alperates.com.tr/api/auth/google/callback");
   });
 });

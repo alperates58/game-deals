@@ -11,6 +11,8 @@ import {
 import { setSessionCookieOnResponse } from "@/lib/auth/session";
 
 export async function GET(req: NextRequest) {
+  const { redirectUri, appUrl } = getGoogleOAuthConfig(req);
+
   try {
     const searchParams = req.nextUrl.searchParams;
     const oauthError = searchParams.get("error");
@@ -21,7 +23,7 @@ export async function GET(req: NextRequest) {
     if (oauthError) {
       const sanitizedParam =
         oauthError === "access_denied" ? "google_access_denied" : "google_failed";
-      const response = NextResponse.redirect(new URL(`/login?error=${sanitizedParam}`, req.url));
+      const response = NextResponse.redirect(new URL(`/login?error=${sanitizedParam}`, appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
@@ -29,21 +31,24 @@ export async function GET(req: NextRequest) {
     // 2. Retrieve and verify state cookie
     const stateCookie = req.cookies.get(GOOGLE_OAUTH_COOKIE_NAME)?.value;
     if (!stateCookie) {
-      const response = NextResponse.redirect(new URL("/login?error=invalid_state", req.url));
+      const response = NextResponse.redirect(new URL("/login?error=invalid_state", appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
 
     const stateData = await verifyOAuthStateToken(stateCookie);
     if (!stateData || !state || stateData.state !== state || !code) {
-      const response = NextResponse.redirect(new URL("/login?error=invalid_state", req.url));
+      const response = NextResponse.redirect(new URL("/login?error=invalid_state", appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
 
     // 3. Exchange code for tokens and validate ID token using OpenID Client
-    const oidcConfig = getGoogleOidcClientConfig();
-    const currentUrl = new URL(req.url);
+    // Crucial: Use canonical public redirectUri with incoming query parameters so
+    // openid-client sends the exact redirect_uri that was used during authorization,
+    // rather than internal container hostname (localhost:3000).
+    const oidcConfig = getGoogleOidcClientConfig(req);
+    const currentUrl = new URL(`${redirectUri}?${searchParams.toString()}`);
 
     const tokens = await client.authorizationCodeGrant(oidcConfig, currentUrl, {
       pkceCodeVerifier: stateData.codeVerifier,
@@ -53,14 +58,14 @@ export async function GET(req: NextRequest) {
 
     const claims = tokens.claims();
     if (!claims || !claims.sub || !claims.email) {
-      const response = NextResponse.redirect(new URL("/login?error=google_failed", req.url));
+      const response = NextResponse.redirect(new URL("/login?error=google_failed", appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
 
     // 4. Enforce email_verified
     if (!claims.email_verified) {
-      const response = NextResponse.redirect(new URL("/login?error=email_not_verified", req.url));
+      const response = NextResponse.redirect(new URL("/login?error=email_not_verified", appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
@@ -83,14 +88,14 @@ export async function GET(req: NextRequest) {
     } catch (err: any) {
       const errCode =
         err?.message === "REGISTRATION_DISABLED" ? "registration_disabled" : "google_failed";
-      const response = NextResponse.redirect(new URL(`/login?error=${errCode}`, req.url));
+      const response = NextResponse.redirect(new URL(`/login?error=${errCode}`, appUrl));
       response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
       return response;
     }
 
-    // 6. Set session cookie and redirect to sanitized returnTo
+    // 6. Set session cookie and redirect to sanitized returnTo using public appUrl
     const targetPath = sanitizeReturnTo(stateData.returnTo);
-    const redirectUrl = new URL(targetPath, req.url);
+    const redirectUrl = new URL(targetPath, appUrl);
     const response = NextResponse.redirect(redirectUrl);
 
     // Clear temporary OAuth cookie
@@ -107,7 +112,7 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("[Google OAuth Callback Error]", error?.message || "Unknown error");
-    const response = NextResponse.redirect(new URL("/login?error=google_failed", req.url));
+    const response = NextResponse.redirect(new URL("/login?error=google_failed", appUrl));
     response.cookies.set(GOOGLE_OAUTH_COOKIE_NAME, "", { maxAge: 0, path: "/" });
     return response;
   }
