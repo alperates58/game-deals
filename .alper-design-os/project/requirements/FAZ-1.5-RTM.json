@@ -1,7 +1,7 @@
 {
-  "matrixVersion": "1.5.0",
+  "matrixVersion": "1.5.1",
   "phase": "FAZ 1.5 — Admin Control Center & User Settings Separation",
-  "generatedAt": "2026-10-16T12:50:00.000Z",
+  "generatedAt": "2026-10-16T13:02:00.000Z",
   "authoritativeSource": "User Prompts & Design OS Governance",
   "traceability": [
     {
@@ -12,7 +12,7 @@
       "database": "User.role (Role.OWNER)",
       "api": "src/lib/auth/session.ts (requireOwner, requireActiveUser)",
       "ui": "src/app/admin/layout.tsx",
-      "test": "tests/unit/admin-auth.test.ts"
+      "test": "TEST_GAP (Runtime HTTP verified: 307 to /login?redirect=/admin; 403 for standard USER role; no isolated vitest file)"
     },
     {
       "id": "REQ-ADMIN-02",
@@ -22,7 +22,7 @@
       "database": "N/A (Shell UI layout)",
       "api": "src/app/admin/layout.tsx",
       "ui": "src/components/admin/admin-shell.tsx",
-      "test": "src/app/admin/page.tsx (Compiled routes verification)"
+      "test": "TEST_GAP (Verified via Next.js production build route compilation)"
     },
     {
       "id": "REQ-ADMIN-03",
@@ -32,7 +32,7 @@
       "database": "User, Game, SyncRun, NotificationDelivery, DatabaseBackup",
       "api": "src/app/admin/page.tsx (Server Component data fetching)",
       "ui": "src/app/admin/page.tsx",
-      "test": "tests/unit/admin-dashboard.test.ts"
+      "test": "TEST_GAP (Verified via real DB aggregates & query inspection; no isolated vitest file)"
     },
     {
       "id": "REQ-ADMIN-04",
@@ -42,7 +42,7 @@
       "database": "User.accountStatus, User.role, AdminAuditLog",
       "api": "src/app/api/admin/users/route.ts, src/app/api/admin/users/[id]/route.ts",
       "ui": "src/app/admin/users/page.tsx, src/app/admin/users/[id]/page.tsx",
-      "test": "tests/unit/admin-users.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases: 'should verify that self-demotion and self-suspension logic rejects invalid requests', 'should verify that last remaining OWNER cannot be suspended or demoted')"
     },
     {
       "id": "REQ-ADMIN-05",
@@ -52,7 +52,7 @@
       "database": "User.membershipTier (FREE, PRO)",
       "api": "src/lib/membership/entitlements.ts",
       "ui": "src/app/admin/membership/page.tsx",
-      "test": "tests/unit/membership-entitlements.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases: 'should grant basic limits for FREE tier', 'should grant enhanced limits for PRO tier', 'should grant maximum owner entitlements regardless of membership tier', 'should fallback safely for null or unauthenticated user')"
     },
     {
       "id": "REQ-ADMIN-06",
@@ -62,7 +62,7 @@
       "database": "SystemSetting.allowRegistration, AuthAccount",
       "api": "src/app/api/settings/route.ts, src/lib/auth/google.ts",
       "ui": "src/app/admin/auth/page.tsx",
-      "test": "tests/unit/google-auth.test.ts"
+      "test": "tests/unit/google-auth.test.ts (cases: 'Google OAuth Security & Configuration Rules', registration allowed/disallowed checks, state token verification)"
     },
     {
       "id": "REQ-USER-01",
@@ -72,7 +72,7 @@
       "database": "UserNotificationPreference, UserNotificationSettings, TelegramConnection",
       "api": "src/app/api/user/settings/route.ts, src/app/api/user/notification-preferences/route.ts",
       "ui": "src/app/ayarlar/page.tsx, src/components/settings/user-settings-center.tsx",
-      "test": "tests/unit/user-settings.test.ts"
+      "test": "TEST_GAP (Runtime HTTP 200 OK verified; Next.js build compilation passed; no isolated vitest file)"
     },
     {
       "id": "REQ-USER-02",
@@ -82,7 +82,7 @@
       "database": "UserNotification (readAt: DateTime?)",
       "api": "src/app/api/notifications/route.ts, src/app/api/notifications/mark-read/route.ts",
       "ui": "src/app/bildirimler/page.tsx, src/components/layout/header.tsx",
-      "test": "tests/unit/notifications.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (case: 'should format concise title and message for in-app inbox')"
     },
     {
       "id": "REQ-NOTIF-01",
@@ -92,7 +92,7 @@
       "database": "NotificationEvent, NotificationDelivery (channel, status, attemptCount)",
       "api": "src/lib/notifications/event-producer.ts, src/lib/notifications/dispatcher.ts",
       "ui": "src/app/admin/notifications/deliveries/page.tsx",
-      "test": "tests/unit/notifications.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases in '5. Multi-Channel Notification Template Formatting' covering email, telegram, and in-app payloads)"
     },
     {
       "id": "REQ-NOTIF-02",
@@ -102,7 +102,7 @@
       "database": "NotificationDelivery (@@unique([eventId, channel]))",
       "api": "src/lib/notifications/dispatcher.ts (enqueueDeliveryForEvent)",
       "ui": "N/A (Database & Service constraint)",
-      "test": "tests/unit/notifications.test.ts"
+      "test": "TEST_GAP (PostgreSQL composite unique constraint NotificationDelivery_eventId_channel_key verified via engine schema query; no unit test)"
     },
     {
       "id": "REQ-NOTIF-03",
@@ -112,7 +112,7 @@
       "database": "NotificationDelivery.status (PENDING, PROCESSING, SENT, RETRYING, FAILED)",
       "api": "src/lib/notifications/dispatcher.ts (processPendingDeliveries)",
       "ui": "src/app/admin/notifications/deliveries/page.tsx (Manual Retry button)",
-      "test": "tests/unit/notifications.test.ts"
+      "test": "TEST_GAP (Backoff algorithm implemented in dispatcher.ts; no isolated vitest file)"
     },
     {
       "id": "REQ-NOTIF-04",
@@ -122,7 +122,7 @@
       "database": "UserNotificationSettings (quietHoursEnabled, quietHoursStart, quietHoursEnd)",
       "api": "src/lib/notifications/quiet-hours.ts",
       "ui": "src/components/settings/user-settings-center.tsx (Sessiz Saatler tab)",
-      "test": "tests/unit/quiet-hours.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases: 'should return false when quiet hours string is empty or missing', 'should correctly identify time inside overnight quiet hours window', 'should correctly identify time outside overnight quiet hours window', 'should handle daytime quiet hours window')"
     },
     {
       "id": "REQ-NOTIF-05",
@@ -132,17 +132,17 @@
       "database": "TelegramConnection, TelegramLinkToken, EmailVerificationToken",
       "api": "src/lib/notifications/email-provider.ts, src/lib/notifications/telegram-provider.ts",
       "ui": "src/app/admin/notifications/page.tsx",
-      "test": "tests/unit/notifications.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases: 'should escape special MarkdownV2 characters properly', 'should format rich HTML and plain text for email', token hashing and generation cases)"
     },
     {
       "id": "REQ-CATALOG-01",
       "category": "Catalog Administration",
-      "description": "Catalog table with server-side pagination, class filters, search, and non-destructive manual overrides preserving source data.",
+      "description": "Catalog table with server-side pagination, class filters, search, and non-destructive manual overrides preserving source data (metadata only; price remains source-driven).",
       "architecture": "ADR-017",
-      "database": "Game, GameManualOverride (actorUserId, reason, override values)",
+      "database": "Game, GameManualOverride (actorUserId, reason, override metadata values; no price field)",
       "api": "src/app/api/admin/catalog/route.ts, src/app/api/admin/catalog/[id]/override/route.ts",
       "ui": "src/app/admin/catalog/page.tsx, src/app/admin/catalog/[id]/page.tsx",
-      "test": "tests/unit/manual-overrides.test.ts"
+      "test": "TEST_GAP (Manual override model & reset API verified via schema & route check; no isolated vitest file)"
     },
     {
       "id": "REQ-CATALOG-02",
@@ -152,7 +152,7 @@
       "database": "ExternalRating, GameSubscription, GameLanguageSupport, GameMedia",
       "api": "src/app/admin/ratings, src/app/admin/subscriptions, src/app/admin/languages, src/app/admin/media",
       "ui": "Dedicated foundation admin screens",
-      "test": "prisma/schema.prisma validation"
+      "test": "TEST_GAP (Prisma schema relations and Next.js route compilation verified)"
     },
     {
       "id": "REQ-STORE-01",
@@ -162,7 +162,7 @@
       "database": "SystemSetting (Store configuration fields)",
       "api": "src/app/admin/integrations/page.tsx",
       "ui": "src/app/admin/integrations/page.tsx",
-      "test": "tests/unit/truthful-ui.test.ts"
+      "test": "TEST_GAP (Next.js route compilation verified)"
     },
     {
       "id": "REQ-OPS-01",
@@ -172,7 +172,7 @@
       "database": "ScheduledJobState, SyncRun",
       "api": "src/app/api/settings/scheduled-jobs, src/app/api/settings/sync-runs",
       "ui": "src/app/admin/operations/scheduler, /sync-runs, /quality",
-      "test": "tests/unit/scheduler.test.ts"
+      "test": "tests/unit/backup-and-scheduler.test.ts (cases: 'Scheduler Calculation Unit Tests'), tests/unit/advisory-lock-and-jobs.test.ts, tests/unit/catalog-quality.test.ts"
     },
     {
       "id": "REQ-SYSTEM-01",
@@ -182,7 +182,7 @@
       "database": "AdminAuditLog (action, entityType, entityId, details, ipAddress)",
       "api": "src/lib/audit/audit-logger.ts, src/app/api/admin/audit/route.ts",
       "ui": "src/app/admin/audit/page.tsx, src/app/admin/system/health/page.tsx",
-      "test": "tests/unit/audit-logger.test.ts"
+      "test": "tests/unit/faz15-admin-and-notifications.test.ts (cases: 'should redact sensitive fields containing password, secret, token, and chat ID', 'should handle null, undefined, arrays, and primitives gracefully')"
     },
     {
       "id": "REQ-SYSTEM-02",
@@ -192,7 +192,7 @@
       "database": "DatabaseBackup (filename, checksum, sizeBytes, recordCount)",
       "api": "src/app/api/settings/backup/route.ts, src/app/api/settings/backup/validate/route.ts",
       "ui": "src/app/admin/system/backup/page.tsx",
-      "test": "tests/unit/backup-restore.test.ts"
+      "test": "tests/unit/backup-and-scheduler.test.ts (cases: 'Backup Security & Path Traversal Unit Tests' covering safe path resolution, path traversal prevention, database URL parsing)"
     }
   ]
 }
