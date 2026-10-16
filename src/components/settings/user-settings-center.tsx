@@ -72,6 +72,17 @@ const EVENT_LABELS: Record<string, string> = {
   FAVORITE_PRICE_CHANGE: "Favori Oyunlarımda Fiyat Değiştiğinde",
 };
 
+export type SettingsTabId = "account" | "security" | "notifications" | "channels" | "quiet" | "defaults";
+
+export const SETTINGS_TABS: { id: SettingsTabId; label: string; fullLabel: string; icon: any }[] = [
+  { id: "account", label: "Hesap", fullLabel: "Hesap Bilgileri", icon: User },
+  { id: "security", label: "Güvenlik", fullLabel: "Giriş & Güvenlik", icon: Shield },
+  { id: "notifications", label: "Bildirimler", fullLabel: "Bildirim Tercihleri", icon: Bell },
+  { id: "channels", label: "Kanallar", fullLabel: "Bildirim Kanalları", icon: Send },
+  { id: "quiet", label: "Sessiz Saatler", fullLabel: "Sessiz Saatler", icon: Moon },
+  { id: "defaults", label: "Varsayılanlar", fullLabel: "Varsayılanlar & Bölge", icon: Sliders },
+];
+
 export function UserSettingsCenter({
   initialUser,
   initialTelegram,
@@ -80,7 +91,7 @@ export function UserSettingsCenter({
   isEmailConfigured,
   isTelegramConfigured,
 }: UserSettingsCenterProps) {
-  const [activeTab, setActiveTab] = useState<"account" | "security" | "notifications" | "channels" | "quiet" | "defaults">("account");
+  const [activeTab, setActiveTab] = useState<SettingsTabId>("account");
 
   // Profile state
   const [user, setUser] = useState<UserProfile>(initialUser);
@@ -292,93 +303,60 @@ export function UserSettingsCenter({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Sidebar Navigation */}
-      <div className="lg:col-span-1 space-y-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab("account")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "account"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <User className="h-4 w-4" />
-          <span>Hesap Bilgileri</span>
-        </button>
+    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+      {/* Mobile Horizontal Scroll Tab Bar (< lg) */}
+      <div className="lg:hidden w-full">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 no-scrollbar scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0">
+          {SETTINGS_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all border ${
+                  isActive
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-sm"
+                    : "bg-zinc-900/90 text-zinc-400 border-zinc-800/80 hover:bg-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-emerald-400" : "text-zinc-400"}`} />
+                <span className="whitespace-nowrap">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab("security")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "security"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <Shield className="h-4 w-4" />
-          <span>Giriş & Güvenlik</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("notifications")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "notifications"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <Bell className="h-4 w-4" />
-          <span>Bildirim Tercihleri</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("channels")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "channels"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <Send className="h-4 w-4" />
-          <span>Bildirim Kanalları</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("quiet")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "quiet"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <Moon className="h-4 w-4" />
-          <span>Sessiz Saatler</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("defaults")}
-          className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-            activeTab === "defaults"
-              ? "bg-zinc-800 text-white shadow-sm"
-              : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          }`}
-        >
-          <Sliders className="h-4 w-4" />
-          <span>Varsayılanlar & Bölge</span>
-        </button>
+      {/* Desktop Sidebar Navigation (lg+) */}
+      <div className="hidden lg:block lg:col-span-1 space-y-1">
+        {SETTINGS_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                isActive
+                  ? "bg-zinc-800 text-white shadow-sm"
+                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{tab.fullLabel}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Main Content Area */}
-      <div className="lg:col-span-3 space-y-6">
+      <div className="lg:col-span-3 space-y-6 min-w-0">
         {/* TAB 1: ACCOUNT */}
         {activeTab === "account" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Hesap Bilgileri</h2>
               <p className="text-xs text-zinc-400 mt-0.5">Kişisel profilinizi ve kimlik detaylarınızı yönetin.</p>
@@ -445,7 +423,7 @@ export function UserSettingsCenter({
               </div>
             </form>
 
-            <div className="pt-6 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="pt-6 border-t border-zinc-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
                 <span className="text-[11px] text-zinc-400 block mb-1">Üyelik Seviyesi</span>
                 <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 text-xs font-bold text-emerald-400">
@@ -471,19 +449,19 @@ export function UserSettingsCenter({
 
         {/* TAB 2: SECURITY */}
         {activeTab === "security" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Giriş ve Güvenlik</h2>
               <p className="text-xs text-zinc-400 mt-0.5">Hesabınıza bağlı giriş yöntemleri ve oturum güvenliği.</p>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-white font-bold text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-white font-bold text-sm">
                     G
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-xs font-bold text-white">Google ile Giriş</h3>
                     <p className="text-[11px] text-zinc-400">
                       {user.isGoogleLinked ? "Google hesabınız bu hesaba bağlı." : "Google hesabı bağlı değil."}
@@ -492,7 +470,7 @@ export function UserSettingsCenter({
                 </div>
 
                 <span
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+                  className={`self-start sm:self-auto shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
                     user.isGoogleLinked
                       ? "bg-emerald-950/80 text-emerald-400 border-emerald-800/60"
                       : "bg-zinc-800/50 text-zinc-400 border-zinc-700/60"
@@ -502,12 +480,12 @@ export function UserSettingsCenter({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300">
                     <Lock className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h3 className="text-xs font-bold text-white">Hesap Şifresi</h3>
                     <p className="text-[11px] text-zinc-400">
                       {user.hasPassword ? "Hesabınız için parola belirlenmiş." : "Google ile oluşturuldu (Parola yok)."}
@@ -516,7 +494,7 @@ export function UserSettingsCenter({
                 </div>
 
                 <span
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+                  className={`self-start sm:self-auto shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
                     user.hasPassword
                       ? "bg-emerald-950/80 text-emerald-400 border-emerald-800/60"
                       : "bg-amber-950/80 text-amber-400 border-amber-800/60"
@@ -531,7 +509,7 @@ export function UserSettingsCenter({
 
         {/* TAB 3: NOTIFICATIONS MATRIX */}
         {activeTab === "notifications" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">Olay Tercihleri ve Matris</h2>
@@ -542,7 +520,7 @@ export function UserSettingsCenter({
                 type="button"
                 disabled={isSavingMatrix}
                 onClick={handleSaveMatrix}
-                className="self-start sm:self-auto rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-950/40"
+                className="self-start sm:self-auto rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-950/40 shrink-0"
               >
                 {isSavingMatrix ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 <span>Tercihleri Kaydet</span>
@@ -563,13 +541,13 @@ export function UserSettingsCenter({
             )}
 
             <div className="overflow-x-auto rounded-xl border border-zinc-800">
-              <table className="w-full text-left text-xs">
+              <table className="w-full min-w-[460px] text-left text-xs">
                 <thead className="bg-zinc-950/80 text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-800">
                   <tr>
-                    <th className="p-3.5">Olay Türü</th>
-                    <th className="p-3.5 text-center">Uygulama İçi</th>
-                    <th className="p-3.5 text-center">E-posta</th>
-                    <th className="p-3.5 text-center">Telegram</th>
+                    <th className="p-3 sm:p-3.5">Olay Türü</th>
+                    <th className="p-3 sm:p-3.5 text-center">Uygulama İçi</th>
+                    <th className="p-3 sm:p-3.5 text-center">E-posta</th>
+                    <th className="p-3 sm:p-3.5 text-center">Telegram</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60 bg-zinc-900/30">
@@ -583,10 +561,10 @@ export function UserSettingsCenter({
 
                     return (
                       <tr key={evt} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="p-3.5 font-semibold text-zinc-200">{label}</td>
+                        <td className="p-3 sm:p-3.5 font-semibold text-zinc-200">{label}</td>
 
                         {/* In-App */}
-                        <td className="p-3.5 text-center">
+                        <td className="p-3 sm:p-3.5 text-center">
                           <input
                             type="checkbox"
                             checked={inAppChecked}
@@ -596,7 +574,7 @@ export function UserSettingsCenter({
                         </td>
 
                         {/* Email */}
-                        <td className="p-3.5 text-center" title={!canEmail ? "E-posta henüz doğrulanmadı veya sunucu yapılandırılmadı." : ""}>
+                        <td className="p-3 sm:p-3.5 text-center" title={!canEmail ? "E-posta henüz doğrulanmadı veya sunucu yapılandırılmadı." : ""}>
                           <input
                             type="checkbox"
                             disabled={!canEmail}
@@ -607,7 +585,7 @@ export function UserSettingsCenter({
                         </td>
 
                         {/* Telegram */}
-                        <td className="p-3.5 text-center" title={!canTelegram ? "Telegram hesabı henüz bağlanmadı veya bot yapılandırılmadı." : ""}>
+                        <td className="p-3 sm:p-3.5 text-center" title={!canTelegram ? "Telegram hesabı henüz bağlanmadı veya bot yapılandırılmadı." : ""}>
                           <input
                             type="checkbox"
                             disabled={!canTelegram}
@@ -627,22 +605,22 @@ export function UserSettingsCenter({
 
         {/* TAB 4: CHANNELS */}
         {activeTab === "channels" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Bildirim Kanalları</h2>
               <p className="text-xs text-zinc-400 mt-0.5">E-posta, Telegram ve diğer iletişim kanallarınızı yapılandırın.</p>
             </div>
 
             {/* Telegram Channel Card */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-950/60 border border-sky-800/60 text-sky-400">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-950/60 border border-sky-800/60 text-sky-400">
                     <Send className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h3 className="text-xs font-bold text-white">Telegram Bot Bildirimleri</h3>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-zinc-400 truncate">
                       {telegram?.isActive
                         ? `Bağlı hesap: @${telegram.telegramUsername || telegram.displayName || "Kullanıcı"}`
                         : "Telegram hesabınızı bağlayarak anlık fırsat mesajları alın."}
@@ -651,7 +629,7 @@ export function UserSettingsCenter({
                 </div>
 
                 <span
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+                  className={`self-start sm:self-auto shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
                     telegram?.isActive
                       ? "bg-emerald-950/80 text-emerald-400 border-emerald-800/60"
                       : isTelegramConfigured
@@ -676,7 +654,7 @@ export function UserSettingsCenter({
                 </div>
               )}
 
-              <div className="pt-2 flex flex-wrap items-center gap-3">
+              <div className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
                 {telegram?.isActive ? (
                   <>
                     <button
@@ -709,22 +687,22 @@ export function UserSettingsCenter({
             </div>
 
             {/* Email Channel Card */}
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-400">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-400">
                     <Mail className="h-5 w-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h3 className="text-xs font-bold text-white">E-posta Bildirimleri</h3>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-zinc-400 truncate">
                       Adres: {user.email} ({emailVerified ? "Doğrulanmış" : "Doğrulanmamış"})
                     </p>
                   </div>
                 </div>
 
                 <span
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
+                  className={`self-start sm:self-auto shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold border ${
                     emailVerified
                       ? "bg-emerald-950/80 text-emerald-400 border-emerald-800/60"
                       : "bg-amber-950/80 text-amber-400 border-amber-800/60"
@@ -747,7 +725,7 @@ export function UserSettingsCenter({
                 </div>
               )}
 
-              <div className="pt-2 flex flex-wrap items-center gap-3">
+              <div className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
                 {!emailVerified ? (
                   <button
                     type="button"
@@ -771,7 +749,7 @@ export function UserSettingsCenter({
             </div>
 
             {/* Other Channels (Truthful UI) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="p-4 rounded-xl border border-zinc-800/60 bg-zinc-950/20 opacity-60">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-bold text-zinc-300">Discord Botu</span>
@@ -793,7 +771,7 @@ export function UserSettingsCenter({
 
         {/* TAB 5: QUIET HOURS */}
         {activeTab === "quiet" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Sessiz Saatler</h2>
               <p className="text-xs text-zinc-400 mt-0.5">
@@ -833,7 +811,7 @@ export function UserSettingsCenter({
               </label>
 
               {quietHours.quietHoursEnabled && (
-                <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
                   <div>
                     <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Başlangıç Saati</label>
                     <input
@@ -887,7 +865,7 @@ export function UserSettingsCenter({
 
         {/* TAB 6: DEFAULTS & LOCALES */}
         {activeTab === "defaults" && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-6 space-y-6">
             <div>
               <h2 className="text-lg font-bold text-white tracking-tight">Varsayılanlar ve Bölge</h2>
               <p className="text-xs text-zinc-400 mt-0.5">Yeni alarmlar oluşturulurken kullanılacak varsayılan tercihler.</p>
@@ -914,7 +892,7 @@ export function UserSettingsCenter({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Dil</label>
                   <input

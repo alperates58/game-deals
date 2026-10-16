@@ -146,58 +146,65 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     touchCurrentX.current = null;
   };
 
-  const navGroups: NavGroup[] = [
-    {
-      title: "FIRSATLAR & KATALOG",
-      items: [
-        { href: "/", label: "Ana Sayfa", icon: Sparkles },
-        { href: "/firsatlar", label: "Tüm Fırsatlar", icon: TrendingDown },
-        {
-          href: "/tarihi-dip",
-          label: "Tarihi Dip Fırsatları",
-          icon: Clock,
-          badge: "Dip",
-          badgeColor: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-        },
-        {
-          href: "/eklentiler",
-          label: "DLC & Eklentiler",
-          icon: Layers,
-          badge: "DLC",
-          badgeColor: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-        },
-      ],
-    },
-    {
-      title: "KİŞİSEL ALAN",
-      items: [
-        { href: "/profil", label: "Profil & Dashboard", icon: User, authRequired: true },
-        { href: "/kutuphane", label: "Kütüphanem", icon: Gamepad2, authRequired: true },
-        { href: "/bildirimler", label: "Bildirim Kutusu", icon: Bell, authRequired: true },
-        { href: "/alarmlar", label: "Fiyat Alarmları", icon: Clock, authRequired: true },
-        { href: "/favoriler", label: "Favorilerim", icon: Heart, authRequired: true },
-        { href: "/istek-listem", label: "İstek Listesi", icon: Bookmark, authRequired: true },
-        { href: "/ayarlar", label: "Hesap & Bildirim Ayarları", icon: Settings, authRequired: true },
-      ],
-    },
-    ...(user?.role === Role.OWNER
-      ? [
-          {
-            title: "SİSTEM YÖNETİMİ",
-            items: [
-              {
-                href: "/admin",
-                label: "Admin Kontrol Merkezi",
-                icon: ShieldCheck,
-                badge: "Admin",
-                badgeColor: "bg-red-500/20 text-red-300 border border-red-500/30",
-                isOwner: true,
-              },
-            ],
-          },
-        ]
-      : []),
-  ];
+  const catalogGroup: NavGroup = {
+    title: "FIRSATLAR & KATALOG",
+    items: [
+      { href: "/", label: "Ana Sayfa", icon: Sparkles },
+      { href: "/firsatlar", label: "Tüm Fırsatlar", icon: TrendingDown },
+      {
+        href: "/tarihi-dip",
+        label: "Tarihi Dip",
+        icon: Clock,
+        badge: "Dip",
+        badgeColor: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+      },
+      {
+        href: "/eklentiler",
+        label: "DLC & Eklentiler",
+        icon: Layers,
+        badge: "DLC",
+        badgeColor: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+      },
+    ],
+  };
+
+  const personalGroup: NavGroup = {
+    title: "KİŞİSEL ALAN",
+    items: [
+      { href: "/profil", label: "Profil & Dashboard", icon: User, authRequired: true },
+      { href: "/kutuphane", label: "Kütüphanem", icon: Gamepad2, authRequired: true },
+      { href: "/bildirimler", label: "Bildirim Kutusu", icon: Bell, authRequired: true },
+      { href: "/alarmlar", label: "Fiyat Alarmları", icon: Clock, authRequired: true },
+      { href: "/favoriler", label: "Favorilerim", icon: Heart, authRequired: true },
+      { href: "/istek-listem", label: "İstek Listesi", icon: Bookmark, authRequired: true },
+      { href: "/ayarlar", label: "Hesap & Bildirim Ayarları", icon: Settings, authRequired: true },
+    ],
+  };
+
+  const adminGroup: NavGroup = {
+    title: "SİSTEM YÖNETİMİ",
+    items: [
+      {
+        href: "/admin",
+        label: "Admin Kontrol Merkezi",
+        icon: ShieldCheck,
+        badge: "Admin",
+        badgeColor: "bg-red-500/20 text-red-300 border border-red-500/30",
+        isOwner: true,
+      },
+    ],
+  };
+
+  const navGroups: NavGroup[] = user
+    ? [
+        personalGroup,
+        catalogGroup,
+        ...(user.role === Role.OWNER ? [adminGroup] : []),
+      ]
+    : [
+        catalogGroup,
+        personalGroup,
+      ];
 
   if (!mounted || !isRendered) {
     return null;
