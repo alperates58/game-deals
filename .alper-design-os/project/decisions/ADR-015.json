@@ -1,0 +1,41 @@
+{
+  "id": "ADR-015",
+  "title": "Separate User Settings from Owner System Administration",
+  "context": "Previously, /ayarlar was restricted strictly to OWNER users and contained all system controls, while regular logged-in users had no settings page. Phase 1.5 mandates clear separation: /ayarlar for all users' personal preferences and /admin for owner control.",
+  "decision": "Establish /ayarlar as universal user settings (Profile, Security, Notification preferences, Telegram, Email, Quiet Hours, Appearance) and /admin as Owner Control Center (Dashboard, Users, Catalog, Integrations, Operations, System).",
+  "alternatives": [
+    "Keep monolith /ayarlar with role tabs",
+    "Create /admin without personal settings"
+  ],
+  "consequences": [
+    "Standard users gain a dedicated personal settings portal",
+    "System administration is isolated under server-side protected /admin route",
+    "SettingsCenter monolith is decomposed into focused domain panels"
+  ],
+  "risks": [
+    "Care must be taken to ensure no admin endpoints leak into /ayarlar or vice versa."
+  ],
+  "evidence": [
+    "src/app/ayarlar/page.tsx line 25 previously restricted non-owners with 403",
+    "docs/admin/architecture.md"
+  ],
+  "requirements": [
+    "REQ-ADMIN-01",
+    "REQ-ADMIN-02",
+    "REQ-USER-01"
+  ],
+  "affectedComponents": [
+    "src/app/ayarlar",
+    "src/app/admin",
+    "src/components/layout/header.tsx",
+    "src/components/layout/sidebar.tsx"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-16T11:08:50.823Z",
+  "approvedBy": "OWNER",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

@@ -1,33 +1,36 @@
 {
   "id": "ADR-003",
-  "title": "Safe Catalog Manual Overrides with Actor Provenance",
-  "context": "Collector syncs periodically overwrite Game fields. If an administrator manually corrects a title or product class directly on Game, subsequent syncs overwrite it unless separated.",
-  "decision": "Create GameManualOverride table holding explicit typed overrides (title, publisher, developer, franchise, releaseDate, productClass, imageUrl, isActive) with actor and reason provenance, preserving raw Game source data.",
+  "title": "Microsoft Display Catalog API as Authoritative TR Price Source",
+  "context": "Identifying the most accurate, authorized, and maintainable data source for Xbox Turkey prices.",
+  "decision": "Use Microsoft Display Catalog API (displaycatalog.mp.microsoft.com/v7.0/products) as authoritative price and metadata source for TR market.",
   "alternatives": [
-    "Directly update Game table on manual edit (overwritten on next collector sync)",
-    "Store arbitrary unvalidated JSON in Game model"
+    "HTML scraping xbox.com web pages",
+    "Private Xbox live partner APIs with credentials"
   ],
   "consequences": [
-    "Raw Xbox collector data is always preserved intact",
-    "Effective values compute override ?? sourceValue",
-    "Audit trail tracks who overrode what and why",
-    "Reset override restores raw collector data cleanly"
+    "High stability, structured JSON response, batch support up to 25+ IDs",
+    "Zero token or session refresh maintenance",
+    "Safe rate limiter ensures long term resilience"
   ],
-  "risks": [],
-  "evidence": [
-    "src/lib/pricing/price-sync.ts and mapper.ts overwrite game records on each pass"
+  "risks": [
+    "Undocumented rate limits require defensive collector delays and backoff."
   ],
-  "requirements": [],
+  "evidence": [],
+  "requirements": [
+    "FR-03",
+    "NFR-REL-01"
+  ],
   "affectedComponents": [
-    "src/app/admin/catalog",
-    "src/lib/xbox/mapper.ts"
+    "xbox-source",
+    "catalog",
+    "pricing"
   ],
   "status": "ACCEPTED",
   "supersedes": null,
   "supersededBy": null,
-  "createdAt": "2026-10-16T11:08:59.134Z",
-  "approvedBy": "OWNER",
+  "createdAt": "2026-10-14T19:00:39.432Z",
+  "approvedBy": "Brief §9, §12 & Phase 0 Proof of Concept",
   "confirmedByUser": true,
-  "authoritySource": "USER_DECISION",
+  "authoritySource": "RESEARCH_FINDING",
   "verificationStatus": "VERIFIED"
 }

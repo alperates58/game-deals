@@ -169,12 +169,17 @@ describe("FAZ 1.5 — Admin Control Center, Security & Notifications", () => {
     };
 
     it("should format rich HTML and plain text for email", () => {
-      const email = NotificationTemplateService.renderEmail(NotificationEventType.PRICE_DROP, mockPayload);
+      const email = NotificationTemplateService.renderEmail(
+        NotificationEventType.PRICE_DROP,
+        mockPayload,
+        "gamer@example.com"
+      );
 
       expect(email.subject).toContain("Forza Horizon 5");
       expect(email.subject).toContain("350 TRY");
       expect(email.html).toContain("350");
       expect(email.html).toContain("700");
+      expect(email.html).toContain("gamer@example.com");
       expect(email.text).toContain("Forza Horizon 5");
       expect(email.text).toContain("forza-horizon-5");
     });

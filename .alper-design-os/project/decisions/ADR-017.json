@@ -1,0 +1,39 @@
+{
+  "id": "ADR-017",
+  "title": "Safe Catalog Manual Overrides with Actor Provenance",
+  "context": "Collector syncs periodically overwrite Game fields. If an administrator manually corrects a title or product class directly on Game, subsequent syncs overwrite it unless separated.",
+  "decision": "Create GameManualOverride table holding explicit typed overrides (title, publisher, developer, franchise, releaseDate, productClass, imageUrl, isActive) with actor and reason provenance, preserving raw Game source data.",
+  "alternatives": [
+    "Directly update Game table on manual edit (overwritten on next collector sync)",
+    "Store arbitrary unvalidated JSON in Game model"
+  ],
+  "consequences": [
+    "Raw Xbox collector data is always preserved intact",
+    "Effective values compute override ?? sourceValue",
+    "Audit trail tracks who overrode what and why",
+    "Reset override restores raw collector data cleanly"
+  ],
+  "risks": [
+    "Application queries must always resolve effective values instead of raw Game fields directly where applicable."
+  ],
+  "evidence": [
+    "src/lib/pricing/price-sync.ts and mapper.ts overwrite game records on each pass",
+    "docs/admin/architecture.md"
+  ],
+  "requirements": [
+    "REQ-CATALOG-01",
+    "REQ-AUDIT-01"
+  ],
+  "affectedComponents": [
+    "src/app/admin/catalog",
+    "src/lib/xbox/mapper.ts"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-16T11:08:59.134Z",
+  "approvedBy": "OWNER",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

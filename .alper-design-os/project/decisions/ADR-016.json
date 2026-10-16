@@ -1,0 +1,40 @@
+{
+  "id": "ADR-016",
+  "title": "Multi-Channel Notification Pipeline Decoupling Domain Events from Deliveries",
+  "context": "NotificationEvent represents a domain occurrence (PRICE_DROP, ALERT_MATCHED, etc.). Direct synchronous dispatch in web requests causes latency, timeouts, and loss of delivery status. Channel-specific delivery requires decoupled delivery queue.",
+  "decision": "Preserve NotificationEvent as immutable domain events, introduce NotificationDelivery queue table with unique([eventId, channel]) for idempotency, process delivery in autonomous background worker.",
+  "alternatives": [
+    "Send notifications directly inside web request handler",
+    "Treat NotificationEvent as delivery record directly"
+  ],
+  "consequences": [
+    "Domain events remain decoupled from delivery protocols",
+    "Idempotent multi-channel delivery (Email, Telegram, In-App) via NotificationDelivery",
+    "Reliable background worker processing with exponential backoff retry and quiet hours"
+  ],
+  "risks": [
+    "Worker loop must handle rate limits gracefully (e.g. Telegram 429 retry_after, SMTP failures)."
+  ],
+  "evidence": [
+    "schema.prisma NotificationEvent model without channel/delivery tracking",
+    "docs/notifications/architecture.md"
+  ],
+  "requirements": [
+    "REQ-NOTIF-01",
+    "REQ-NOTIF-02",
+    "REQ-NOTIF-03"
+  ],
+  "affectedComponents": [
+    "src/lib/notifications",
+    "src/lib/alerts",
+    "src/lib/scheduler"
+  ],
+  "status": "ACCEPTED",
+  "supersedes": null,
+  "supersededBy": null,
+  "createdAt": "2026-10-16T11:08:54.968Z",
+  "approvedBy": "OWNER",
+  "confirmedByUser": true,
+  "authoritySource": "USER_DECISION",
+  "verificationStatus": "VERIFIED"
+}

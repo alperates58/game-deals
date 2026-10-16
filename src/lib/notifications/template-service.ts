@@ -119,7 +119,7 @@ export class NotificationTemplateService {
   public static renderEmail(
     eventType: NotificationEventType,
     payload: NotificationPayload,
-    userEmail: string
+    userEmail: string = "kullanici@oyunfirsatlari.com"
   ): RenderedEmailNotification {
     const appUrl = this.getAppUrl();
     const gameUrl = payload.gameSlug ? `${appUrl}/oyun/${payload.gameSlug}` : appUrl;

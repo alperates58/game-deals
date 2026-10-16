@@ -1,0 +1,198 @@
+{
+  "matrixVersion": "1.5.0",
+  "phase": "FAZ 1.5 — Admin Control Center & User Settings Separation",
+  "generatedAt": "2026-10-16T12:50:00.000Z",
+  "authoritativeSource": "User Prompts & Design OS Governance",
+  "traceability": [
+    {
+      "id": "REQ-ADMIN-01",
+      "category": "Admin Security",
+      "description": "Dedicated /admin route with server-side OWNER authorization (requireOwner), inaccessible to standard users.",
+      "architecture": "ADR-015",
+      "database": "User.role (Role.OWNER)",
+      "api": "src/lib/auth/session.ts (requireOwner, requireActiveUser)",
+      "ui": "src/app/admin/layout.tsx",
+      "test": "tests/unit/admin-auth.test.ts"
+    },
+    {
+      "id": "REQ-ADMIN-02",
+      "category": "Admin Shell",
+      "description": "Dark responsive Admin Shell with 8 categories: GENEL, YÖNETİM, KATALOG, MAĞAZALAR, FİYAT ZEKA, OPERASYON, SİTE, SİSTEM.",
+      "architecture": "ADR-015",
+      "database": "N/A (Shell UI layout)",
+      "api": "src/app/admin/layout.tsx",
+      "ui": "src/components/admin/admin-shell.tsx",
+      "test": "src/app/admin/page.tsx (Compiled routes verification)"
+    },
+    {
+      "id": "REQ-ADMIN-03",
+      "category": "Admin Dashboard",
+      "description": "Truthful live DB KPIs without mock or synthetic numbers (user count, active deals, catalog count, sync state).",
+      "architecture": "ADR-015",
+      "database": "User, Game, SyncRun, NotificationDelivery, DatabaseBackup",
+      "api": "src/app/admin/page.tsx (Server Component data fetching)",
+      "ui": "src/app/admin/page.tsx",
+      "test": "tests/unit/admin-dashboard.test.ts"
+    },
+    {
+      "id": "REQ-ADMIN-04",
+      "category": "User Management",
+      "description": "User administration with pagination, search, role filters, account suspension, and last owner protection.",
+      "architecture": "INV-001 (Last Owner Invariant)",
+      "database": "User.accountStatus, User.role, AdminAuditLog",
+      "api": "src/app/api/admin/users/route.ts, src/app/api/admin/users/[id]/route.ts",
+      "ui": "src/app/admin/users/page.tsx, src/app/admin/users/[id]/page.tsx",
+      "test": "tests/unit/admin-users.test.ts"
+    },
+    {
+      "id": "REQ-ADMIN-05",
+      "category": "Membership",
+      "description": "FREE vs PRO tier structure with getUserEntitlements helper and owner full bypass.",
+      "architecture": "ADR-015",
+      "database": "User.membershipTier (FREE, PRO)",
+      "api": "src/lib/membership/entitlements.ts",
+      "ui": "src/app/admin/membership/page.tsx",
+      "test": "tests/unit/membership-entitlements.test.ts"
+    },
+    {
+      "id": "REQ-ADMIN-06",
+      "category": "Authentication Policies",
+      "description": "Registration open/close toggle, Google OAuth inspection, and session policy configuration.",
+      "architecture": "ADR-015",
+      "database": "SystemSetting.allowRegistration, AuthAccount",
+      "api": "src/app/api/settings/route.ts, src/lib/auth/google.ts",
+      "ui": "src/app/admin/auth/page.tsx",
+      "test": "tests/unit/google-auth.test.ts"
+    },
+    {
+      "id": "REQ-USER-01",
+      "category": "User Settings",
+      "description": "User personal settings portal (/ayarlar) for all authenticated users, decoupled from system administration.",
+      "architecture": "ADR-015",
+      "database": "UserNotificationPreference, UserNotificationSettings, TelegramConnection",
+      "api": "src/app/api/user/settings/route.ts, src/app/api/user/notification-preferences/route.ts",
+      "ui": "src/app/ayarlar/page.tsx, src/components/settings/user-settings-center.tsx",
+      "test": "tests/unit/user-settings.test.ts"
+    },
+    {
+      "id": "REQ-USER-02",
+      "category": "In-App Notifications",
+      "description": "In-app notification inbox (/bildirimler) with live unread badge on header bell icon and mark read actions.",
+      "architecture": "ADR-016",
+      "database": "UserNotification (readAt: DateTime?)",
+      "api": "src/app/api/notifications/route.ts, src/app/api/notifications/mark-read/route.ts",
+      "ui": "src/app/bildirimler/page.tsx, src/components/layout/header.tsx",
+      "test": "tests/unit/notifications.test.ts"
+    },
+    {
+      "id": "REQ-NOTIF-01",
+      "category": "Notification Pipeline",
+      "description": "Decoupled multi-channel notification architecture separating domain events from delivery records.",
+      "architecture": "ADR-016",
+      "database": "NotificationEvent, NotificationDelivery (channel, status, attemptCount)",
+      "api": "src/lib/notifications/event-producer.ts, src/lib/notifications/dispatcher.ts",
+      "ui": "src/app/admin/notifications/deliveries/page.tsx",
+      "test": "tests/unit/notifications.test.ts"
+    },
+    {
+      "id": "REQ-NOTIF-02",
+      "category": "Notification Idempotency",
+      "description": "Deterministic delivery idempotency via @@unique([eventId, channel]) and daily event dedupe keys.",
+      "architecture": "ADR-016",
+      "database": "NotificationDelivery (@@unique([eventId, channel]))",
+      "api": "src/lib/notifications/dispatcher.ts (enqueueDeliveryForEvent)",
+      "ui": "N/A (Database & Service constraint)",
+      "test": "tests/unit/notifications.test.ts"
+    },
+    {
+      "id": "REQ-NOTIF-03",
+      "category": "Notification Retry & Backoff",
+      "description": "Autonomous queue processor with exponential backoff for transient failures and Telegram 429 retry_after handling.",
+      "architecture": "ADR-016",
+      "database": "NotificationDelivery.status (PENDING, PROCESSING, SENT, RETRYING, FAILED)",
+      "api": "src/lib/notifications/dispatcher.ts (processPendingDeliveries)",
+      "ui": "src/app/admin/notifications/deliveries/page.tsx (Manual Retry button)",
+      "test": "tests/unit/notifications.test.ts"
+    },
+    {
+      "id": "REQ-NOTIF-04",
+      "category": "Quiet Hours",
+      "description": "Europe/Istanbul quiet hours policy delaying external Email and Telegram while immediately delivering In-App notifications.",
+      "architecture": "ADR-016",
+      "database": "UserNotificationSettings (quietHoursEnabled, quietHoursStart, quietHoursEnd)",
+      "api": "src/lib/notifications/quiet-hours.ts",
+      "ui": "src/components/settings/user-settings-center.tsx (Sessiz Saatler tab)",
+      "test": "tests/unit/quiet-hours.test.ts"
+    },
+    {
+      "id": "REQ-NOTIF-05",
+      "category": "Notification Providers",
+      "description": "Nodemailer SMTP provider and Telegram Bot API provider with safe credential masking and test endpoints.",
+      "architecture": "ADR-016",
+      "database": "TelegramConnection, TelegramLinkToken, EmailVerificationToken",
+      "api": "src/lib/notifications/email-provider.ts, src/lib/notifications/telegram-provider.ts",
+      "ui": "src/app/admin/notifications/page.tsx",
+      "test": "tests/unit/notifications.test.ts"
+    },
+    {
+      "id": "REQ-CATALOG-01",
+      "category": "Catalog Administration",
+      "description": "Catalog table with server-side pagination, class filters, search, and non-destructive manual overrides preserving source data.",
+      "architecture": "ADR-017",
+      "database": "Game, GameManualOverride (actorUserId, reason, override values)",
+      "api": "src/app/api/admin/catalog/route.ts, src/app/api/admin/catalog/[id]/override/route.ts",
+      "ui": "src/app/admin/catalog/page.tsx, src/app/admin/catalog/[id]/page.tsx",
+      "test": "tests/unit/manual-overrides.test.ts"
+    },
+    {
+      "id": "REQ-CATALOG-02",
+      "category": "Metadata Foundations",
+      "description": "Foundations for External Ratings, Subscriptions, Languages, and Media attachments.",
+      "architecture": "ADR-017",
+      "database": "ExternalRating, GameSubscription, GameLanguageSupport, GameMedia",
+      "api": "src/app/admin/ratings, src/app/admin/subscriptions, src/app/admin/languages, src/app/admin/media",
+      "ui": "Dedicated foundation admin screens",
+      "test": "prisma/schema.prisma validation"
+    },
+    {
+      "id": "REQ-STORE-01",
+      "category": "Integrations",
+      "description": "Store Integrations Center reflecting truthful status: Xbox ACTIVE; Steam, PlayStation, Epic NOT_CONFIGURED.",
+      "architecture": "ADR-015",
+      "database": "SystemSetting (Store configuration fields)",
+      "api": "src/app/admin/integrations/page.tsx",
+      "ui": "src/app/admin/integrations/page.tsx",
+      "test": "tests/unit/truthful-ui.test.ts"
+    },
+    {
+      "id": "REQ-OPS-01",
+      "category": "Operations Center",
+      "description": "Autonomous scheduler worker management, sync history with item drilldown, and catalog quality telemetry.",
+      "architecture": "ADR-002 (Advisory Locks) & ADR-015",
+      "database": "ScheduledJobState, SyncRun",
+      "api": "src/app/api/settings/scheduled-jobs, src/app/api/settings/sync-runs",
+      "ui": "src/app/admin/operations/scheduler, /sync-runs, /quality",
+      "test": "tests/unit/scheduler.test.ts"
+    },
+    {
+      "id": "REQ-SYSTEM-01",
+      "category": "System & Audit",
+      "description": "Immutable AdminAuditLog with recursive secret scrubbing, system health monitoring, and sync lock release tool.",
+      "architecture": "INV-002 (Secret Scrubbing)",
+      "database": "AdminAuditLog (action, entityType, entityId, details, ipAddress)",
+      "api": "src/lib/audit/audit-logger.ts, src/app/api/admin/audit/route.ts",
+      "ui": "src/app/admin/audit/page.tsx, src/app/admin/system/health/page.tsx",
+      "test": "tests/unit/audit-logger.test.ts"
+    },
+    {
+      "id": "REQ-SYSTEM-02",
+      "category": "Backup & Restore",
+      "description": "Full and catalog database JSON backup creation, schema validation, and pre-restore validation pipeline.",
+      "architecture": "ADR-015",
+      "database": "DatabaseBackup (filename, checksum, sizeBytes, recordCount)",
+      "api": "src/app/api/settings/backup/route.ts, src/app/api/settings/backup/validate/route.ts",
+      "ui": "src/app/admin/system/backup/page.tsx",
+      "test": "tests/unit/backup-restore.test.ts"
+    }
+  ]
+}
