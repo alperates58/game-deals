@@ -16,7 +16,12 @@ export const metadata: Metadata = {
 const ALL_EVENT_TYPES = Object.values(NotificationEventType);
 const ALL_CHANNELS = Object.values(NotificationChannel);
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  searchParams?: Promise<{ tab?: string; telegram?: string }>;
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
+  const resolvedParams = searchParams ? await searchParams : {};
   const sessionUser = await getCurrentUser();
 
   if (!sessionUser) {
@@ -115,6 +120,8 @@ export default async function SettingsPage() {
         initialMatrix={matrix}
         isEmailConfigured={isEmailConfigured()}
         isTelegramConfigured={isTelegramConfigured()}
+        requestedTab={resolvedParams.tab}
+        telegramConnectedParam={resolvedParams.telegram === "connected"}
       />
     </div>
   );

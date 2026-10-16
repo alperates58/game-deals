@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireActiveUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { sendTelegramMessage } from "@/lib/notifications/telegram-provider";
+import { renderTelegramTestMessage } from "@/lib/notifications/template-service";
 
 const lastTestTimestamp = new Map<string, number>();
 
@@ -31,24 +32,37 @@ export async function POST() {
       );
     }
 
+    const testMessage = renderTelegramTestMessage();
     const result = await sendTelegramMessage(
       connection.telegramChatId,
-      "🔔 *Game Deals Test Bildirimi*\\n\\nTelegram entegrasyonunuz kusursuz çalışıyor! Yeni indirimler ve alarmlarınız bu kanaldan iletilecektir\\."
+      testMessage.text,
+      { replyMarkup: testMessage.replyMarkup }
     );
 
     if (!result.success) {
+      console.error("[Telegram Test Delivery Failed]", result.error);
       return NextResponse.json(
-        { error: result.error || "Telegram mesajı gönderilemedi." },
+        {
+          error: "Test bildirimi gönderilemedi. Lütfen biraz sonra tekrar deneyin.",
+          errorCode: "TELEGRAM_DELIVERY_FAILED",
+        },
         { status: 502 }
       );
     }
 
     lastTestTimestamp.set(user.userId, now);
-    return NextResponse.json({ success: true, message: "Test bildirimi Telegram hesabınıza gönderildi!" });
+    return NextResponse.json({
+      success: true,
+      message: "Test bildirimi Telegram hesabınıza gönderildi!",
+    });
   } catch (err: any) {
     if (err.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Giriş yapmanız gerekmektedir." }, { status: 401 });
     }
-    return NextResponse.json({ error: "Test gönderimi başarısız oldu." }, { status: 500 });
+    console.error("[Telegram Test Error]", err?.message || err);
+    return NextResponse.json(
+      { error: "Test bildirimi gönderilemedi. Lütfen biraz sonra tekrar deneyin." },
+      { status: 500 }
+    );
   }
 }

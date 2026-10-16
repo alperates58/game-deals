@@ -7,6 +7,12 @@ export interface SendTelegramResult {
   isBlockedOrInactive?: boolean;
 }
 
+export interface SendTelegramOptions {
+  parseMode?: "HTML" | "MarkdownV2" | null;
+  disableWebPagePreview?: boolean;
+  replyMarkup?: any;
+}
+
 export interface TelegramConfigStatus {
   configured: boolean;
   botUsername: string | null;
@@ -35,12 +41,24 @@ export function isTelegramConfigured(): boolean {
 
 /**
  * Sends a message via Telegram Bot API with robust error classification.
+ * Defaults to "HTML" parse mode.
  */
 export async function sendTelegramMessage(
   chatId: string,
   text: string,
-  fetchFn: typeof fetch = fetch
+  optionsOrFetch?: SendTelegramOptions | typeof fetch,
+  fetchFnArg?: typeof fetch
 ): Promise<SendTelegramResult> {
+  let options: SendTelegramOptions = {};
+  let fetchFn: typeof fetch = fetch;
+
+  if (typeof optionsOrFetch === "function") {
+    fetchFn = optionsOrFetch;
+  } else if (optionsOrFetch) {
+    options = optionsOrFetch;
+    if (fetchFnArg) fetchFn = fetchFnArg;
+  }
+
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) {
     return {
@@ -52,16 +70,26 @@ export async function sendTelegramMessage(
 
   const endpoint = `https://api.telegram.org/bot${token}/sendMessage`;
 
+  const payload: Record<string, any> = {
+    chat_id: chatId,
+    text,
+    disable_web_page_preview: options.disableWebPagePreview ?? false,
+  };
+
+  // Default to HTML unless explicitly set to null
+  if (options.parseMode !== null) {
+    payload.parse_mode = options.parseMode || "HTML";
+  }
+
+  if (options.replyMarkup) {
+    payload.reply_markup = options.replyMarkup;
+  }
+
   try {
     const response = await fetchFn(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "MarkdownV2",
-        disable_web_page_preview: false,
-      }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10000),
     });
 

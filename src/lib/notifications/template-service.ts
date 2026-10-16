@@ -15,6 +15,7 @@ export interface NotificationPayload {
 
 export interface RenderedTelegramNotification {
   text: string;
+  replyMarkup?: any;
 }
 
 export interface RenderedEmailNotification {
@@ -29,21 +30,216 @@ export interface RenderedInAppNotification {
   linkUrl: string;
 }
 
+export interface TelegramMessageWithMarkup {
+  text: string;
+  replyMarkup?: any;
+}
+
 /**
- * Escapes characters for Telegram MarkdownV2 safely.
+ * Escapes characters for Telegram HTML parse mode safely.
+ * Only &, <, > are special in Telegram HTML text.
+ */
+export function escapeTelegramHtml(text: string | null | undefined): string {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/**
+ * Escapes characters for Telegram HTML attribute values (such as href).
+ */
+export function escapeTelegramHtmlAttr(text: string | null | undefined): string {
+  if (!text) return "";
+  return escapeTelegramHtml(text).replace(/"/g, "&quot;");
+}
+
+/**
+ * Formats price with Turkish locale comma separation for clean Telegram messages.
+ */
+export function formatTelegramPrice(price: number, currency: string = "TL"): string {
+  if (typeof price !== "number" || isNaN(price)) return `0 ${currency}`;
+  const formatted =
+    price % 1 === 0
+      ? price.toString()
+      : price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${formatted} ${currency}`;
+}
+
+/**
+ * Escapes characters for Telegram MarkdownV2 safely (retained for backward compatibility).
  */
 export function escapeTelegramMarkdown(text: string): string {
   if (!text) return "";
   return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, "\\$&");
 }
 
+function resolveAppUrl(override?: string): string {
+  if (override?.trim()) {
+    return override.trim().replace(/\/+$/, "");
+  }
+  const raw = process.env.APP_URL?.trim();
+  return raw ? raw.replace(/\/+$/, "") : "https://game.alperates.com.tr";
+}
+
+/**
+ * Renders standardized test message that exercises real HTML delivery format.
+ */
+export function renderTelegramTestMessage(appUrlOverride?: string): TelegramMessageWithMarkup {
+  const appUrl = resolveAppUrl(appUrlOverride);
+  const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
+
+  const lines = [
+    "🎮 <b>Oyun Fırsat Test Bildirimi</b>",
+    "",
+    "Telegram bağlantınız başarıyla çalışıyor.",
+    "",
+    "💰 Fiyat: <b>199,90 TL</b>",
+    "🏷️ Liste Fiyatı: <s>399,90 TL</s>",
+    "🎯 İndirim: <b>%50</b>",
+    "",
+    "<i>Bu bir test bildirimidir. Fiyat alarmlarınız ve dip fırsatlarınız bu formatta iletilecektir.</i>",
+    "",
+    `👉 <a href="${escapeTelegramHtmlAttr(settingsUrl)}">Bildirim Ayarlarını Aç</a>`,
+  ];
+
+  return {
+    text: lines.join("\n"),
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          {
+            text: "⚙️ Bildirim Ayarlarını Aç",
+            url: settingsUrl,
+          },
+        ],
+      ],
+    },
+  };
+}
+
+/**
+ * Renders confirmation message on successful account link (/start <token>).
+ */
+export function renderTelegramLinkSuccessMessage(appUrlOverride?: string): TelegramMessageWithMarkup {
+  const appUrl = resolveAppUrl(appUrlOverride);
+  const returnUrl = `${appUrl}/ayarlar?tab=channels&telegram=connected`;
+
+  const lines = [
+    "✅ <b>Telegram hesabınız bağlandı!</b>",
+    "",
+    "Oyun Fırsat bildirimleriniz artık bu sohbet üzerinden gönderilecek.",
+    "",
+    "Fiyat düşüşleri, alarm eşleşmeleri ve istek listenizdeki fırsatları buradan takip edebilirsiniz.",
+  ];
+
+  return {
+    text: lines.join("\n"),
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          {
+            text: "🌐 Siteye Dön",
+            url: returnUrl,
+          },
+        ],
+      ],
+    },
+  };
+}
+
+/**
+ * Renders message for invalid or expired link token.
+ */
+export function renderTelegramInvalidTokenMessage(appUrlOverride?: string): TelegramMessageWithMarkup {
+  const appUrl = resolveAppUrl(appUrlOverride);
+  const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
+
+  const lines = [
+    "❌ <b>Geçersiz veya Süresi Dolmuş Bağlantı</b>",
+    "",
+    `Lütfen Oyun Fırsat <a href="${escapeTelegramHtmlAttr(settingsUrl)}">Ayarlar</a> sayfasından yeni bir Telegram bağlantısı başlatın.`,
+  ];
+
+  return {
+    text: lines.join("\n"),
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          {
+            text: "⚙️ Ayarlar Sayfasına Git",
+            url: settingsUrl,
+          },
+        ],
+      ],
+    },
+  };
+}
+
+/**
+ * Renders introductory help message when /start is sent without a token.
+ */
+export function renderTelegramHelpMessage(appUrlOverride?: string): TelegramMessageWithMarkup {
+  const appUrl = resolveAppUrl(appUrlOverride);
+  const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
+
+  const lines = [
+    "👋 <b>Merhaba!</b>",
+    "",
+    `Oyun Fırsat bildirimlerini almak için web sitesindeki <a href="${escapeTelegramHtmlAttr(settingsUrl)}">Ayarlar</a> sayfasından hesabınızı bağlamanız gerekmektedir.`,
+  ];
+
+  return {
+    text: lines.join("\n"),
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          {
+            text: "⚙️ Hesabını Bağla",
+            url: settingsUrl,
+          },
+        ],
+      ],
+    },
+  };
+}
+
+/**
+ * Renders confirmation message when user sends /stop.
+ */
+export function renderTelegramStopMessage(appUrlOverride?: string): TelegramMessageWithMarkup {
+  const appUrl = resolveAppUrl(appUrlOverride);
+  const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
+
+  const lines = [
+    "🛑 <b>Bildirimler Durduruldu</b>",
+    "",
+    `Oyun Fırsat bildirimleriniz askıya alındı. Tekrar etkinleştirmek için web sitemizdeki <a href="${escapeTelegramHtmlAttr(settingsUrl)}">Ayarlar</a> sayfasını ziyaret edebilirsiniz.`,
+  ];
+
+  return {
+    text: lines.join("\n"),
+    replyMarkup: {
+      inline_keyboard: [
+        [
+          {
+            text: "⚙️ Ayarları Yönet",
+            url: settingsUrl,
+          },
+        ],
+      ],
+    },
+  };
+}
+
 export class NotificationTemplateService {
   private static getAppUrl(): string {
-    return process.env.APP_URL || "https://game.alperates.com.tr";
+    return resolveAppUrl();
   }
 
   /**
-   * Renders Telegram message for a domain event.
+   * Renders Telegram message for a domain event using robust HTML formatting.
    */
   public static renderTelegram(
     eventType: NotificationEventType,
@@ -51,64 +247,64 @@ export class NotificationTemplateService {
   ): RenderedTelegramNotification {
     const appUrl = this.getAppUrl();
     const gameUrl = payload.gameSlug ? `${appUrl}/oyun/${payload.gameSlug}` : appUrl;
-    const currency = payload.currency || "TL";
+    const currency = escapeTelegramHtml(payload.currency || "TL");
 
-    let headline = "🔥 *Fırsat Bildirimi*";
+    let headline = "🔥 <b>Fırsat Bildirimi</b>";
     switch (eventType) {
       case NotificationEventType.PRICE_DROP:
-        headline = "📉 *Fiyat Düştü!*";
+        headline = "📉 <b>Fiyat Düştü!</b>";
         break;
       case NotificationEventType.ALERT_MATCHED:
-        headline = "🔔 *Fiyat Alarmınız Çaldı!*";
+        headline = "🔔 <b>Fiyat Alarmınız Çaldı!</b>";
         break;
       case NotificationEventType.NEW_OBSERVED_LOW:
-        headline = "🌟 *Yeni Tarihi Dip Fiyat!*";
+        headline = "🌟 <b>Yeni Tarihi Dip Fiyat!</b>";
         break;
       case NotificationEventType.DEAL_SCORE_THRESHOLD:
-        headline = "🚀 *Yüksek Fırsat Skoru!*";
+        headline = "🚀 <b>Yüksek Fırsat Skoru!</b>";
         break;
       case NotificationEventType.OWNED_GAME_DLC_DEAL:
-        headline = "🎁 *Sahip Olduğunuz Oyuna DLC İndirimi!*";
+        headline = "🎁 <b>Sahip Olduğunuz Oyuna DLC İndirimi!</b>";
         break;
       case NotificationEventType.WISHLIST_DEAL:
-        headline = "✨ *İstek Listenizdeki Oyun İndirimde!*";
+        headline = "✨ <b>İstek Listenizdeki Oyun İndirimde!</b>";
         break;
       case NotificationEventType.FAVORITE_PRICE_CHANGE:
-        headline = "❤️ *Favori Oyununuzda Fiyat Değişimi!*";
+        headline = "❤️ <b>Favori Oyununuzda Fiyat Değişimi!</b>";
         break;
     }
 
     const lines = [
       headline,
       "",
-      `🎮 *${escapeTelegramMarkdown(payload.gameTitle)}*`,
+      `🎮 <b>${escapeTelegramHtml(payload.gameTitle)}</b>`,
     ];
 
     if (payload.parentGameTitle) {
-      lines.push(`📦 Ana Oyun: ${escapeTelegramMarkdown(payload.parentGameTitle)}`);
+      lines.push(`📦 Ana Oyun: ${escapeTelegramHtml(payload.parentGameTitle)}`);
     }
 
     if (payload.matchReason) {
-      lines.push(`💡 ${escapeTelegramMarkdown(payload.matchReason)}`);
+      lines.push(`💡 ${escapeTelegramHtml(payload.matchReason)}`);
     }
 
-    lines.push(`💰 Güncel Fiyat: *${payload.currentPrice} ${currency}*`);
+    lines.push(`💰 Güncel Fiyat: <b>${formatTelegramPrice(payload.currentPrice, currency)}</b>`);
 
     if (payload.listPrice && payload.listPrice > payload.currentPrice) {
-      lines.push(`🏷️ Liste Fiyatı: ~${payload.listPrice} ${currency}~`);
+      lines.push(`🏷️ Liste Fiyatı: <s>${formatTelegramPrice(payload.listPrice, currency)}</s>`);
     }
 
     if (payload.discountPercent && payload.discountPercent > 0) {
-      lines.push(`🎯 İndirim Oranı: *%${payload.discountPercent}*`);
+      lines.push(`🎯 İndirim Oranı: <b>%${payload.discountPercent}</b>`);
     }
 
     if (payload.dealScore !== undefined) {
-      lines.push(`⚡ Fırsat Skoru: *${payload.dealScore}/100*`);
+      lines.push(`⚡ Fırsat Skoru: <b>${payload.dealScore}/100</b>`);
     }
 
     lines.push("");
-    lines.push(`👉 [Oyunu İncele](${escapeTelegramMarkdown(gameUrl)})`);
-    lines.push(`⚙️ [Bildirim Ayarları](${escapeTelegramMarkdown(`${appUrl}/ayarlar`)})`);
+    lines.push(`👉 <a href="${escapeTelegramHtmlAttr(gameUrl)}">Oyunu İncele</a>`);
+    lines.push(`⚙️ <a href="${escapeTelegramHtmlAttr(`${appUrl}/ayarlar?tab=channels`)}">Bildirim Ayarları</a>`);
 
     return { text: lines.join("\n") };
   }
@@ -123,7 +319,7 @@ export class NotificationTemplateService {
   ): RenderedEmailNotification {
     const appUrl = this.getAppUrl();
     const gameUrl = payload.gameSlug ? `${appUrl}/oyun/${payload.gameSlug}` : appUrl;
-    const settingsUrl = `${appUrl}/ayarlar`;
+    const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
     const currency = payload.currency || "TL";
 
     let subjectPrefix = "Fırsat Bildirimi";

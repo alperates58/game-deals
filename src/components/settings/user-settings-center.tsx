@@ -15,6 +15,8 @@ import {
   ExternalLink,
   Loader2,
   RefreshCw,
+  X,
+  Radio,
   Clock,
   Sparkles,
   Lock,
@@ -61,6 +63,8 @@ interface UserSettingsCenterProps {
   initialMatrix: Record<string, Record<string, boolean>>;
   isEmailConfigured: boolean;
   isTelegramConfigured: boolean;
+  requestedTab?: string;
+  telegramConnectedParam?: boolean;
 }
 
 const EVENT_LABELS: Record<string, string> = {
@@ -91,8 +95,17 @@ export function UserSettingsCenter({
   initialMatrix,
   isEmailConfigured,
   isTelegramConfigured,
+  requestedTab,
+  telegramConnectedParam,
 }: UserSettingsCenterProps) {
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("account");
+  const initialActiveTab: SettingsTabId =
+    requestedTab && SETTINGS_TABS.some((t) => t.id === requestedTab)
+      ? (requestedTab as SettingsTabId)
+      : telegramConnectedParam
+      ? "channels"
+      : "account";
+
+  const [activeTab, setActiveTab] = useState<SettingsTabId>(initialActiveTab);
 
   // Profile state
   const [user, setUser] = useState<UserProfile>(initialUser);
@@ -105,9 +118,17 @@ export function UserSettingsCenter({
   const [telegram, setTelegram] = useState<TelegramConnectionInfo | null>(initialTelegram);
   const [isLinkingTelegram, setIsLinkingTelegram] = useState(false);
   const [isRefreshingTelegram, setIsRefreshingTelegram] = useState(false);
-  const [telegramFallbackUrl, setTelegramFallbackUrl] = useState<string | null>(null);
-  const [telegramMessage, setTelegramMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const [telegramMessage, setTelegramMessage] = useState<{ success: boolean; text: string } | null>(
+    telegramConnectedParam ? { success: true, text: "Telegram hesabınız başarıyla bağlandı." } : null
+  );
+
+  // Telegram Guided Linking Modal state
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkModalStep, setLinkModalStep] = useState<1 | 2 | 3>(1);
+  const [linkModalUrl, setLinkModalUrl] = useState<string | null>(null);
+
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Email verification state
   const [emailVerified, setEmailVerified] = useState(Boolean(initialUser.emailVerifiedAt));
@@ -194,11 +215,14 @@ export function UserSettingsCenter({
     }
   };
 
-  // Clean up polling interval on unmount
+  // Clean up polling and modal timers on unmount
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+      }
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
       }
     };
   }, []);
@@ -209,7 +233,18 @@ export function UserSettingsCenter({
       const data = await res.json();
       if (res.ok && data.connected && data.telegram?.isActive) {
         setTelegram(data.telegram);
-        setTelegramFallbackUrl(null);
+        setLinkModalStep(3);
+
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+
+        if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = setTimeout(() => {
+          setIsLinkModalOpen(false);
+        }, 3000);
+
         if (notifyOnSuccess) {
           setTelegramMessage({
             success: true,
@@ -243,57 +278,35 @@ export function UserSettingsCenter({
     }, 3000);
   };
 
-  // Re-check status on window focus if awaiting connection
+  // Re-check status on window focus if modal is open or awaiting connection
   useEffect(() => {
     const handleFocus = () => {
-      if (telegramFallbackUrl && !telegram?.isActive) {
+      if (isLinkModalOpen && !telegram?.isActive) {
         checkTelegramStatus(true);
       }
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [telegramFallbackUrl, telegram?.isActive]);
+  }, [isLinkModalOpen, telegram?.isActive]);
 
-  // Telegram Connect Link
+  // Telegram Connect - opens guided modal instead of throwing user away
   const handleConnectTelegram = async () => {
     setIsLinkingTelegram(true);
     setTelegramMessage(null);
-    setTelegramFallbackUrl(null);
-
-    // Synchronously pre-open blank window to overcome browser popup blockers
-    let popupWindow: Window | null = null;
-    try {
-      popupWindow = window.open("about:blank", "_blank");
-    } catch {
-      popupWindow = null;
-    }
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
 
     try {
       const res = await fetch("/api/notifications/telegram/link-token", { method: "POST" });
       const data = await res.json();
       if (res.ok && data.linkUrl) {
-        setTelegramFallbackUrl(data.linkUrl);
-
-        if (popupWindow && !popupWindow.closed) {
-          popupWindow.location.href = data.linkUrl;
-        }
-
-        setTelegramMessage({
-          success: true,
-          text: "Telegram botu hazırlandı. Açılan pencerede veya aşağıdaki bağlantıdan 'Başlat' (Start) butonuna basarak bağlantıyı tamamlayınız.",
-        });
-
+        setLinkModalUrl(data.linkUrl);
+        setLinkModalStep(1);
+        setIsLinkModalOpen(true);
         startBoundedTelegramPolling();
       } else {
-        if (popupWindow && !popupWindow.closed) {
-          popupWindow.close();
-        }
         setTelegramMessage({ success: false, text: data.error || "Bağlantı başlatılamadı." });
       }
     } catch {
-      if (popupWindow && !popupWindow.closed) {
-        popupWindow.close();
-      }
       setTelegramMessage({ success: false, text: "Ağ hatası oluştu." });
     } finally {
       setIsLinkingTelegram(false);
@@ -326,8 +339,10 @@ export function UserSettingsCenter({
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
+        if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
         setTelegram(null);
-        setTelegramFallbackUrl(null);
+        setLinkModalUrl(null);
+        setIsLinkModalOpen(false);
         setTelegramMessage({ success: true, text: "Telegram bağlantınız kesildi." });
       }
     } catch {
@@ -344,10 +359,13 @@ export function UserSettingsCenter({
       if (res.ok) {
         setTelegramMessage({ success: true, text: "Test bildirimi Telegram hesabınıza gönderildi!" });
       } else {
-        setTelegramMessage({ success: false, text: data.error || "Test gönderilemedi." });
+        setTelegramMessage({
+          success: false,
+          text: data.error || "Test bildirimi gönderilemedi. Lütfen biraz sonra tekrar deneyin.",
+        });
       }
     } catch {
-      setTelegramMessage({ success: false, text: "Ağ hatası oluştu." });
+      setTelegramMessage({ success: false, text: "Ağ hatası oluştu. Lütfen bağlantınızı kontrol edin." });
     }
   };
 
@@ -762,48 +780,16 @@ export function UserSettingsCenter({
                 </div>
               )}
 
-              {telegramFallbackUrl && !telegram?.isActive && (
-                <div className="rounded-xl p-3 bg-sky-950/40 border border-sky-800/60 text-xs space-y-2">
-                  <div className="flex items-center gap-2 text-sky-300 font-medium">
-                    <ExternalLink className="h-4 w-4 shrink-0 text-sky-400" />
-                    <span>Telegram bot sayfası otomatik açılmadıysa aşağıdaki bağlantıya tıklayabilirsiniz:</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                    <a
-                      href={telegramFallbackUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors shadow-sm"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Telegram&apos;da Aç →</span>
-                    </a>
-                    <button
-                      type="button"
-                      disabled={isRefreshingTelegram}
-                      onClick={handleRefreshTelegramStatus}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
-                    >
-                      {isRefreshingTelegram ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      )}
-                      <span>Durumu Yenile</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
                 {telegram?.isActive ? (
                   <>
                     <button
                       type="button"
                       onClick={handleTestTelegram}
-                      className="rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition-colors"
+                      className="rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white transition-all flex items-center gap-2 shadow-sm shadow-sky-950/40"
                     >
-                      Test Bildirimi Gönder
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Test Bildirimi Gönder</span>
                     </button>
                     <button
                       type="button"
@@ -816,7 +802,7 @@ export function UserSettingsCenter({
                       type="button"
                       disabled={isRefreshingTelegram}
                       onClick={handleRefreshTelegramStatus}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3.5 py-2 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-50 ml-auto"
                     >
                       {isRefreshingTelegram ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -832,7 +818,7 @@ export function UserSettingsCenter({
                       type="button"
                       disabled={isLinkingTelegram || !isTelegramConfigured}
                       onClick={handleConnectTelegram}
-                      className="rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
+                      className="rounded-lg bg-sky-600 hover:bg-sky-500 px-4 py-2 text-xs font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2 shadow-sm shadow-sky-950/40"
                     >
                       {isLinkingTelegram ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                       <span>Telegram&apos;ı Bağla</span>
@@ -842,7 +828,7 @@ export function UserSettingsCenter({
                         type="button"
                         disabled={isRefreshingTelegram}
                         onClick={handleRefreshTelegramStatus}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3.5 py-2 text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors disabled:opacity-50"
                       >
                         {isRefreshingTelegram ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1088,6 +1074,150 @@ export function UserSettingsCenter({
           </div>
         )}
       </div>
+
+      {/* Guided Telegram Linking Stepper Modal */}
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="relative w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-6 animate-in zoom-in-95">
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsLinkModalOpen(false);
+                if (pollingRef.current) {
+                  clearInterval(pollingRef.current);
+                  pollingRef.current = null;
+                }
+                if (autoCloseTimerRef.current) {
+                  clearTimeout(autoCloseTimerRef.current);
+                }
+              }}
+              className="absolute top-4 right-4 rounded-lg p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Header */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs font-semibold text-sky-400 uppercase tracking-wider">
+                <Send className="h-4 w-4" />
+                <span>Telegram Entegrasyonu</span>
+              </div>
+              <h2 className="text-xl font-bold text-white tracking-tight">Telegram Bildirimlerini Bağla</h2>
+              <p className="text-xs text-zinc-400">
+                Oyun fırsatları ve fiyat alarmlarınızı Telegram üzerinden anlık mesaj olarak alın.
+              </p>
+            </div>
+
+            {/* Stepper Progress */}
+            <div className="grid grid-cols-3 gap-2 py-1">
+              <div className={`h-1.5 rounded-full transition-colors ${linkModalStep >= 1 ? "bg-sky-500" : "bg-zinc-800"}`} />
+              <div className={`h-1.5 rounded-full transition-colors ${linkModalStep >= 2 ? "bg-sky-500" : "bg-zinc-800"}`} />
+              <div className={`h-1.5 rounded-full transition-colors ${linkModalStep >= 3 ? "bg-emerald-500" : "bg-zinc-800"}`} />
+            </div>
+
+            {/* Step 1: Open Bot */}
+            {linkModalStep === 1 && (
+              <div className="space-y-4 text-center py-2">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                  <Send className="h-7 w-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold text-white">1. Adım: Telegram Botunu Açın</h3>
+                  <p className="text-xs text-zinc-400">
+                    Aşağıdaki butona tıklayarak Telegram botunu yeni sekmede veya uygulamada açın.
+                  </p>
+                </div>
+                {linkModalUrl && (
+                  <a
+                    href={linkModalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      setLinkModalStep(2);
+                      startBoundedTelegramPolling();
+                    }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-5 py-3 text-sm font-bold text-white transition-all shadow-lg shadow-sky-950/40"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Telegram&apos;da Aç →</span>
+                  </a>
+                )}
+                <p className="text-[11px] text-zinc-500">
+                  Masaüstünde yeni sekme, mobilde doğrudan Telegram uygulaması açılacaktır.
+                </p>
+              </div>
+            )}
+
+            {/* Step 2: Press Start */}
+            {linkModalStep === 2 && (
+              <div className="space-y-4 text-center py-2">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                  <Radio className="h-7 w-7 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold text-white">2. Adım: Başlat Butonuna Dokunun</h3>
+                  <p className="text-xs text-zinc-400">
+                    Açılan Telegram sohbet penceresinde en alttaki <b className="text-white">&quot;BAŞLAT&quot; (Start)</b> butonuna dokunun.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center gap-2.5 p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-amber-400">
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  <span className="font-medium">Bağlantı bekleniyor...</span>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between text-xs text-zinc-400">
+                  {linkModalUrl && (
+                    <a
+                      href={linkModalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sky-400 hover:underline inline-flex items-center gap-1 text-[11px]"
+                    >
+                      <span>Botu Tekrar Aç</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => checkTelegramStatus(true)}
+                    className="text-zinc-400 hover:text-white transition-colors text-[11px]"
+                  >
+                    Şimdi Kontrol Et
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Success Confirmation */}
+            {linkModalStep === 3 && (
+              <div className="space-y-4 text-center py-2 animate-in zoom-in-95">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-semibold text-white">Telegram Hesabınız Bağlandı!</h3>
+                  <p className="text-xs text-emerald-400 font-mono font-medium">
+                    @{telegram?.telegramUsername || telegram?.displayName || "Kullanıcı"}
+                  </p>
+                  <p className="text-xs text-zinc-400 pt-1">
+                    Bağlantı başarıyla doğrulandı. Fırsat bildirimleriniz artık anlık olarak bu kanala iletilecektir.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsLinkModalOpen(false)}
+                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white transition-all shadow-lg shadow-emerald-950/40"
+                >
+                  Tamam
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
