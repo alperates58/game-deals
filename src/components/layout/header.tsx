@@ -37,57 +37,57 @@ export async function Header() {
           <BrandLogo />
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 ml-2">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 ml-1 xl:ml-2">
             <Link
               href="/"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="flex items-center gap-1 xl:gap-1.5 rounded-md px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
             >
-              <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-              Ana Sayfa
+              <Sparkles className="h-3.5 w-3.5 text-emerald-400 hidden xl:inline" />
+              <span>Ana Sayfa</span>
             </Link>
             <Link
               href="/firsatlar"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="flex items-center gap-1 xl:gap-1.5 rounded-md px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
             >
-              <TrendingDown className="h-3.5 w-3.5 text-emerald-400" />
-              Tüm Fırsatlar
+              <TrendingDown className="h-3.5 w-3.5 text-emerald-400 hidden xl:inline" />
+              <span>Fırsatlar</span>
             </Link>
             <Link
               href="/tarihi-dip"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="flex items-center gap-1 xl:gap-1.5 rounded-md px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
             >
-              <Clock className="h-3.5 w-3.5 text-emerald-400" />
-              Tarihi Dip
+              <Clock className="h-3.5 w-3.5 text-emerald-400 hidden xl:inline" />
+              <span>Tarihi Dip</span>
             </Link>
             <Link
               href="/firsatlar?type=bundle"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="flex items-center gap-1 xl:gap-1.5 rounded-md px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
             >
-              <Package className="h-3.5 w-3.5 text-purple-400" />
-              Paketler
+              <Package className="h-3.5 w-3.5 text-purple-400 hidden xl:inline" />
+              <span>Paketler</span>
             </Link>
             <Link
               href="/eklentiler"
-              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="flex items-center gap-1 xl:gap-1.5 rounded-md px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
             >
-              <Layers className="h-3.5 w-3.5 text-blue-400" />
-              DLC & Eklentiler
+              <Layers className="h-3.5 w-3.5 text-blue-400 hidden xl:inline" />
+              <span><span className="hidden xl:inline">DLC & </span>Eklentiler</span>
             </Link>
           </nav>
         </div>
 
-        {/* Center / Right: Live Search with expanding capability */}
-        <div className="hidden md:flex flex-1 justify-end items-center px-1 sm:px-3 min-w-0">
-          <LiveSearch dropdownAlign="right" />
+        {/* Center / Right: Live Search with guaranteed minimum width */}
+        <div className="hidden md:flex flex-1 justify-end items-center px-1 sm:px-2 min-w-[220px] sm:min-w-[260px] lg:min-w-[280px] max-w-sm lg:max-w-md xl:max-w-lg">
+          <LiveSearch className="w-full" dropdownAlign="right" />
         </div>
 
         {/* Right: User / Auth Navigation */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {user ? (
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               <Link
                 href="/bildirimler"
-                className="relative flex items-center justify-center rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="relative flex items-center justify-center rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
                 title="Bildirim Kutusu"
               >
                 <Bell className="h-4 w-4" />
@@ -100,14 +100,15 @@ export async function Header() {
               </Link>
               <Link
                 href="/kutuphane"
-                className="hidden md:flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="hidden md:flex items-center gap-1.5 rounded-lg px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
+                title="Kütüphanem"
               >
                 <Gamepad2 className="h-3.5 w-3.5 text-emerald-400" />
-                Kütüphanem
+                <span className="hidden xl:inline">Kütüphanem</span>
               </Link>
               <Link
                 href="/ayarlar"
-                className="hidden md:flex items-center gap-1.5 rounded-md p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="hidden md:flex items-center justify-center rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors shrink-0"
                 title="Kişisel Ayarlar"
               >
                 <Settings className="h-4 w-4" />
@@ -115,22 +116,22 @@ export async function Header() {
               {user.role === Role.OWNER && (
                 <Link
                   href="/admin"
-                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold text-red-400 bg-red-950/40 border border-red-800/40 hover:bg-red-900/60 transition-colors"
+                  className="flex items-center gap-1 rounded-lg px-2 xl:px-2.5 py-1.5 text-xs font-semibold text-red-400 bg-red-950/40 border border-red-800/40 hover:bg-red-900/60 transition-colors shrink-0"
                   title="Admin Kontrol Merkezi"
                 >
                   <ShieldCheck className="h-3.5 w-3.5 text-red-400" />
-                  <span className="hidden sm:inline">Admin</span>
+                  <span className="hidden xl:inline">Admin</span>
                 </Link>
               )}
               <Link
                 href="/profil"
-                className="flex items-center gap-1.5 sm:gap-2 rounded-lg bg-zinc-900 border border-zinc-800 px-2 sm:px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 hover:border-zinc-700 transition-all"
+                className="flex items-center gap-1.5 rounded-lg bg-zinc-900 border border-zinc-800 px-2 xl:px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 hover:border-zinc-700 transition-all shrink-0"
                 title="Profil & Hesabım"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600/30 text-emerald-400 font-bold text-[11px]">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600/30 text-emerald-400 font-bold text-[11px] shrink-0">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:inline max-w-[80px] md:max-w-[100px] truncate">{user.name}</span>
+                <span className="hidden xl:inline max-w-[90px] truncate">{user.name}</span>
               </Link>
             </div>
           ) : (

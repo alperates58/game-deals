@@ -41,6 +41,8 @@ COPY --chown=nextjs:nodejs scripts ./scripts
 COPY --chown=nextjs:nodejs public ./public
 COPY --chown=nextjs:nodejs src ./src
 COPY --chown=nextjs:nodejs tsconfig.json ./tsconfig.json
+COPY --chown=nextjs:nodejs tailwind.config.* ./
+COPY --chown=nextjs:nodejs postcss.config.* ./
 
 # Only this lightweight layer updates on UI/code changes
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next

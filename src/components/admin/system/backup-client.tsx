@@ -19,12 +19,19 @@ interface BackupItem {
   id: string;
   filename: string;
   mode: "FULL" | "CATALOG";
+  status?: "IN_PROGRESS" | "COMPLETED" | "FAILED" | "RESTORING";
   sizeBytes: number;
-  createdAt: string;
-  itemCounts: {
-    games: number;
-    prices: number;
-    relations: number;
+  rowCountEstimate?: number;
+  tablesIncluded?: string[];
+  startedAt?: string;
+  createdAt?: string;
+  completedAt?: string | null;
+  fileExists?: boolean;
+  errorSummary?: string | null;
+  itemCounts?: {
+    games?: number;
+    prices?: number;
+    relations?: number;
     users?: number;
   };
 }
@@ -214,7 +221,7 @@ export function BackupClient() {
             <tr>
               <th className="py-3 px-4">Tarih</th>
               <th className="py-3 px-4">Dosya Adı</th>
-              <th className="py-3 px-4">Kapsam</th>
+              <th className="py-3 px-4">Kapsam / Durum</th>
               <th className="py-3 px-4">Boyut</th>
               <th className="py-3 px-4">İçerik</th>
               <th className="py-3 px-4 text-right">İşlemler</th>
@@ -235,64 +242,111 @@ export function BackupClient() {
                 </td>
               </tr>
             ) : (
-              backups.map((b) => (
-                <tr key={b.id} className="hover:bg-zinc-800/40 transition-colors">
-                  <td className="py-3 px-4 font-mono text-[11px] text-zinc-400">
-                    {new Date(b.createdAt).toLocaleString("tr-TR")}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-zinc-200">{b.filename}</td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                        b.mode === "FULL"
-                          ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                          : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                      }`}
-                    >
-                      {b.mode}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 font-mono text-zinc-300">{formatSize(b.sizeBytes)}</td>
-                  <td className="py-3 px-4 text-[11px] text-zinc-400 font-mono">
-                    {b.itemCounts.games} oyun / {b.itemCounts.prices} fiyat
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <a
-                        href={`/api/settings/backup/download/${b.filename}`}
-                        download
-                        className="rounded bg-zinc-800 hover:bg-zinc-700 p-1.5 text-zinc-300 transition-colors"
-                        title="İndir"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </a>
+              backups.map((b) => {
+                const dateStr = b.startedAt || b.createdAt;
+                const formattedDate = dateStr ? new Date(dateStr).toLocaleString("tr-TR") : "Belirtilmedi";
+                const isAvailable = b.fileExists !== false;
 
-                      <button
-                        type="button"
-                        disabled={restoringId === b.id}
-                        onClick={() => handleRestore(b)}
-                        className="rounded bg-amber-950 border border-amber-700/60 hover:bg-amber-900 p-1.5 text-amber-300 transition-colors disabled:opacity-50"
-                        title="Geri Yükle"
-                      >
-                        {restoringId === b.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <RotateCcw className="h-3.5 w-3.5" />
+                return (
+                  <tr key={b.id} className="hover:bg-zinc-800/40 transition-colors">
+                    <td className="py-3 px-4 font-mono text-[11px] text-zinc-400 whitespace-nowrap">
+                      {formattedDate}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-zinc-200">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate max-w-[200px] sm:max-w-xs">{b.filename}</span>
+                        {!isAvailable && (
+                          <span className="rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.2 text-[9px]">
+                            Disk Kaydı Yok
+                          </span>
                         )}
-                      </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`rounded px-2 py-0.5 text-[10px] font-bold ${
+                            b.mode === "FULL"
+                              ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                              : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          }`}
+                        >
+                          {b.mode}
+                        </span>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBackup(b.id)}
-                        className="rounded bg-red-950/60 border border-red-800/40 hover:bg-red-900 p-1.5 text-red-400 transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {b.status === "COMPLETED" && (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 text-[9px] font-medium">
+                            <CheckCircle2 className="h-2.5 w-2.5" /> Başarılı
+                          </span>
+                        )}
+                        {b.status === "IN_PROGRESS" && (
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 text-[9px] font-medium">
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" /> Alınıyor
+                          </span>
+                        )}
+                        {b.status === "FAILED" && (
+                          <span className="inline-flex items-center gap-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 px-1.5 py-0.5 text-[9px] font-medium" title={b.errorSummary || "Yedekleme hatası"}>
+                            <AlertTriangle className="h-2.5 w-2.5" /> Hata
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-zinc-300 whitespace-nowrap">
+                      {formatSize(b.sizeBytes || 0)}
+                    </td>
+                    <td className="py-3 px-4 text-[11px] text-zinc-400 font-mono whitespace-nowrap">
+                      {b.itemCounts?.games !== undefined ? (
+                        `${b.itemCounts.games} oyun / ${b.itemCounts.prices ?? 0} fiyat`
+                      ) : b.rowCountEstimate ? (
+                        `~${b.rowCountEstimate.toLocaleString("tr-TR")} satır (${b.tablesIncluded?.length || 0} tablo)`
+                      ) : b.tablesIncluded && b.tablesIncluded.length > 0 ? (
+                        `${b.tablesIncluded.length} tablo`
+                      ) : (
+                        "Veritabanı Yedeği"
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isAvailable ? (
+                          <a
+                            href={`/api/settings/backup/download/${b.filename}`}
+                            download
+                            className="rounded bg-zinc-800 hover:bg-zinc-700 p-1.5 text-zinc-300 transition-colors"
+                            title="İndir"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        ) : null}
+
+                        {isAvailable && (
+                          <button
+                            type="button"
+                            disabled={restoringId === b.id}
+                            onClick={() => handleRestore(b)}
+                            className="rounded bg-amber-950 border border-amber-700/60 hover:bg-amber-900 p-1.5 text-amber-300 transition-colors disabled:opacity-50"
+                            title="Geri Yükle"
+                          >
+                            {restoringId === b.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteBackup(b.id)}
+                          className="rounded bg-red-950/60 border border-red-800/40 hover:bg-red-900 p-1.5 text-red-400 transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

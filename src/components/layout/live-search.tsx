@@ -185,12 +185,7 @@ export function LiveSearch({
   return (
     <div
       ref={containerRef}
-      className={
-        className ||
-        `relative w-full transition-all duration-300 ease-out ${
-          isFocused ? "max-w-md lg:max-w-xl" : "max-w-xs sm:max-w-sm lg:max-w-md"
-        }`
-      }
+      className={`relative w-full ${className || ""}`}
     >
       <form onSubmit={handleSubmit} className="relative group">
         {/* Search Icon */}
@@ -216,7 +211,6 @@ export function LiveSearch({
             }
           }}
           onBlur={() => {
-            // Keep focused true if dropdown is open to avoid snap transition
             if (!isOpen) {
               setIsFocused(false);
             }
@@ -224,11 +218,11 @@ export function LiveSearch({
           onKeyDown={handleKeyDown}
           autoFocus={autoFocus}
           placeholder={placeholder}
-          className="h-10 sm:h-11 w-full rounded-xl border border-zinc-800 bg-zinc-900/90 pl-10 pr-10 text-sm font-medium text-white placeholder-zinc-400 focus:border-emerald-500 focus:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-sm"
+          className="h-10 w-full rounded-xl border border-zinc-700/80 bg-zinc-900/95 pl-10 pr-9 text-sm font-medium text-white placeholder-zinc-400 focus:border-emerald-500 focus:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
         />
 
         {/* Clear or Loading Icon */}
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-emerald-400 pointer-events-none" />
           ) : query.length > 0 ? (
@@ -245,22 +239,26 @@ export function LiveSearch({
         </div>
       </form>
 
-      {/* Dropdown Menu - Perfectly aligned, full-width or comfortable dropdown width */}
+      {/* Dropdown Menu - 100% Solid Opaque, High-Contrast Cards, Elevated Z-Index */}
       {isOpen && query.trim().length >= 2 && (
         <div
-          className={`absolute top-full mt-2 z-50 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/98 backdrop-blur-xl shadow-2xl ${
+          style={{ backgroundColor: "#09090b" }}
+          className={`absolute top-full mt-2.5 z-[100] overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.95)] ${
             dropdownAlign === "full"
               ? "left-0 right-0 w-full"
               : dropdownAlign === "right"
-              ? "right-0 w-[calc(100vw-32px)] sm:w-[500px] md:w-[560px] max-w-[94vw]"
-              : "left-0 right-0 w-full min-w-[340px] sm:min-w-[440px] md:min-w-[500px]"
+              ? "right-0 w-[calc(100vw-32px)] sm:w-[480px] md:w-[540px] max-w-[94vw]"
+              : "left-0 right-0 w-full min-w-[320px] sm:min-w-[420px] md:min-w-[500px]"
           }`}
         >
           {results.length > 0 ? (
-            <div className="divide-y divide-zinc-800/60 max-h-[480px] overflow-y-auto">
-              <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-900/80 flex items-center justify-between">
-                <span>Eşleşen Sonuçlar ({results.length})</span>
-                <span className="text-[10px] text-zinc-500 font-normal">↑↓ ile seç, Enter ile git</span>
+            <div className="divide-y divide-zinc-800 max-h-[480px] overflow-y-auto">
+              <div className="px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-300 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-zinc-200">
+                  <Search className="h-3.5 w-3.5 text-emerald-400" />
+                  Eşleşen Sonuçlar ({results.length})
+                </span>
+                <span className="text-[10px] text-zinc-400 font-normal">↑↓ ile seç, Enter ile git</span>
               </div>
 
               {results.map((item, index) => {
@@ -277,11 +275,13 @@ export function LiveSearch({
                     }}
                     onMouseEnter={() => setSelectedIndex(index)}
                     className={`flex items-center gap-3.5 p-3 transition-colors ${
-                      isSelected ? "bg-zinc-850" : "hover:bg-zinc-900/80"
+                      isSelected
+                        ? "bg-zinc-800/90 border-l-4 border-emerald-500 pl-2.5"
+                        : "bg-zinc-950 hover:bg-zinc-900/90"
                     }`}
                   >
                     {/* Thumbnail Poster */}
-                    <div className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-zinc-900 border border-zinc-800 shadow-sm">
+                    <div className="relative h-14 w-11 shrink-0 overflow-hidden rounded-lg bg-zinc-900 border border-zinc-700 shadow-md">
                       {item.imageUrl ? (
                         <Image
                           src={getOptimizedImageUrl(item.imageUrl, "thumb")}
@@ -291,7 +291,7 @@ export function LiveSearch({
                           className="object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[9px] text-zinc-600 font-semibold">
+                        <div className="flex h-full w-full items-center justify-center text-[9px] text-zinc-500 font-bold bg-zinc-900">
                           Görsel Yok
                         </div>
                       )}
@@ -300,7 +300,7 @@ export function LiveSearch({
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-semibold text-zinc-100 hover:text-emerald-400 transition-colors">
+                        <span className="truncate text-sm font-bold text-zinc-100 group-hover:text-emerald-400 transition-colors">
                           {item.title}
                         </span>
                         {getClassBadge(item.productClass)}
@@ -311,7 +311,7 @@ export function LiveSearch({
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           {item.discountPercent > 0 && (
-                            <span className="rounded bg-emerald-950 border border-emerald-500/40 px-1.5 py-0.5 text-[11px] font-extrabold text-emerald-400">
+                            <span className="rounded bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 text-[11px] font-extrabold text-emerald-400">
                               -%{item.discountPercent}
                             </span>
                           )}
@@ -333,15 +333,15 @@ export function LiveSearch({
                   inputRef.current?.blur();
                   onItemSelect?.();
                 }}
-                className="p-3 text-center text-xs font-semibold text-emerald-400 hover:bg-zinc-900/80 flex items-center justify-center gap-2 transition-colors border-t border-zinc-800/80"
+                className="p-3 text-center text-xs font-bold text-emerald-400 bg-zinc-900 hover:bg-zinc-800 hover:text-emerald-300 flex items-center justify-center gap-2 transition-colors border-t border-zinc-800"
               >
                 <span>&ldquo;{query}&rdquo; için tüm sonuçları gör</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           ) : !isLoading ? (
-            <div className="p-8 text-center text-xs text-zinc-400">
-              <p className="font-bold text-zinc-300 text-sm">Sonuç Bulunamadı</p>
+            <div className="p-8 text-center text-xs text-zinc-400 bg-zinc-950">
+              <p className="font-bold text-zinc-200 text-sm">Sonuç Bulunamadı</p>
               <p className="mt-1 text-xs text-zinc-400">
                 &ldquo;{query}&rdquo; ile eşleşen oyun, paket veya eklenti bulunamadı.
               </p>
