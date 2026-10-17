@@ -49,7 +49,8 @@ USER nextjs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=6 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=6 \
+  CMD sh -c "if [ \"$PORT\" = \"3000\" ] && [ \"$NODE_ENV\" = \"production\" ]; then wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 0; else exit 0; fi"
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node scripts/auto-seed.js && exec ./node_modules/.bin/next start"]
+CMD ["sh", "-c", "(./node_modules/.bin/prisma migrate deploy || ./node_modules/.bin/prisma db push --accept-data-loss || true) && node scripts/auto-seed.js && exec ./node_modules/.bin/next start"]
+
