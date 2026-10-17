@@ -9,6 +9,7 @@ import {
   LogIn,
   Gamepad2,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 import { LiveSearch } from "./live-search";
 import { BrandLogo } from "./brand-logo";
@@ -57,6 +58,13 @@ export async function Header() {
             >
               <Clock className="h-3.5 w-3.5 text-emerald-400" />
               Tarihi Dip
+            </Link>
+            <Link
+              href="/firsatlar?type=bundle"
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+            >
+              <Package className="h-3.5 w-3.5 text-purple-400" />
+              Paketler
             </Link>
             <Link
               href="/eklentiler"

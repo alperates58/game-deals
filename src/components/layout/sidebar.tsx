@@ -21,6 +21,7 @@ import {
   X,
   ChevronRight,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 import { Role } from "@prisma/client";
 import { LiveSearch } from "./live-search";
@@ -157,6 +158,13 @@ export function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         icon: Clock,
         badge: "Dip",
         badgeColor: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+      },
+      {
+        href: "/firsatlar?type=bundle",
+        label: "Paketler & Koleksiyonlar",
+        icon: Package,
+        badge: "Paket",
+        badgeColor: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
       },
       {
         href: "/eklentiler",

@@ -16,6 +16,7 @@ import {
   Gamepad2,
   DollarSign,
   Activity,
+  Package,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,8 @@ async function getHomePageData() {
     deepDiscounts,
     recentPriceChangesRaw,
     totalHistoricalLowsRaw,
+    bundleDeals,
+    totalBundlesCount,
   ] = await Promise.all([
     prisma.game.count({ where: { isActive: true } }),
     prisma.game.count({ where: { isActive: true, discountPercent: { gt: 0 } } }),
@@ -144,6 +147,30 @@ async function getHomePageData() {
       SELECT COUNT(*)::int as count FROM "Game"
       WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
     `.catch(() => [{ count: 0 }]),
+    // Discounted Bundles & Collections (Paketler)
+    prisma.game.findMany({
+      where: {
+        isActive: true,
+        productClass: "BUNDLE",
+        discountPercent: { gt: 0 },
+      },
+      include: {
+        dealAnalysis: true,
+      },
+      orderBy: [
+        { dealAnalysis: { dealScore: "desc" } },
+        { discountPercent: "desc" },
+      ],
+      take: 15,
+    }),
+    // Count of all active discounted bundles
+    prisma.game.count({
+      where: {
+        isActive: true,
+        productClass: "BUNDLE",
+        discountPercent: { gt: 0 },
+      },
+    }),
   ]);
 
   // Fetch full game records for genuine price drops
@@ -178,9 +205,11 @@ async function getHomePageData() {
     totalGames,
     activeDealsCount,
     totalHistoricalLowsCount,
+    totalBundlesCount,
     lastSyncAt: lastSync?.finishedAt || null,
     bestDeals,
     verifiedLows,
+    bundleDeals,
     popularGames,
     under150Deals,
     deepDiscounts,
@@ -241,6 +270,7 @@ export default async function HomePage() {
 
   const historicalLowCarouselItems = data.verifiedLows.map(mapToCarouselItem);
   const deepDiscountsCarouselItems = data.deepDiscounts.map(mapToCarouselItem);
+  const bundleCarouselItems = data.bundleDeals.map(mapToCarouselItem);
   const recentChangesCarouselItems = data.recentPriceChanges.map(mapToCarouselItem);
   const under150CarouselItems = data.under150Deals.map(mapToCarouselItem);
 
@@ -373,6 +403,19 @@ export default async function HomePage() {
           seeAllHref="/firsatlar?minDiscount=70"
           seeAllText="Dev İndirimler (%70+)"
           games={deepDiscountsCarouselItems}
+        />
+      )}
+
+      {/* Slider Carousel: 🎁 İndirimdeki Paketler & Koleksiyonlar (Bundle) Vitrini */}
+      {bundleCarouselItems.length > 0 && (
+        <DealsCarousel
+          title="İndirimdeki Paketler & Koleksiyonlar (Bundle)"
+          subtitle="Birden fazla oyun veya DLC içeren avantaja sahip koleksiyon paketleri"
+          icon={<Package className="h-4 w-4" />}
+          iconStyle="bg-purple-950 border-purple-500/40 text-purple-400"
+          seeAllHref="/firsatlar?type=bundle"
+          seeAllText={`Tüm Paketler (${data.totalBundlesCount})`}
+          games={bundleCarouselItems}
         />
       )}
 

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { GameCard } from "@/components/game/game-card";
 import { Clock, Info, Award } from "lucide-react";
 import { CatalogFilterBar } from "@/components/game/catalog-filter-bar";
+import { CatalogPagination } from "@/components/game/catalog-pagination";
 import { ProductClass } from "@prisma/client";
 import { buildReleaseDateFilter } from "@/lib/catalog/filters";
 
@@ -16,8 +17,11 @@ interface HistoricalLowsPageProps {
     maxPrice?: string;
     sort?: string;
     q?: string;
+    page?: string;
   }>;
 }
+
+const PAGE_SIZE = 48;
 
 export default async function HistoricalLowsPage({ searchParams }: HistoricalLowsPageProps) {
   const {
@@ -28,7 +32,11 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     maxPrice = "",
     sort = "dealScore",
     q = "",
+    page = "1",
   } = await searchParams;
+
+  const currentPage = Math.max(1, parseInt(page, 10) || 1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
@@ -102,14 +110,20 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
     orderBy = [{ updatedAt: "desc" }];
   }
 
-  const verifiedLows = await prisma.game.findMany({
-    where: whereClause,
-    include: {
-      dealAnalysis: true,
-    },
-    orderBy,
-    take: 120,
-  });
+  const [totalCount, verifiedLows] = await Promise.all([
+    prisma.game.count({ where: whereClause }),
+    prisma.game.findMany({
+      where: whereClause,
+      include: {
+        dealAnalysis: true,
+      },
+      orderBy,
+      skip,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
@@ -124,8 +138,9 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
             Takip Başladığından Beri En Düşük Fiyattakiler
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl">
-            {verifiedLows.length} içerik listeleniyor{" "}
+            <span className="font-semibold text-amber-400">{totalCount.toLocaleString("tr-TR")}</span> içerik listeleniyor{" "}
             {platform === "series" ? "(Xbox Series X|S)" : platform === "one" ? "(Xbox One)" : ""}{" "}
+            {totalPages > 1 ? `— Sayfa ${currentPage} / ${totalPages} ` : ""}
             — Sistemimizin takibe aldığı tarihten bu yana gördüğü en düşük fiyatta olan oyunlar ve eklentiler.
           </p>
         </div>
@@ -148,10 +163,30 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
 
       {/* Grid */}
       {verifiedLows.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {verifiedLows.map((game) => (
-            <GameCard key={game.id} {...game} />
-          ))}
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {verifiedLows.map((game) => (
+              <GameCard key={game.id} {...game} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <CatalogPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            basePath="/tarihi-dip"
+            searchParams={{
+              type,
+              platform,
+              year,
+              minDiscount,
+              maxPrice,
+              sort,
+              q: cleanQ,
+            }}
+          />
         </div>
       ) : (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">

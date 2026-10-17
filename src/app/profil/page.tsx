@@ -285,17 +285,35 @@ export default async function ProfilePage() {
               <Link
                 key={rec.game.id}
                 href={`/oyun/${rec.game.slug}`}
-                className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-4 hover:border-emerald-500/40 transition-colors flex flex-col justify-between space-y-3 group"
+                className="rounded-xl border border-zinc-800 bg-zinc-950/80 p-3 hover:border-emerald-500/40 transition-colors flex flex-col justify-between space-y-3 group"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="rounded bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                      %{rec.personalMatchScore} Eşleşme
-                    </span>
-                    <span className="text-[10px] font-semibold text-zinc-400">
-                      Fırsat: {rec.game.dealScore}/100
-                    </span>
+                  {/* Poster Image */}
+                  <div className="relative aspect-[16/9] w-full rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800/80 mb-3">
+                    {rec.game.imageUrl ? (
+                      <Image
+                        src={getOptimizedImageUrl(rec.game.imageUrl, "detail")}
+                        alt={rec.game.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-zinc-700 bg-zinc-900">
+                        <Gamepad2 className="h-8 w-8" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="rounded bg-emerald-500/90 backdrop-blur-sm px-2 py-0.5 text-[10px] font-bold text-zinc-950 shadow-sm">
+                        %{rec.personalMatchScore} Eşleşme
+                      </span>
+                      <span className="rounded bg-zinc-900/90 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-semibold text-zinc-300 border border-zinc-700/50">
+                        Skor: {rec.game.dealScore}/100
+                      </span>
+                    </div>
                   </div>
+
                   <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-1">
                     {rec.game.title}
                   </h4>

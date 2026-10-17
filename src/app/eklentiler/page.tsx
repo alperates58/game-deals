@@ -4,6 +4,7 @@ import { Layers, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { ProductClass } from "@prisma/client";
 import { buildReleaseDateFilter } from "@/lib/catalog/filters";
+import { CatalogPagination } from "@/components/game/catalog-pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,11 @@ interface AddonsPageProps {
     year?: string;
     sort?: string;
     minDiscount?: string;
+    page?: string;
   }>;
 }
+
+const PAGE_SIZE = 48;
 
 export default async function AddonsPage({ searchParams }: AddonsPageProps) {
   const {
@@ -26,7 +30,11 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
     year = "all",
     sort = "discount",
     minDiscount = "0",
+    page = "1",
   } = await searchParams;
+
+  const currentPage = Math.max(1, parseInt(page, 10) || 1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
 
@@ -78,14 +86,20 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
     orderBy = [{ currentPrice: "desc" }];
   }
 
-  const addons = await prisma.game.findMany({
-    where: whereClause,
-    include: {
-      dealAnalysis: true,
-    },
-    orderBy,
-    take: 60,
-  });
+  const [totalCount, addons] = await Promise.all([
+    prisma.game.count({ where: whereClause }),
+    prisma.game.findMany({
+      where: whereClause,
+      include: {
+        dealAnalysis: true,
+      },
+      orderBy,
+      skip,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -100,7 +114,9 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
             DLC & Eklentiler
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Genişletme paketleri, sezon biletleri ve ek içerikler ({addons.length} içerik{platform === "series" ? " — Xbox Series X|S" : platform === "one" ? " — Xbox One" : ""})
+            Genişletme paketleri, sezon biletleri ve ek içerikler (<span className="font-semibold text-blue-400">{totalCount.toLocaleString("tr-TR")}</span> içerik
+            {totalPages > 1 ? ` — Sayfa ${currentPage} / ${totalPages}` : ""}
+            {platform === "series" ? " — Xbox Series X|S" : platform === "one" ? " — Xbox One" : ""})
           </p>
         </div>
 
@@ -206,10 +222,29 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
 
       {/* Grid */}
       {addons.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {addons.map((addon) => (
-            <GameCard key={addon.id} {...addon} />
-          ))}
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {addons.map((addon) => (
+              <GameCard key={addon.id} {...addon} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <CatalogPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            basePath="/eklentiler"
+            searchParams={{
+              q,
+              class: classFilter,
+              platform,
+              year,
+              sort,
+              minDiscount: String(minDiscNum),
+            }}
+          />
         </div>
       ) : (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">

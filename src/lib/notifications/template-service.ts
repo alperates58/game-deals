@@ -260,6 +260,18 @@ export class NotificationTemplateService {
       case NotificationEventType.NEW_OBSERVED_LOW:
         headline = "🌟 <b>Yeni Tarihi Dip Fiyat!</b>";
         break;
+      case NotificationEventType.HISTORICAL_LOW_MATCH:
+        headline = "🎯 <b>Tarihi Dip Fiyata Düştü!</b>";
+        break;
+      case NotificationEventType.FREE_GAME_DEAL:
+        headline = "🎁 <b>Ücretsiz / 0 TL Fırsatı!</b>";
+        break;
+      case NotificationEventType.DEEP_DISCOUNT_DEAL:
+        headline = "💥 <b>Mega İndirim (%70+)!</b>";
+        break;
+      case NotificationEventType.BUNDLE_DEAL:
+        headline = "📦 <b>Koleksiyon & Paket İndirimi!</b>";
+        break;
       case NotificationEventType.DEAL_SCORE_THRESHOLD:
         headline = "🚀 <b>Yüksek Fırsat Skoru!</b>";
         break;
@@ -337,6 +349,22 @@ export class NotificationTemplateService {
       case NotificationEventType.NEW_OBSERVED_LOW:
         subjectPrefix = "Tarihi Dip Fiyat";
         title = "Yeni Tarihi Dip Fiyat";
+        break;
+      case NotificationEventType.HISTORICAL_LOW_MATCH:
+        subjectPrefix = "Tarihi Dip Fiyat";
+        title = "Tarihi Dip Fiyata Ulaşıldı";
+        break;
+      case NotificationEventType.FREE_GAME_DEAL:
+        subjectPrefix = "Ücretsiz Fırsat";
+        title = "Tamamen Ücretsiz / 0 TL Fırsatı";
+        break;
+      case NotificationEventType.DEEP_DISCOUNT_DEAL:
+        subjectPrefix = "Mega İndirim";
+        title = "Mega İndirim (%70 ve Üzeri)";
+        break;
+      case NotificationEventType.BUNDLE_DEAL:
+        subjectPrefix = "Paket İndirimi";
+        title = "Paket & Koleksiyon İndirimi";
         break;
       case NotificationEventType.DEAL_SCORE_THRESHOLD:
         subjectPrefix = "Fırsat Skoru Hedefi";
@@ -469,7 +497,19 @@ Bildirim tercihlerinizi yönetmek için: ${settingsUrl}
         title = "Fiyat Alarmı Gerçekleşti";
         break;
       case NotificationEventType.NEW_OBSERVED_LOW:
-        title = "Tarihi Dip Fiyat";
+        title = "Yeni Tarihi Dip Fiyat";
+        break;
+      case NotificationEventType.HISTORICAL_LOW_MATCH:
+        title = "Tarihi Dip Fiyatta";
+        break;
+      case NotificationEventType.FREE_GAME_DEAL:
+        title = "Ücretsiz / 0 TL Fırsatı";
+        break;
+      case NotificationEventType.DEEP_DISCOUNT_DEAL:
+        title = "Mega İndirim (%70+)";
+        break;
+      case NotificationEventType.BUNDLE_DEAL:
+        title = "Paket İndirimi";
         break;
       case NotificationEventType.DEAL_SCORE_THRESHOLD:
         title = "Fırsat Skoru Hedefi";

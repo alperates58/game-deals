@@ -3,6 +3,7 @@ import { GameCard } from "@/components/game/game-card";
 import { TrendingDown, Gamepad2, Search } from "lucide-react";
 import { ProductClass } from "@prisma/client";
 import { CatalogFilterBar } from "@/components/game/catalog-filter-bar";
+import { CatalogPagination } from "@/components/game/catalog-pagination";
 import { buildReleaseDateFilter } from "@/lib/catalog/filters";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +17,11 @@ interface DealsPageProps {
     sort?: string;
     minDiscount?: string;
     maxPrice?: string;
+    page?: string;
   }>;
 }
+
+const PAGE_SIZE = 48;
 
 export default async function DealsPage({ searchParams }: DealsPageProps) {
   const {
@@ -28,7 +32,11 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     sort = "dealScore",
     minDiscount = "0",
     maxPrice = "",
+    page = "1",
   } = await searchParams;
+
+  const currentPage = Math.max(1, parseInt(page, 10) || 1);
+  const skip = (currentPage - 1) * PAGE_SIZE;
 
   const minDiscNum = parseInt(minDiscount, 10) || 0;
   const maxPriceNum = maxPrice ? parseFloat(maxPrice) : null;
@@ -115,7 +123,6 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
       GROUP BY g.id
       HAVING COUNT(ph.id) >= 2
       ORDER BY MAX(ph."observedAt") DESC
-      LIMIT 80
     `;
     const changedGameIds = changedGameRows.map((r) => r.id);
     changedGameCount = changedGameIds.length;
@@ -134,28 +141,38 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
     orderBy = [{ discountPercent: "desc" }, { popularityScore: "desc" }];
   }
 
-  let deals = await prisma.game.findMany({
-    where: whereClause,
-    include: {
-      dealAnalysis: true,
-    },
-    orderBy,
-    take: 80,
-  });
-
-  // Failsafe: if sort is priceChange and returned 0 deals due to strict ID restriction, fallback cleanly
-  if (deals.length === 0 && sort === "priceChange") {
-    const fallbackWhere = { ...whereClause };
-    delete fallbackWhere.id;
-    deals = await prisma.game.findMany({
-      where: fallbackWhere,
+  let [totalCount, deals] = await Promise.all([
+    prisma.game.count({ where: whereClause }),
+    prisma.game.findMany({
+      where: whereClause,
       include: {
         dealAnalysis: true,
       },
-      orderBy: [{ updatedAt: "desc" }, { discountPercent: "desc" }],
-      take: 80,
-    });
+      orderBy,
+      skip,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  // Failsafe: if sort is priceChange and returned 0 deals due to strict ID restriction, fallback cleanly
+  if (totalCount === 0 && sort === "priceChange") {
+    const fallbackWhere = { ...whereClause };
+    delete fallbackWhere.id;
+    [totalCount, deals] = await Promise.all([
+      prisma.game.count({ where: fallbackWhere }),
+      prisma.game.findMany({
+        where: fallbackWhere,
+        include: {
+          dealAnalysis: true,
+        },
+        orderBy: [{ updatedAt: "desc" }, { discountPercent: "desc" }],
+        skip,
+        take: PAGE_SIZE,
+      }),
+    ]);
   }
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
@@ -180,8 +197,9 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
               : "Tüm Aktif Fırsatlar"}
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            {deals.length} içerik listeleniyor{" "}
+            <span className="font-semibold text-emerald-400">{totalCount.toLocaleString("tr-TR")}</span> içerik listeleniyor{" "}
             {platform === "series" ? "(Xbox Series X|S)" : platform === "one" ? "(Xbox One)" : ""}{" "}
+            {totalPages > 1 ? `— Sayfa ${currentPage} / ${totalPages} ` : ""}
             {hasQuery
               ? "— Veritabanı arama eşleşmeleri"
               : sort === "priceChange"
@@ -202,10 +220,30 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
 
       {/* Grid */}
       {deals.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {deals.map((game) => (
-            <GameCard key={game.id} {...game} />
-          ))}
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {deals.map((game) => (
+              <GameCard key={game.id} {...game} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <CatalogPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            basePath="/firsatlar"
+            searchParams={{
+              q: cleanQ,
+              type,
+              platform,
+              year,
+              sort,
+              minDiscount,
+              maxPrice,
+            }}
+          />
         </div>
       ) : (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-12 text-center">

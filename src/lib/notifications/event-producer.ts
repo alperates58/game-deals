@@ -15,6 +15,7 @@ export interface GamePriceEvaluationContext {
   currency?: string;
   parentGameId?: string;
   parentGameTitle?: string;
+  productClass?: string;
 }
 
 /**
@@ -31,13 +32,92 @@ export function buildEventDedupeKey(
 }
 
 /**
+ * Emits global catalog deal notifications to all active users who have not opted out of this event type.
+ * Ensures users who don't explicitly watch or alarm the game still receive discovery alerts according to their notification preferences.
+ */
+async function notifyGlobalSubscribers(
+  eventType: NotificationEventType,
+  context: GamePriceEvaluationContext,
+  matchReason: string,
+  extraPayload: Record<string, any> = {},
+  db = prisma
+): Promise<number> {
+  let count = 0;
+  const now = new Date();
+
+  // Find all active users and their preferences for this specific event type
+  const activeUsers = await db.user.findMany({
+    where: { accountStatus: "ACTIVE" },
+    select: {
+      id: true,
+      notificationPreferences: {
+        where: { eventType },
+        select: { channel: true, enabled: true },
+      },
+    },
+  });
+
+  for (const user of activeUsers) {
+    // Check if user explicitly disabled ALL channels for this eventType
+    // If no preference is stored yet, system defaults to enabled.
+    const prefs = user.notificationPreferences;
+    const allDisabled = prefs.length > 0 && prefs.every((p) => !p.enabled);
+    if (allDisabled) {
+      continue;
+    }
+
+    const dedupeKey = buildEventDedupeKey(
+      eventType,
+      user.id,
+      context.gameId,
+      context.currentPrice
+    );
+
+    try {
+      const event = await db.notificationEvent.create({
+        data: {
+          userId: user.id,
+          gameId: context.gameId,
+          type: eventType,
+          status: NotificationStatus.PENDING,
+          dedupeKey,
+          payload: {
+            gameTitle: context.gameTitle,
+            gameSlug: context.gameSlug,
+            currentPrice: context.currentPrice,
+            listPrice: context.listPrice,
+            discountPercent: context.discountPercent,
+            dealScore: context.dealScore,
+            currency: context.currency || "TL",
+            matchReason,
+            triggeredAt: now.toISOString(),
+            ...extraPayload,
+          },
+        },
+      });
+
+      await enqueueEventDeliveries(event.id, db);
+      count++;
+    } catch {
+      // Duplicate event (already notified today for this price) -> safe ignore
+    }
+  }
+
+  return count;
+}
+
+/**
  * Evaluates and produces domain NotificationEvents for games following price changes:
  * - PRICE_DROP (for wishlist/favorite watchers)
  * - NEW_OBSERVED_LOW (for wishlist/favorite watchers)
- * - DEAL_SCORE_THRESHOLD (when score >= 80)
- * - OWNED_GAME_DLC_DEAL (for users who own the parent base game)
  * - WISHLIST_DEAL
  * - FAVORITE_PRICE_CHANGE
+ * - OWNED_GAME_DLC_DEAL (for users who own the parent base game)
+ * - HISTORICAL_LOW_MATCH (Global Catalog Deal — no watch needed)
+ * - FREE_GAME_DEAL (Global Catalog Deal — no watch needed)
+ * - DEEP_DISCOUNT_DEAL (Global Catalog Deal — no watch needed)
+ * - BUNDLE_DEAL (Global Catalog Deal — no watch needed)
+ * - DEAL_SCORE_THRESHOLD (Global Catalog Deal — no watch needed)
  */
 export async function producePriceChangeEvents(
   context: GamePriceEvaluationContext,
@@ -46,7 +126,7 @@ export async function producePriceChangeEvents(
   let createdCount = 0;
   const now = new Date();
 
-  // 1. Wishlist and Favorites Watchers
+  // 1. Wishlist and Favorites Watchers (Personal Watch Lists)
   const userInteractions = await db.userGame.findMany({
     where: {
       gameId: context.gameId,
@@ -136,7 +216,7 @@ export async function producePriceChangeEvents(
       }
     }
 
-    // New observed low event
+    // New observed low event for explicitly watched game
     if (context.isNewLow && context.discountPercent > 0) {
       const dedupeKey = buildEventDedupeKey(
         NotificationEventType.NEW_OBSERVED_LOW,
@@ -161,7 +241,7 @@ export async function producePriceChangeEvents(
               discountPercent: context.discountPercent,
               dealScore: context.dealScore,
               currency: context.currency || "TL",
-              matchReason: `Tarihi dip fiyat rekoru! ${context.gameTitle} şimdiye kadarki en düşük fiyata ulaştı: ${context.currentPrice} TL`,
+              matchReason: `Tarihi dip fiyat rekoru! Takip ettiğiniz ${context.gameTitle} şimdiye kadarki en düşük fiyata ulaştı: ${context.currentPrice} TL`,
               triggeredAt: now.toISOString(),
             },
           },
@@ -220,6 +300,71 @@ export async function producePriceChangeEvents(
         // Safe ignore duplicate
       }
     }
+  }
+
+  // 3. Broad / Global Catalog Deals (NO WATCH / FOLLOW NEEDED):
+  // Users who have enabled these preference categories receive notifications for any game across the catalog.
+
+  // 3a. Free game (0 TL claimable) deal
+  if (
+    context.currentPrice === 0 &&
+    (context.discountPercent === 100 || (context.listPrice && context.listPrice > 0))
+  ) {
+    createdCount += await notifyGlobalSubscribers(
+      NotificationEventType.FREE_GAME_DEAL,
+      context,
+      `Tamamen ücretsiz! ${context.gameTitle} şu an 0 TL bedava olarak sunuluyor.`,
+      { currentPrice: 0, discountPercent: 100 },
+      db
+    );
+  }
+
+  // 3b. Historical low match (Game price reached or matched historical low record)
+  if (
+    context.historicalLow > 0 &&
+    context.currentPrice <= context.historicalLow &&
+    context.discountPercent > 0
+  ) {
+    createdCount += await notifyGlobalSubscribers(
+      NotificationEventType.HISTORICAL_LOW_MATCH,
+      context,
+      `Tarihi dip fiyata indi! ${context.gameTitle} en ucuz fiyatı olan ${context.currentPrice} TL seviyesine ulaştı.`,
+      {},
+      db
+    );
+  }
+
+  // 3c. Deep discount (70% and above mega discounts)
+  if (context.discountPercent >= 70) {
+    createdCount += await notifyGlobalSubscribers(
+      NotificationEventType.DEEP_DISCOUNT_DEAL,
+      context,
+      `Mega indirim fırsatı! ${context.gameTitle} %${context.discountPercent} indirimle ${context.currentPrice} TL oldu.`,
+      {},
+      db
+    );
+  }
+
+  // 3d. Bundle / Collection deals
+  if (context.productClass === "BUNDLE" && context.discountPercent > 0) {
+    createdCount += await notifyGlobalSubscribers(
+      NotificationEventType.BUNDLE_DEAL,
+      context,
+      `Koleksiyon paketi indirimi! ${context.gameTitle} paketi %${context.discountPercent} indirimde.`,
+      {},
+      db
+    );
+  }
+
+  // 3e. Deal score threshold (>= 80 excellent deals)
+  if (context.dealScore >= 80 && context.discountPercent > 0) {
+    createdCount += await notifyGlobalSubscribers(
+      NotificationEventType.DEAL_SCORE_THRESHOLD,
+      context,
+      `Kaçırılmayacak fırsat! ${context.gameTitle} yüksek fırsat skoru (${context.dealScore}/100) ile %${context.discountPercent} indirimde.`,
+      {},
+      db
+    );
   }
 
   return createdCount;

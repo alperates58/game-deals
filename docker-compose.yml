@@ -57,6 +57,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     command: npm run worker
+    healthcheck:
+      disable: true
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-gamedeals}?schema=public
       - APP_URL=${APP_URL:-https://game.alperates.com.tr}

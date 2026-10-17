@@ -182,6 +182,8 @@ export async function GET(
         items: games.map((g) => ({
           id: g.id,
           xboxProductId: g.xboxProductId,
+          productId: g.xboxProductId || g.id,
+          action: g.discountPercent > 0 ? `%${g.discountPercent} İndirim` : (Number(g.currentPrice) > 0 ? `${g.currentPrice} ₺` : "Katalog Eklendi"),
           title: g.title,
           slug: g.slug,
           imageUrl: g.imageUrl,
@@ -271,6 +273,8 @@ export async function GET(
         .map((ph) => ({
           id: ph.id,
           xboxProductId: ph.game.xboxProductId,
+          productId: ph.game.xboxProductId || ph.id,
+          action: ph.discountPercent > 0 ? `%${ph.discountPercent} İndirim` : (Number(ph.currentPrice) > 0 ? `${ph.currentPrice} ₺` : "Fiyat Değişti"),
           title: ph.game.title,
           slug: ph.game.slug,
           imageUrl: ph.game.imageUrl,

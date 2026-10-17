@@ -67,15 +67,73 @@ interface UserSettingsCenterProps {
   telegramConnectedParam?: boolean;
 }
 
-const EVENT_LABELS: Record<string, string> = {
-  PRICE_DROP: "Fiyat Düştüğünde",
-  ALERT_MATCHED: "Fiyat Alarmım Çaldığında",
-  NEW_OBSERVED_LOW: "Yeni Tarihi Dip Fiyat Olduğunda",
-  DEAL_SCORE_THRESHOLD: "Fırsat Skoru Hedefime Ulaştığında",
-  OWNED_GAME_DLC_DEAL: "Sahip Olduğum Oyuna DLC İndirimi Geldiğinde",
-  WISHLIST_DEAL: "İstek Listemdeki Oyun İndirime Girdiğinde",
-  FAVORITE_PRICE_CHANGE: "Favori Oyunlarımda Fiyat Değiştiğinde",
+export interface EventConfigMeta {
+  label: string;
+  description: string;
+  badge?: string;
+  badgeColor?: string;
+}
+
+export const EVENT_CONFIG: Record<string, EventConfigMeta> = {
+  PRICE_DROP: {
+    label: "Fiyat Düştüğünde",
+    description: "Takip ettiğiniz veya kütüphanenizdeki oyunlarda indirim başladığında",
+  },
+  ALERT_MATCHED: {
+    label: "Fiyat Alarmım Çaldığında",
+    description: "Belirlediğiniz özel hedef fiyata veya altına ulaşıldığında",
+    badge: "Alarm",
+    badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+  },
+  NEW_OBSERVED_LOW: {
+    label: "Yeni Tarihi Dip Rekoru Kırıldığında",
+    description: "Oyunun tüm zamanların en düşük fiyat rekoru kırıldığında",
+    badge: "Yeni Rekor",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  },
+  HISTORICAL_LOW_MATCH: {
+    label: "Tarihi Dip Fiyata Düştüğünde",
+    description: "Oyunun mevcut dip fiyat seviyesine tekrar indiğinde veya eşitlendiğinde",
+    badge: "Dip Fiyat",
+    badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+  },
+  FREE_GAME_DEAL: {
+    label: "Ücretsiz / 0 TL Fırsatlarında",
+    description: "Katalogda 0 TL veya %100 bedava dağıtılan oyun ve paketlerde",
+    badge: "0 TL",
+    badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+  },
+  DEEP_DISCOUNT_DEAL: {
+    label: "Mega İndirim Geldiğinde (%70+)",
+    description: "%70 ve üzeri dev indirim alan yüksek kaliteli fırsatlarda",
+    badge: "%70+",
+    badgeColor: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+  },
+  BUNDLE_DEAL: {
+    label: "Koleksiyon / Paket İndirimi Geldiğinde",
+    description: "İçinde birden fazla oyun barındıran paketlerdeki indirimlerde",
+  },
+  DEAL_SCORE_THRESHOLD: {
+    label: "Fırsat Skoru Hedefime Ulaştığında",
+    description: "Fırsat Algoritması puanı 80 ve üzerine çıkan nadir fırsatlarda",
+  },
+  OWNED_GAME_DLC_DEAL: {
+    label: "Sahip Olduğum Oyuna DLC İndirimi Geldiğinde",
+    description: "Kütüphanenizdeki ana oyunların resmi DLC ve sezon biletleri indirime girdiğinde",
+  },
+  WISHLIST_DEAL: {
+    label: "İstek Listemdeki Oyun İndirime Girdiğinde",
+    description: "İstek listenizdeki oyunlardan herhangi birinde indirim başladığında",
+  },
+  FAVORITE_PRICE_CHANGE: {
+    label: "Favori Oyunlarımda Fiyat Değiştiğinde",
+    description: "Favoriye aldığınız oyunların anlık fiyat hareketlerinde",
+  },
 };
+
+const EVENT_LABELS: Record<string, string> = Object.fromEntries(
+  Object.entries(EVENT_CONFIG).map(([k, v]) => [k, v.label])
+);
 
 export type SettingsTabId = "account" | "security" | "notifications" | "channels" | "quiet" | "defaults";
 
@@ -677,7 +735,7 @@ export function UserSettingsCenter({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60 bg-zinc-900/30">
-                  {Object.entries(EVENT_LABELS).map(([evt, label]) => {
+                  {Object.entries(EVENT_CONFIG).map(([evt, meta]) => {
                     const inAppChecked = matrix[evt]?.[NotificationChannel.IN_APP] ?? true;
                     const emailChecked = matrix[evt]?.[NotificationChannel.EMAIL] ?? true;
                     const telegramChecked = matrix[evt]?.[NotificationChannel.TELEGRAM] ?? true;
@@ -687,7 +745,17 @@ export function UserSettingsCenter({
 
                     return (
                       <tr key={evt} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="p-3 sm:p-3.5 font-semibold text-zinc-200">{label}</td>
+                        <td className="p-3 sm:p-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-zinc-200">{meta.label}</span>
+                            {meta.badge && (
+                              <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold border ${meta.badgeColor || "bg-zinc-800 text-zinc-300 border-zinc-700"}`}>
+                                {meta.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{meta.description}</p>
+                        </td>
 
                         {/* In-App */}
                         <td className="p-3 sm:p-3.5 text-center">

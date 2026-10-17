@@ -42,14 +42,53 @@ export function SyncRunsClient() {
   const [runItems, setRunItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
+  const getTriggerLabel = (trigger: string) => {
+    switch (trigger) {
+      case "PRICE_SYNC":
+      case "PRICE_UPDATE":
+        return "Fiyat Senkronizasyonu";
+      case "CATALOG_DISCOVERY":
+      case "SCHEDULED_FULL":
+        return "Katalog Keşfi";
+      case "METADATA_REFRESH":
+        return "Metadata Tazeleme";
+      case "RELATIONSHIP_REFRESH":
+        return "İlişki Doğrulama";
+      case "MANUAL_SYNC":
+        return "Manuel Senkronizasyon";
+      default:
+        return trigger || "Senkronizasyon";
+    }
+  };
+
   const fetchRuns = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/settings/sync-runs?limit=30");
       const data = await res.json();
-      if (data.runs) {
-        setRuns(data.runs);
+      const rawRuns = data.runs || data.syncRuns;
+      if (rawRuns && Array.isArray(rawRuns)) {
+        const normalized: SyncRun[] = rawRuns.map((r: any) => ({
+          id: r.id,
+          trigger: getTriggerLabel(r.trigger || r.type),
+          status: r.status,
+          itemsProcessed: r.itemsProcessed ?? r.productsChecked ?? r.productsFound ?? 0,
+          itemsAdded: r.itemsAdded ?? r.productsAdded ?? 0,
+          itemsChanged: r.itemsChanged ?? r.pricesChanged ?? 0,
+          errorCount: r.errorCount ?? 0,
+          count429: r.count429 ?? 0,
+          count5xx: r.count5xx ?? 0,
+          startedAt: r.startedAt,
+          finishedAt: r.finishedAt ?? null,
+          durationMs:
+            r.durationMs ??
+            (r.finishedAt && r.startedAt
+              ? new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()
+              : null),
+          errorSummary: r.errorSummary || r.summaryText || null,
+        }));
+        setRuns(normalized);
       } else {
         setError(data.error || "Geçmiş yüklenemedi.");
       }
@@ -279,11 +318,13 @@ export function SyncRunsClient() {
                       className="rounded-lg bg-zinc-950 p-3 border border-zinc-800/80 text-xs flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-white truncate">{item.title || item.productId}</p>
-                        <p className="text-[10px] font-mono text-zinc-400">{item.productId}</p>
+                        <p className="font-semibold text-white truncate">{item.title || item.productId || item.xboxProductId}</p>
+                        <p className="text-[10px] font-mono text-zinc-400">{item.productId || item.xboxProductId || item.id}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="font-mono text-xs text-zinc-300">{item.action}</span>
+                        <span className="font-mono text-xs text-zinc-300">
+                          {item.action || (item.discountPercent ? `%${item.discountPercent} İndirim` : (item.currentPrice ? `${item.currentPrice} ₺` : "İşlendi"))}
+                        </span>
                         {item.error && <p className="text-[10px] text-red-400">{item.error}</p>}
                       </div>
                     </div>

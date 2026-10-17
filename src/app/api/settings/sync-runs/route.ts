@@ -166,15 +166,25 @@ export async function GET(req: Request) {
         return {
           id: run.id,
           type: run.type,
+          trigger: run.type,
           status: run.status,
           startedAt: run.startedAt,
           finishedAt: run.finishedAt,
+          durationMs: run.finishedAt
+            ? run.finishedAt.getTime() - run.startedAt.getTime()
+            : null,
           productsFound: run.productsFound,
           productsChecked: run.productsChecked,
+          itemsProcessed: run.productsChecked || run.productsFound,
           productsAdded: run.productsAdded,
+          itemsAdded: run.productsAdded,
           pricesChanged: run.pricesChanged,
+          itemsChanged: run.pricesChanged,
           errorCount: run.errorCount,
+          count429: 0,
+          count5xx: 0,
           summaryText,
+          errorSummary: summaryText || run.errorSummary || null,
           addedGames,
           updatedGames,
         };
@@ -183,6 +193,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
+      runs: enrichedSyncRuns,
       syncRuns: enrichedSyncRuns,
     });
   } catch (err: any) {
