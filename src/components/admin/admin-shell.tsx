@@ -32,6 +32,7 @@ import {
   ExternalLink,
   ChevronRight,
   Send,
+  TrendingDown,
 } from "lucide-react";
 
 interface AdminShellProps {
@@ -85,6 +86,7 @@ const ADMIN_NAVIGATION: NavSection[] = [
     title: "FİYAT ZEKA",
     items: [
       { href: "/admin/deal-intelligence", label: "Deal Intelligence", icon: Sparkles },
+      { href: "/admin/price-changes", label: "Fiyat Değişiklikleri", icon: TrendingDown },
     ],
   },
   {
