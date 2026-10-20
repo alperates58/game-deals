@@ -15,6 +15,7 @@ async function main() {
     const count = await prisma.game.count();
     if (count > 0) {
       console.log(`[Auto-Seed] Database already contains ${count} games. Skipping initial seed.`);
+      await ensureSystemSettingsHealth(prisma);
       await reconcileCrossPlatformVariants(prisma);
       return;
     }
@@ -68,11 +69,23 @@ async function main() {
 
     const newCount = await prisma.game.count();
     console.log(`[Auto-Seed] Initial seed completed! ${newCount} games and relations ready.`);
+    await ensureSystemSettingsHealth(prisma);
     await reconcileCrossPlatformVariants(prisma);
   } catch (err) {
     console.warn("[Auto-Seed] Warning: Auto-seed skipped due to:", err.message);
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function ensureSystemSettingsHealth(prisma) {
+  try {
+    await prisma.systemSetting.updateMany({
+      where: { id: "global", telegramNotificationsEnabled: false },
+      data: { telegramNotificationsEnabled: true },
+    });
+  } catch (err) {
+    // safe ignore
   }
 }
 

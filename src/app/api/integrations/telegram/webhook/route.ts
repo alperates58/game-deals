@@ -129,6 +129,12 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // Automatically enable Telegram notification preferences for user
+      await prisma.userNotificationPreference.updateMany({
+        where: { userId, channel: "TELEGRAM" },
+        data: { enabled: true },
+      });
+
       // Send link confirmation with inline return keyboard
       const successMsg = renderTelegramLinkSuccessMessage();
       const sendResult = await sendTelegramMessage(chatId, successMsg.text, {

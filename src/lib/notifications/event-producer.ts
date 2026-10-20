@@ -201,6 +201,7 @@ export async function producePriceChangeEvents(
             dealScore: context.dealScore,
             currency: context.currency || "TL",
             badges: uniqueBadges,
+            matchingEventTypes: userTypes,
             matchReason,
             triggeredAt: now.toISOString(),
             parentGameTitle: context.parentGameTitle,

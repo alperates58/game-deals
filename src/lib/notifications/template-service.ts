@@ -11,7 +11,9 @@ export interface NotificationPayload {
   currency?: string;
   triggeredAt?: string;
   parentGameTitle?: string;
+  matchingEventTypes?: NotificationEventType[];
   badges?: string[];
+
 }
 
 export interface RenderedTelegramNotification {
@@ -30,6 +32,7 @@ export interface RenderedInAppNotification {
   body: string;
   linkUrl: string;
   badges?: string[];
+
 }
 
 export interface TelegramMessageWithMarkup {
@@ -60,12 +63,13 @@ export function escapeTelegramHtmlAttr(text: string | null | undefined): string 
 /**
  * Formats price with Turkish locale comma separation for clean Telegram messages.
  */
-export function formatTelegramPrice(price: number, currency: string = "TL"): string {
-  if (typeof price !== "number" || isNaN(price)) return `0 ${currency}`;
+export function formatTelegramPrice(price: number | string | any, currency: string = "TL"): string {
+  const num = typeof price === "number" ? price : parseFloat(String(price));
+  if (isNaN(num)) return `0 ${currency}`;
   const formatted =
-    price % 1 === 0
-      ? price.toString()
-      : price.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    num % 1 === 0
+      ? num.toString()
+      : num.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return `${formatted} ${currency}`;
 }
 
@@ -78,11 +82,16 @@ export function escapeTelegramMarkdown(text: string): string {
 }
 
 function resolveAppUrl(override?: string): string {
+  let url = "https://game.alperates.com.tr";
   if (override?.trim()) {
-    return override.trim().replace(/\/+$/, "");
+    url = override.trim().replace(/\/+$/, "");
+  } else if (process.env.APP_URL?.trim()) {
+    url = process.env.APP_URL.trim().replace(/\/+$/, "");
   }
-  const raw = process.env.APP_URL?.trim();
-  return raw ? raw.replace(/\/+$/, "") : "https://game.alperates.com.tr";
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url;
 }
 
 /**
@@ -248,7 +257,8 @@ export class NotificationTemplateService {
     payload: NotificationPayload
   ): RenderedTelegramNotification {
     const appUrl = this.getAppUrl();
-    const gameUrl = payload.gameSlug ? `${appUrl}/oyun/${payload.gameSlug}` : appUrl;
+    const safeSlug = payload.gameSlug ? encodeURIComponent(payload.gameSlug.trim()) : "";
+    const gameUrl = safeSlug ? `${appUrl}/oyun/${safeSlug}` : appUrl;
     const currency = escapeTelegramHtml(payload.currency || "TL");
 
     let headline = "🔥 <b>Fırsat Bildirimi</b>";
@@ -336,7 +346,8 @@ export class NotificationTemplateService {
     userEmail: string = "kullanici@oyunfirsatlari.com"
   ): RenderedEmailNotification {
     const appUrl = this.getAppUrl();
-    const gameUrl = payload.gameSlug ? `${appUrl}/oyun/${payload.gameSlug}` : appUrl;
+    const safeSlug = payload.gameSlug ? encodeURIComponent(payload.gameSlug.trim()) : "";
+    const gameUrl = safeSlug ? `${appUrl}/oyun/${safeSlug}` : appUrl;
     const settingsUrl = `${appUrl}/ayarlar?tab=channels`;
     const currency = payload.currency || "TL";
 

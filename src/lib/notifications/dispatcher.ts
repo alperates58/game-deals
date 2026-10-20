@@ -61,11 +61,18 @@ export async function enqueueEventDeliveries(
   const enqueued: NotificationChannel[] = [];
 
   // Helper to check user preference for an event type and channel (defaults to true)
+  const eventPayload = (event.payload as any) || {};
+  const matchingTypes: NotificationEventType[] =
+    Array.isArray(eventPayload?.matchingEventTypes) && eventPayload.matchingEventTypes.length > 0
+      ? eventPayload.matchingEventTypes
+      : [event.type];
+
   const isUserPrefEnabled = (channel: NotificationChannel): boolean => {
-    const pref = user.notificationPreferences.find(
-      (p) => p.eventType === event.type && p.channel === channel
+    const matchingPrefs = user.notificationPreferences.filter(
+      (p) => matchingTypes.includes(p.eventType) && p.channel === channel
     );
-    return pref ? pref.enabled : true;
+    if (matchingPrefs.length === 0) return true;
+    return matchingPrefs.some((p) => p.enabled);
   };
 
   // 1. IN_APP Channel
@@ -312,6 +319,7 @@ export async function processNotificationDeliveries(
           // Handle failure
           const attempts = delivery.attemptCount + 1;
           const sanitizedError = sanitizeDeliveryError(result.error || "");
+          console.error(`[Email Delivery Failed] Delivery ${delivery.id} to ${user.email}: ${sanitizedError}`);
 
           if (result.isTransient && attempts < delivery.maxAttempts) {
             const backoff = RETRY_BACKOFF_MS[attempts - 1] || RETRY_BACKOFF_MS[RETRY_BACKOFF_MS.length - 1];
@@ -369,6 +377,7 @@ export async function processNotificationDeliveries(
         } else {
           const attempts = delivery.attemptCount + 1;
           const sanitizedError = sanitizeDeliveryError(result.error || "");
+          console.error(`[Telegram Delivery Failed] Delivery ${delivery.id} to chat ${user.telegramConnection.telegramChatId}: ${sanitizedError}`);
 
           // If user blocked bot or chat deleted, mark TelegramConnection inactive
           if (result.isBlockedOrInactive) {

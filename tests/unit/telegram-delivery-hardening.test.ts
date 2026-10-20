@@ -237,5 +237,94 @@ describe("Telegram Delivery Hardening & HTML Formatting", () => {
       expect(capturedPayload.reply_markup).toEqual(markup);
       expect(capturedPayload.parse_mode).toBe("HTML");
     });
+
+    it("should include modern link_preview_options in payload alongside disable_web_page_preview", async () => {
+      process.env.TELEGRAM_BOT_TOKEN = "test-token-123";
+
+      let capturedPayload: any = null;
+      const mockFetch = vi.fn().mockImplementation(async (url: string, init: any) => {
+        capturedPayload = JSON.parse(init.body);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, result: { message_id: 1001 } }),
+        };
+      });
+
+      await sendTelegramMessage(
+        "12345678",
+        "Mesaj",
+        { disableWebPagePreview: true },
+        mockFetch as any
+      );
+
+      expect(capturedPayload.disable_web_page_preview).toBe(true);
+      expect(capturedPayload.link_preview_options).toEqual({ is_disabled: true });
+    });
+
+    it("should automatically fallback to plain text if Telegram rejects HTML with can't parse entities", async () => {
+      process.env.TELEGRAM_BOT_TOKEN = "test-token-123";
+
+      const payloads: any[] = [];
+      const mockFetch = vi.fn().mockImplementation(async (url: string, init: any) => {
+        const body = JSON.parse(init.body);
+        payloads.push(body);
+
+        if (payloads.length === 1) {
+          // 1st attempt: Telegram rejects HTML
+          return {
+            ok: false,
+            status: 400,
+            json: async () => ({
+              ok: false,
+              error_code: 400,
+              description: "Bad Request: can't parse entities: Character '<' is reserved",
+            }),
+          };
+        }
+
+        // 2nd attempt (fallback): Plain text succeeds
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ok: true, result: { message_id: 1002 } }),
+        };
+      });
+
+      const result = await sendTelegramMessage(
+        "12345678",
+        "<b>Corrupted <Tag> Test</b>",
+        mockFetch as any
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe("1002");
+      expect(payloads).toHaveLength(2);
+      expect(payloads[0].parse_mode).toBe("HTML");
+      expect(payloads[1].parse_mode).toBeUndefined();
+      expect(payloads[1].text).not.toContain("<b>");
+      expect(payloads[1].text).not.toContain("</b>");
+    });
+  });
+
+  describe("6. Resilient Price and URL Formatting", () => {
+    it("should parse string or decimal prices cleanly in formatTelegramPrice", () => {
+      expect(formatTelegramPrice("199.9" as any, "TL")).toBe("199,90 TL");
+      expect(formatTelegramPrice("350" as any, "TL")).toBe("350 TL");
+      expect(formatTelegramPrice(undefined as any, "TL")).toBe("0 TL");
+    });
+
+    it("should encode game slugs in renderTelegram to protect URL entities", () => {
+      const rendered = NotificationTemplateService.renderTelegram(
+        NotificationEventType.PRICE_DROP,
+        {
+          gameTitle: "Özel Oyun (2026)",
+          gameSlug: "ozel oyun 2026",
+          currentPrice: 100,
+        }
+      );
+
+      expect(rendered.text).toContain("ozel%20oyun%202026");
+    });
   });
 });

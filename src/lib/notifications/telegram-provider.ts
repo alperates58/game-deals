@@ -74,6 +74,9 @@ export async function sendTelegramMessage(
     chat_id: chatId,
     text,
     disable_web_page_preview: options.disableWebPagePreview ?? false,
+    link_preview_options: {
+      is_disabled: Boolean(options.disableWebPagePreview),
+    },
   };
 
   // Default to HTML unless explicitly set to null
@@ -104,6 +107,36 @@ export async function sendTelegramMessage(
 
     const description = data?.description || `HTTP ${response.status} from Telegram`;
     const statusCode = response.status;
+
+    // Resilient fallback: If Telegram rejects HTML formatting, retry once as plain text
+    if (
+      statusCode === 400 &&
+      description.toLowerCase().includes("can't parse entities") &&
+      payload.parse_mode
+    ) {
+      try {
+        const plainText = text.replace(/<[^>]*>/g, "");
+        const fallbackResponse = await fetchFn(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...payload,
+            text: plainText,
+            parse_mode: undefined,
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
+        const fallbackData = await fallbackResponse.json().catch(() => null);
+        if (fallbackResponse.ok && fallbackData?.ok) {
+          return {
+            success: true,
+            messageId: String(fallbackData.result?.message_id || Date.now()),
+          };
+        }
+      } catch {
+        // Fall through
+      }
+    }
 
     // Rate Limiting (HTTP 429)
     if (statusCode === 429) {

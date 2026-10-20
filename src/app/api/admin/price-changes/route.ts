@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
     } else if (type === "bundles") {
       where.game.productClass = ProductClass.BUNDLE;
     } else if (type === "dlcs") {
-      where.game.productClass = { in: [ProductClass.ADDON, ProductClass.DLC] };
+      where.game.productClass = { in: [ProductClass.ADD_ON, ProductClass.DLC] };
     }
 
     // 3. Search query

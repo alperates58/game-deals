@@ -147,6 +147,17 @@ export async function getSystemSettings() {
     });
   }
 
+  if (settings && settings.telegramNotificationsEnabled === false && Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim())) {
+    try {
+      settings = await prisma.systemSetting.update({
+        where: { id: "global" },
+        data: { telegramNotificationsEnabled: true },
+      });
+    } catch {
+      // Ignore concurrent lock
+    }
+  }
+
   return settings;
 }
 

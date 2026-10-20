@@ -32,6 +32,9 @@ const UpdateSettingsSchema = z.object({
   trackSeasonPasses: z.boolean().optional(),
   trackAddons: z.boolean().optional(),
   trackContentPacks: z.boolean().optional(),
+  inAppNotificationsEnabled: z.boolean().optional(),
+  emailNotificationsEnabled: z.boolean().optional(),
+  telegramNotificationsEnabled: z.boolean().optional(),
 });
 
 export async function GET() {

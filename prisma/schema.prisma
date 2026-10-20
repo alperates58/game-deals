@@ -513,7 +513,7 @@ model SystemSetting {
   // Global Notification master switches
   inAppNotificationsEnabled        Boolean   @default(true)
   emailNotificationsEnabled        Boolean   @default(false)
-  telegramNotificationsEnabled     Boolean   @default(false)
+  telegramNotificationsEnabled     Boolean   @default(true)
 
   // SEO Defaults
   defaultTitle                     String    @default("Game Deals | Türkiye Xbox Oyun İndirimleri ve Fırsat Takibi")
