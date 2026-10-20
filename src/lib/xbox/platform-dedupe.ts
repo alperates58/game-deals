@@ -6,11 +6,18 @@ export interface CleanTitleResult {
 }
 
 const PLATFORM_SUFFIX_REGEX =
-  /\s*(?:[\(\[]|\bfor\s+|-|\/)\s*(Windows(?:\s*10(?:\/11)?)?|PC|Xbox One\s*&\s*Xbox Series X\|S|Xbox Series X\|S\s*&\s*Xbox One|Xbox One\/Series X\|S|Xbox Series X\|S|Xbox Series X|Xbox One|XBOX One|Windows Edition)\s*[\)\]]?\s*$/i;
+  /\s*(?:[\(\[]\s*(?:Xbox|Windows|PC)\b[^\)\]]*[\)\]]|\b(?:for|-)\s+(?:Windows|Xbox|PC)\b.*)\s*$/i;
+
+export function getProductGroup(productClass: string): string {
+  if (["ADD_ON", "CONTENT_PACK", "CURRENCY", "SEASON_PASS"].includes(productClass)) {
+    return "DLC";
+  }
+  return "GAME";
+}
 
 /**
- * Strips platform-specific suffixes like "(Windows)", "(Xbox One)", "(Xbox Series X|S)"
- * to find the unified base game title.
+ * Strips platform-specific suffixes like "(Windows)", "(Xbox One)", "(Xbox Series X|S)",
+ * "(Xbox One & Xbox Series X|S)", "(Windows PC)", "[PC]" etc. to find the unified base game title.
  */
 export function cleanPlatformTitle(rawTitle: string): CleanTitleResult {
   if (!rawTitle) return { baseTitle: "" };
@@ -20,22 +27,24 @@ export function cleanPlatformTitle(rawTitle: string): CleanTitleResult {
 
   const match = title.match(PLATFORM_SUFFIX_REGEX);
   if (match) {
-    const rawPlat = match[1].toLowerCase();
-    if (rawPlat.includes("windows") || rawPlat === "pc") {
+    const rawPlat = match[0].toLowerCase();
+    if (rawPlat.includes("windows") || rawPlat.includes("pc")) {
       detectedPlatform = "PC";
-    } else if (rawPlat.includes("&") || rawPlat.includes("/")) {
+    } else if (rawPlat.includes("one") && rawPlat.includes("series")) {
       detectedPlatform = "CrossGen";
     } else if (rawPlat.includes("series")) {
       detectedPlatform = "XboxSeriesX";
     } else if (rawPlat.includes("one")) {
+      detectedPlatform = "XboxOne";
+    } else if (rawPlat.includes("xbox")) {
       detectedPlatform = "XboxOne";
     }
 
     title = title.slice(0, match.index).trim();
   }
 
-  // Remove dangling punctuation at the end (e.g. trailing hyphens, brackets)
-  title = title.replace(/[\s\-\(\[]+$/, "").trim();
+  // Remove dangling punctuation at the end (e.g. trailing hyphens, brackets, colons)
+  title = title.replace(/[\s\-\(\[\:\|\/]+$/, "").trim();
 
   return {
     baseTitle: title.length > 0 ? title : rawTitle.trim(),
@@ -126,7 +135,7 @@ export async function deduplicateCrossPlatformGames(db = prisma): Promise<{
 
   for (const game of allGames) {
     const { baseTitle, detectedPlatform } = cleanPlatformTitle(game.title);
-    const normKey = `${baseTitle.toLowerCase().trim()}:::${game.productClass}`;
+    const normKey = `${baseTitle.toLowerCase().trim()}:::${getProductGroup(game.productClass)}`;
 
     if (!groups.has(normKey)) {
       groups.set(normKey, []);
@@ -139,12 +148,29 @@ export async function deduplicateCrossPlatformGames(db = prisma): Promise<{
 
   for (const [groupKey, members] of groups.entries()) {
     if (members.length <= 1) {
-      // Single game: if it was previously marked as variant, reset it
+      // Single game: clean platform suffix if present and reset variant flags
       const single = members[0];
-      if (single.isPlatformVariant || single.canonicalGameId) {
+      const { baseTitle: cleanSingleTitle, detectedPlatform } = cleanPlatformTitle(single.title);
+      const extra: string[] = [];
+      if (detectedPlatform === "PC") extra.push("PC");
+      if (detectedPlatform === "XboxSeriesX") extra.push("XboxSeriesX");
+      if (detectedPlatform === "XboxOne") extra.push("XboxOne");
+      if (detectedPlatform === "CrossGen") extra.push("XboxSeriesX", "XboxOne");
+
+      const needsTitleClean = cleanSingleTitle !== single.title;
+      const needsVariantReset = single.isPlatformVariant || single.canonicalGameId;
+      const mergedPlats = mergePlatformArrays(single.platforms, extra);
+      const needsPlatUpdate = mergedPlats.length !== single.platforms.length;
+
+      if (needsTitleClean || needsVariantReset || needsPlatUpdate) {
         await db.game.update({
           where: { id: single.id },
-          data: { isPlatformVariant: false, canonicalGameId: null },
+          data: {
+            title: cleanSingleTitle,
+            platforms: mergedPlats,
+            isPlatformVariant: false,
+            canonicalGameId: null,
+          },
         });
       }
       continue;

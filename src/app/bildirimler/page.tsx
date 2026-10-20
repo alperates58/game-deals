@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { NotificationInboxClient } from "@/components/notifications/notification-inbox-client";
+import { deduplicateUserNotifications } from "@/lib/notifications/notification-dedupe";
 
 export const metadata: Metadata = {
   title: "Bildirimlerim | Game Deals",
@@ -24,6 +25,9 @@ export default async function NotificationsPage(props: NotificationsPageProps) {
   if (!user) {
     redirect("/login?redirect=/bildirimler");
   }
+
+  // Idempotently consolidate any legacy duplicate notifications for this user
+  await deduplicateUserNotifications(user.userId);
 
   const searchParams = await props.searchParams;
   const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);

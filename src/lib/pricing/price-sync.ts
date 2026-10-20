@@ -253,34 +253,39 @@ export async function processNormalizedProduct(
       }),
     ]);
 
-    // Trigger NotificationEvents for matching price alerts
-    await evaluateGamePriceAlerts({
-      gameId: existing.id,
-      currentPrice: product.currentPrice,
-      listPrice: product.listPrice,
-      discountPercent: product.discountPercent,
-      historicalLow: lowResult.historicalLow,
-      dealScore: analysis.dealScore,
-      isNewLow: lowResult.isNewLow,
-    });
+    // Trigger NotificationEvents ONLY for canonical games (variants are unified to canonical)
+    const isVariant = Boolean(existing.isPlatformVariant && existing.canonicalGameId);
 
-    // Trigger domain NotificationEvents for wishlist/favorites/deals
-    try {
-      const { producePriceChangeEvents } = await import("../notifications/event-producer");
-      await producePriceChangeEvents({
+    if (!isVariant) {
+      // Trigger NotificationEvents for matching price alerts
+      await evaluateGamePriceAlerts({
         gameId: existing.id,
-        gameTitle: existing.title,
-        gameSlug: existing.slug,
         currentPrice: product.currentPrice,
         listPrice: product.listPrice,
         discountPercent: product.discountPercent,
         historicalLow: lowResult.historicalLow,
         dealScore: analysis.dealScore,
         isNewLow: lowResult.isNewLow,
-        currency: existing.currency,
       });
-    } catch (err: any) {
-      console.error("[PriceSync EventProducer Error]", err?.message || err);
+
+      // Trigger domain NotificationEvents for wishlist/favorites/deals
+      try {
+        const { producePriceChangeEvents } = await import("../notifications/event-producer");
+        await producePriceChangeEvents({
+          gameId: existing.id,
+          gameTitle: existing.title,
+          gameSlug: existing.slug,
+          currentPrice: product.currentPrice,
+          listPrice: product.listPrice,
+          discountPercent: product.discountPercent,
+          historicalLow: lowResult.historicalLow,
+          dealScore: analysis.dealScore,
+          isNewLow: lowResult.isNewLow,
+          currency: existing.currency,
+        });
+      } catch (err: any) {
+        console.error("[PriceSync EventProducer Error]", err?.message || err);
+      }
     }
 
     return { added: false, priceChanged: true, skipped: false };

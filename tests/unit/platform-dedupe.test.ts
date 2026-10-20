@@ -3,6 +3,7 @@ import {
   cleanPlatformTitle,
   mergePlatformArrays,
   formatPlatformLabel,
+  getProductGroup,
 } from "../../src/lib/xbox/platform-dedupe";
 
 describe("Cross-Platform Title Cleaning & Deduplication", () => {
@@ -28,6 +29,31 @@ describe("Cross-Platform Title Cleaning & Deduplication", () => {
     const res = cleanPlatformTitle("Grand Theft Auto V (Xbox One & Xbox Series X|S)");
     expect(res.baseTitle).toBe("Grand Theft Auto V");
     expect(res.detectedPlatform).toBe("CrossGen");
+  });
+
+  it("should handle (Xbox Series), (Windows PC), and no-space suffixes", () => {
+    const res1 = cleanPlatformTitle("Gas Station Simulator (Xbox Series)");
+    expect(res1.baseTitle).toBe("Gas Station Simulator");
+    expect(res1.detectedPlatform).toBe("XboxSeriesX");
+
+    const res2 = cleanPlatformTitle("Mafia: Definitive Edition (Windows PC)");
+    expect(res2.baseTitle).toBe("Mafia: Definitive Edition");
+    expect(res2.detectedPlatform).toBe("PC");
+
+    const res3 = cleanPlatformTitle("DRAGON BALL FIGHTERZ(Xbox One)");
+    expect(res3.baseTitle).toBe("DRAGON BALL FIGHTERZ");
+    expect(res3.detectedPlatform).toBe("XboxOne");
+
+    const res4 = cleanPlatformTitle("KAWAII PUSH (XBOX SERIES)");
+    expect(res4.baseTitle).toBe("KAWAII PUSH");
+    expect(res4.detectedPlatform).toBe("XboxSeriesX");
+  });
+
+  it("should classify BASE_GAME and BUNDLE into GAME group", () => {
+    expect(getProductGroup("BASE_GAME")).toBe("GAME");
+    expect(getProductGroup("BUNDLE")).toBe("GAME");
+    expect(getProductGroup("ADD_ON")).toBe("DLC");
+    expect(getProductGroup("CONTENT_PACK")).toBe("DLC");
   });
 
   it("should handle for Windows and - PC variations", () => {

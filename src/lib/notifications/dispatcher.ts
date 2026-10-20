@@ -240,18 +240,46 @@ export async function processNotificationDeliveries(
 
     try {
       if (channel === NotificationChannel.IN_APP) {
-        // Render in-app template and create UserNotification record
+        // Render in-app template and upsert/merge UserNotification record to eliminate duplicates
         const rendered = NotificationTemplateService.renderInApp(event.type, payload);
-        await db.userNotification.create({
-          data: {
-            userId: user.id,
-            eventId: event.id,
-            title: rendered.title,
-            message: rendered.body,
-            badges: rendered.badges || [],
-            linkUrl: rendered.linkUrl,
-          },
-        });
+        const existing = rendered.linkUrl
+          ? await db.userNotification.findFirst({
+              where: {
+                userId: user.id,
+                linkUrl: rendered.linkUrl,
+                createdAt: { gte: new Date(Date.now() - 12 * 60 * 60 * 1000) },
+              },
+              orderBy: { createdAt: "desc" },
+            })
+          : null;
+
+        if (existing) {
+          const mergedBadges = Array.from(
+            new Set([...(existing.badges || []), ...(rendered.badges || [])])
+          );
+          const isTarihiDip = rendered.title.toLowerCase().includes("tarihi dip");
+          const isExistingDip = existing.title.toLowerCase().includes("tarihi dip");
+          const title = isTarihiDip || !isExistingDip ? rendered.title : existing.title;
+
+          await db.userNotification.update({
+            where: { id: existing.id },
+            data: {
+              title,
+              badges: mergedBadges,
+            },
+          });
+        } else {
+          await db.userNotification.create({
+            data: {
+              userId: user.id,
+              eventId: event.id,
+              title: rendered.title,
+              message: rendered.body,
+              badges: rendered.badges || [],
+              linkUrl: rendered.linkUrl,
+            },
+          });
+        }
 
         await db.notificationDelivery.update({
           where: { id: delivery.id },
