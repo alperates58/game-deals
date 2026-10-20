@@ -45,7 +45,7 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
   // Authoritative SQL condition: Only games whose current price is at or below historical low
   const lowIdsRaw = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT id FROM "Game"
-    WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
+    WHERE "isActive" = true AND "isPlatformVariant" = false AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
   `;
   const lowIds = lowIdsRaw.map((r) => r.id);
 
@@ -63,14 +63,17 @@ export default async function HistoricalLowsPage({ searchParams }: HistoricalLow
   const whereClause: any = {
     id: { in: lowIds },
     isActive: true,
+    isPlatformVariant: false,
     discountPercent: { gt: 0 },
   };
 
-  // Platform condition (Xbox Series X|S vs Xbox One)
+  // Platform condition (Xbox Series X|S vs Xbox One vs PC)
   if (platform === "series") {
     whereClause.platforms = { has: "XboxSeriesX" };
   } else if (platform === "one") {
     whereClause.platforms = { has: "XboxOne" };
+  } else if (platform === "pc") {
+    whereClause.platforms = { has: "PC" };
   }
 
   // Release year (Yapım Yılı) condition

@@ -26,6 +26,10 @@ export interface SystemSettingsData {
   trackSeasonPasses: boolean;
   trackAddons: boolean;
   trackContentPacks: boolean;
+
+  inAppNotificationsEnabled?: boolean;
+  emailNotificationsEnabled?: boolean;
+  telegramNotificationsEnabled?: boolean;
 }
 
 export interface SchedulerScheduleInfo {
@@ -62,6 +66,10 @@ const DEFAULT_SETTINGS: SystemSettingsData = {
   trackSeasonPasses: true,
   trackAddons: true,
   trackContentPacks: false,
+
+  inAppNotificationsEnabled: true,
+  emailNotificationsEnabled: false,
+  telegramNotificationsEnabled: true,
 };
 
 /**

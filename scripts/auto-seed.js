@@ -15,6 +15,7 @@ async function main() {
     const count = await prisma.game.count();
     if (count > 0) {
       console.log(`[Auto-Seed] Database already contains ${count} games. Skipping initial seed.`);
+      await reconcileCrossPlatformVariants(prisma);
       return;
     }
 
@@ -67,10 +68,103 @@ async function main() {
 
     const newCount = await prisma.game.count();
     console.log(`[Auto-Seed] Initial seed completed! ${newCount} games and relations ready.`);
+    await reconcileCrossPlatformVariants(prisma);
   } catch (err) {
     console.warn("[Auto-Seed] Warning: Auto-seed skipped due to:", err.message);
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function reconcileCrossPlatformVariants(prisma) {
+  try {
+    const dedupeSql = `
+      WITH cleaned AS (
+        SELECT 
+          id,
+          title,
+          "productClass",
+          platforms,
+          "isCore",
+          "popularityScore",
+          regexp_replace(
+            trim(regexp_replace(title, '\\s*[\\(\\[](Windows(?:\\s*10(?:\\/11)?)?|PC|Xbox One\\s*&\\s*Xbox Series X\\|S|Xbox Series X\\|S\\s*&\\s*Xbox One|Xbox One\\/Series X\\|S|Xbox Series X\\|S|Xbox Series X|Xbox One|XBOX One|Windows Edition)[\\)\\]]\\s*$', '', 'i')),
+            '\\s+(Windows|Xbox One|Xbox Series X\\|S)\\s*$', '', 'i'
+          ) AS base_title
+        FROM "Game"
+      ),
+      ranked AS (
+        SELECT 
+          id,
+          title,
+          base_title,
+          platforms,
+          FIRST_VALUE(id) OVER (
+            PARTITION BY LOWER(base_title), "productClass"
+            ORDER BY 
+              CASE WHEN LOWER(title) = LOWER(base_title) THEN 0 ELSE 1 END,
+              CASE WHEN "isCore" THEN 0 ELSE 1 END,
+              "popularityScore" DESC,
+              id ASC
+          ) AS canonical_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY LOWER(base_title), "productClass"
+            ORDER BY 
+              CASE WHEN LOWER(title) = LOWER(base_title) THEN 0 ELSE 1 END,
+              CASE WHEN "isCore" THEN 0 ELSE 1 END,
+              "popularityScore" DESC,
+              id ASC
+          ) AS row_num,
+          COUNT(*) OVER (
+            PARTITION BY LOWER(base_title), "productClass"
+          ) AS group_count
+        FROM cleaned
+      )
+      UPDATE "Game" g
+      SET 
+        "canonicalGameId" = r.canonical_id,
+        "isPlatformVariant" = true
+      FROM ranked r
+      WHERE g.id = r.id 
+        AND r.group_count > 1 
+        AND r.row_num > 1;
+    `;
+    await prisma.$executeRawUnsafe(dedupeSql);
+
+    const mergeSql = `
+      WITH variant_platforms AS (
+        SELECT 
+          "canonicalGameId" AS id,
+          array_agg(DISTINCT p) AS extra_platforms
+        FROM "Game", unnest(platforms) AS p
+        WHERE "isPlatformVariant" = true AND "canonicalGameId" IS NOT NULL
+        GROUP BY "canonicalGameId"
+      )
+      UPDATE "Game" g
+      SET 
+        platforms = (
+          SELECT array_agg(DISTINCT elem)
+          FROM unnest(g.platforms || vp.extra_platforms) AS elem
+        )
+      FROM variant_platforms vp
+      WHERE g.id = vp.id;
+    `;
+    await prisma.$executeRawUnsafe(mergeSql);
+
+    const cleanTitleSql = `
+      UPDATE "Game"
+      SET title = regexp_replace(
+        trim(regexp_replace(title, '\\s*[\\(\\[](Windows(?:\\s*10(?:\\/11)?)?|PC|Xbox One\\s*&\\s*Xbox Series X\\|S|Xbox Series X\\|S\\s*&\\s*Xbox One|Xbox One\\/Series X\\|S|Xbox Series X\\|S|Xbox Series X|Xbox One|XBOX One|Windows Edition)[\\)\\]]\\s*$', '', 'i')),
+        '\\s+(Windows|Xbox One|Xbox Series X\\|S)\\s*$', '', 'i'
+      )
+      WHERE "isPlatformVariant" = false
+        AND title ~* '[\\(\\[](Windows|PC|Xbox One|Xbox Series X\\|S|Windows 10)[\\)\\]]\\s*$';
+    `;
+    await prisma.$executeRawUnsafe(cleanTitleSql);
+
+    console.log("[Auto-Seed] Cross-platform deduplication verified and synchronized.");
+  } catch (err) {
+    console.warn("[Auto-Seed] Deduplication notice:", err.message);
   }
 }
 

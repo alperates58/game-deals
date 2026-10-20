@@ -19,7 +19,24 @@ export interface GamePriceEvaluationContext {
 }
 
 /**
+ * Deterministic priority order for deciding primary event type when multiple triggers match.
+ */
+const EVENT_TYPE_PRIORITY: NotificationEventType[] = [
+  NotificationEventType.FREE_GAME_DEAL,
+  NotificationEventType.WISHLIST_DEAL,
+  NotificationEventType.NEW_OBSERVED_LOW,
+  NotificationEventType.HISTORICAL_LOW_MATCH,
+  NotificationEventType.DEEP_DISCOUNT_DEAL,
+  NotificationEventType.DEAL_SCORE_THRESHOLD,
+  NotificationEventType.OWNED_GAME_DLC_DEAL,
+  NotificationEventType.FAVORITE_PRICE_CHANGE,
+  NotificationEventType.BUNDLE_DEAL,
+  NotificationEventType.PRICE_DROP,
+];
+
+/**
  * Generates deterministic deduplication key for an event to guarantee idempotency.
+ * Ensures a user receives AT MOST ONE notification per game per price drop event per day.
  */
 export function buildEventDedupeKey(
   eventType: NotificationEventType,
@@ -28,57 +45,151 @@ export function buildEventDedupeKey(
   price: number
 ): string {
   const dateStr = new Date().toISOString().split("T")[0]; // Daily deduplication window
-  return `${eventType}:${userId}:${gameId}:${price.toFixed(2)}:${dateStr}`;
+  return `DEAL:${userId}:${gameId}:${price.toFixed(2)}:${dateStr}`;
 }
 
 /**
- * Emits global catalog deal notifications to all active users who have not opted out of this event type.
- * Ensures users who don't explicitly watch or alarm the game still receive discovery alerts according to their notification preferences.
+ * Evaluates and produces domain NotificationEvents for games following price changes.
+ * Consolidates multiple matching categories (e.g. Tarihi Dip + Mega İndirim + Fırsat Skoru + İstek Listesi)
+ * into a single unified notification per game per user, displaying distinctive category badges.
  */
-async function notifyGlobalSubscribers(
-  eventType: NotificationEventType,
+export async function producePriceChangeEvents(
   context: GamePriceEvaluationContext,
-  matchReason: string,
-  extraPayload: Record<string, any> = {},
   db = prisma
 ): Promise<number> {
-  let count = 0;
+  let createdCount = 0;
   const now = new Date();
+  const dateStr = now.toISOString().split("T")[0];
 
-  // Find all active users and their preferences for this specific event type
-  const activeUsers = await db.user.findMany({
-    where: { accountStatus: "ACTIVE" },
-    select: {
-      id: true,
-      notificationPreferences: {
-        where: { eventType },
-        select: { channel: true, enabled: true },
+  // 1. Catalog-level deal evaluation for this game
+  const isFree =
+    context.currentPrice === 0 &&
+    (context.discountPercent === 100 || (context.listPrice && context.listPrice > 0));
+
+  const isHistoricalLow =
+    (context.historicalLow > 0 &&
+      context.currentPrice <= context.historicalLow &&
+      context.discountPercent > 0) ||
+    context.isNewLow;
+
+  const isDeepDiscount = context.discountPercent >= 70;
+  const isHighScore = context.dealScore >= 80 && context.discountPercent > 0;
+  const isBundle = context.productClass === "BUNDLE" && context.discountPercent > 0;
+
+  const catalogBadges: string[] = [];
+  const catalogTypes: NotificationEventType[] = [];
+
+  if (isFree) {
+    catalogTypes.push(NotificationEventType.FREE_GAME_DEAL);
+    catalogBadges.push("🎁 Ücretsiz");
+  }
+  if (isHistoricalLow) {
+    catalogTypes.push(NotificationEventType.HISTORICAL_LOW_MATCH);
+    catalogBadges.push("🎯 Tarihi Dip");
+  }
+  if (isDeepDiscount) {
+    catalogTypes.push(NotificationEventType.DEEP_DISCOUNT_DEAL);
+    catalogBadges.push(`💥 Mega İndirim (%${context.discountPercent})`);
+  }
+  if (isHighScore) {
+    catalogTypes.push(NotificationEventType.DEAL_SCORE_THRESHOLD);
+    catalogBadges.push(`⚡ Fırsat Skoru (${context.dealScore})`);
+  }
+  if (isBundle) {
+    catalogTypes.push(NotificationEventType.BUNDLE_DEAL);
+    catalogBadges.push("📦 Paket İndirimi");
+  }
+
+  // 2. Fetch all active users, their watchlist/favorites for this game, and parent game ownership
+  const [activeUsers, userInteractions, parentOwners] = await Promise.all([
+    db.user.findMany({
+      where: { accountStatus: "ACTIVE" },
+      select: {
+        id: true,
+        notificationPreferences: {
+          select: { eventType: true, channel: true, enabled: true },
+        },
       },
-    },
-  });
+    }),
+    db.userGame.findMany({
+      where: {
+        gameId: context.gameId,
+        OR: [{ wishlist: true }, { favorite: true }],
+      },
+      select: {
+        userId: true,
+        wishlist: true,
+        favorite: true,
+      },
+    }),
+    context.parentGameId && context.discountPercent > 0
+      ? db.userGame.findMany({
+          where: { gameId: context.parentGameId, owned: true },
+          select: { userId: true },
+        })
+      : Promise.resolve([]),
+  ]);
 
+  const interactionMap = new Map(userInteractions.map((i) => [i.userId, i]));
+  const parentOwnerSet = new Set(parentOwners.map((p) => p.userId));
+
+  // 3. For each user, combine personal and catalog deal matches into ONE consolidated notification
   for (const user of activeUsers) {
-    // Check if user explicitly disabled ALL channels for this eventType
-    // If no preference is stored yet, system defaults to enabled.
-    const prefs = user.notificationPreferences;
-    const allDisabled = prefs.length > 0 && prefs.every((p) => !p.enabled);
-    if (allDisabled) {
+    const userBadges = [...catalogBadges];
+    const userTypes = [...catalogTypes];
+
+    const userInt = interactionMap.get(user.id);
+    if (userInt?.wishlist && context.discountPercent > 0) {
+      userTypes.push(NotificationEventType.WISHLIST_DEAL);
+      userBadges.unshift("✨ İstek Listesi");
+    }
+    if (userInt?.favorite) {
+      userTypes.push(NotificationEventType.FAVORITE_PRICE_CHANGE);
+      userBadges.push("❤️ Favori");
+    }
+    if (context.isNewLow && (userInt?.wishlist || userInt?.favorite)) {
+      userTypes.push(NotificationEventType.NEW_OBSERVED_LOW);
+    }
+    if (context.parentGameId && parentOwnerSet.has(user.id) && context.discountPercent > 0) {
+      userTypes.push(NotificationEventType.OWNED_GAME_DLC_DEAL);
+      userBadges.push("📦 Sahip Olduğun Oyuna DLC");
+    }
+
+    // If game did not qualify for any deal category for this user, skip
+    if (userTypes.length === 0) {
       continue;
     }
 
-    const dedupeKey = buildEventDedupeKey(
-      eventType,
-      user.id,
-      context.gameId,
-      context.currentPrice
-    );
+    // Check user preferences: is at least one channel enabled for any matching event type?
+    const prefs = user.notificationPreferences;
+    const hasEnabledChannel = userTypes.some((evtType) => {
+      const typePrefs = prefs.filter((p) => p.eventType === evtType);
+      if (typePrefs.length === 0) return true; // defaults to enabled
+      return typePrefs.some((p) => p.enabled);
+    });
+
+    if (!hasEnabledChannel) {
+      continue;
+    }
+
+    // Determine primary event type based on priority
+    const primaryType =
+      EVENT_TYPE_PRIORITY.find((t) => userTypes.includes(t)) || userTypes[0];
+
+    // Deduplication key guarantees idempotency: maximum 1 notification per game per day
+    const dedupeKey = `DEAL:${user.id}:${context.gameId}:${context.currentPrice.toFixed(2)}:${dateStr}`;
+
+    const uniqueBadges = Array.from(new Set(userBadges));
+    const matchReason = `${context.gameTitle} şu an ${context.currentPrice} ${
+      context.currency || "TL"
+    }.${context.discountPercent > 0 ? ` (%${context.discountPercent} indirim)` : ""}`;
 
     try {
       const event = await db.notificationEvent.create({
         data: {
           userId: user.id,
           gameId: context.gameId,
-          type: eventType,
+          type: primaryType,
           status: NotificationStatus.PENDING,
           dedupeKey,
           payload: {
@@ -89,282 +200,19 @@ async function notifyGlobalSubscribers(
             discountPercent: context.discountPercent,
             dealScore: context.dealScore,
             currency: context.currency || "TL",
+            badges: uniqueBadges,
             matchReason,
             triggeredAt: now.toISOString(),
-            ...extraPayload,
+            parentGameTitle: context.parentGameTitle,
           },
         },
       });
 
       await enqueueEventDeliveries(event.id, db);
-      count++;
+      createdCount++;
     } catch {
-      // Duplicate event (already notified today for this price) -> safe ignore
+      // Unique constraint violation (dedupeKey) -> Already created, safe ignore
     }
-  }
-
-  return count;
-}
-
-/**
- * Evaluates and produces domain NotificationEvents for games following price changes:
- * - PRICE_DROP (for wishlist/favorite watchers)
- * - NEW_OBSERVED_LOW (for wishlist/favorite watchers)
- * - WISHLIST_DEAL
- * - FAVORITE_PRICE_CHANGE
- * - OWNED_GAME_DLC_DEAL (for users who own the parent base game)
- * - HISTORICAL_LOW_MATCH (Global Catalog Deal — no watch needed)
- * - FREE_GAME_DEAL (Global Catalog Deal — no watch needed)
- * - DEEP_DISCOUNT_DEAL (Global Catalog Deal — no watch needed)
- * - BUNDLE_DEAL (Global Catalog Deal — no watch needed)
- * - DEAL_SCORE_THRESHOLD (Global Catalog Deal — no watch needed)
- */
-export async function producePriceChangeEvents(
-  context: GamePriceEvaluationContext,
-  db = prisma
-): Promise<number> {
-  let createdCount = 0;
-  const now = new Date();
-
-  // 1. Wishlist and Favorites Watchers (Personal Watch Lists)
-  const userInteractions = await db.userGame.findMany({
-    where: {
-      gameId: context.gameId,
-      OR: [{ wishlist: true }, { favorite: true }],
-    },
-    include: {
-      user: {
-        select: { id: true, email: true },
-      },
-    },
-  });
-
-  for (const interaction of userInteractions) {
-    const userId = interaction.userId;
-
-    // Wishlist deal event
-    if (interaction.wishlist && context.discountPercent > 0) {
-      const dedupeKey = buildEventDedupeKey(
-        NotificationEventType.WISHLIST_DEAL,
-        userId,
-        context.gameId,
-        context.currentPrice
-      );
-
-      try {
-        const event = await db.notificationEvent.create({
-          data: {
-            userId,
-            gameId: context.gameId,
-            type: NotificationEventType.WISHLIST_DEAL,
-            status: NotificationStatus.PENDING,
-            dedupeKey,
-            payload: {
-              gameTitle: context.gameTitle,
-              gameSlug: context.gameSlug,
-              currentPrice: context.currentPrice,
-              listPrice: context.listPrice,
-              discountPercent: context.discountPercent,
-              dealScore: context.dealScore,
-              currency: context.currency || "TL",
-              matchReason: `İstek listenizdeki ${context.gameTitle} %${context.discountPercent} indirime girdi!`,
-              triggeredAt: now.toISOString(),
-            },
-          },
-        });
-        await enqueueEventDeliveries(event.id, db);
-        createdCount++;
-      } catch {
-        // Unique constraint violation (dedupeKey) -> Already created, safe ignore
-      }
-    }
-
-    // Favorite price change event
-    if (interaction.favorite) {
-      const dedupeKey = buildEventDedupeKey(
-        NotificationEventType.FAVORITE_PRICE_CHANGE,
-        userId,
-        context.gameId,
-        context.currentPrice
-      );
-
-      try {
-        const event = await db.notificationEvent.create({
-          data: {
-            userId,
-            gameId: context.gameId,
-            type: NotificationEventType.FAVORITE_PRICE_CHANGE,
-            status: NotificationStatus.PENDING,
-            dedupeKey,
-            payload: {
-              gameTitle: context.gameTitle,
-              gameSlug: context.gameSlug,
-              currentPrice: context.currentPrice,
-              listPrice: context.listPrice,
-              discountPercent: context.discountPercent,
-              dealScore: context.dealScore,
-              currency: context.currency || "TL",
-              matchReason: `Favori oyununuz ${context.gameTitle} için güncel fiyat: ${context.currentPrice} TL`,
-              triggeredAt: now.toISOString(),
-            },
-          },
-        });
-        await enqueueEventDeliveries(event.id, db);
-        createdCount++;
-      } catch {
-        // Safe ignore duplicate
-      }
-    }
-
-    // New observed low event for explicitly watched game
-    if (context.isNewLow && context.discountPercent > 0) {
-      const dedupeKey = buildEventDedupeKey(
-        NotificationEventType.NEW_OBSERVED_LOW,
-        userId,
-        context.gameId,
-        context.currentPrice
-      );
-
-      try {
-        const event = await db.notificationEvent.create({
-          data: {
-            userId,
-            gameId: context.gameId,
-            type: NotificationEventType.NEW_OBSERVED_LOW,
-            status: NotificationStatus.PENDING,
-            dedupeKey,
-            payload: {
-              gameTitle: context.gameTitle,
-              gameSlug: context.gameSlug,
-              currentPrice: context.currentPrice,
-              listPrice: context.listPrice,
-              discountPercent: context.discountPercent,
-              dealScore: context.dealScore,
-              currency: context.currency || "TL",
-              matchReason: `Tarihi dip fiyat rekoru! Takip ettiğiniz ${context.gameTitle} şimdiye kadarki en düşük fiyata ulaştı: ${context.currentPrice} TL`,
-              triggeredAt: now.toISOString(),
-            },
-          },
-        });
-        await enqueueEventDeliveries(event.id, db);
-        createdCount++;
-      } catch {
-        // Safe ignore duplicate
-      }
-    }
-  }
-
-  // 2. Owned Game DLC Deal: If this product is a DLC/Addon with a parent game, notify owners of the base game!
-  if (context.parentGameId && context.discountPercent > 0) {
-    const parentOwners = await db.userGame.findMany({
-      where: {
-        gameId: context.parentGameId,
-        owned: true,
-      },
-      select: { userId: true },
-    });
-
-    for (const owner of parentOwners) {
-      const dedupeKey = buildEventDedupeKey(
-        NotificationEventType.OWNED_GAME_DLC_DEAL,
-        owner.userId,
-        context.gameId,
-        context.currentPrice
-      );
-
-      try {
-        const event = await db.notificationEvent.create({
-          data: {
-            userId: owner.userId,
-            gameId: context.gameId,
-            type: NotificationEventType.OWNED_GAME_DLC_DEAL,
-            status: NotificationStatus.PENDING,
-            dedupeKey,
-            payload: {
-              gameTitle: context.gameTitle,
-              gameSlug: context.gameSlug,
-              parentGameTitle: context.parentGameTitle || "Ana Oyun",
-              currentPrice: context.currentPrice,
-              listPrice: context.listPrice,
-              discountPercent: context.discountPercent,
-              dealScore: context.dealScore,
-              currency: context.currency || "TL",
-              matchReason: `Kütüphanenizde bulunan ${context.parentGameTitle || "oyununuz"} için ${context.gameTitle} eklentisi %${context.discountPercent} indirime girdi!`,
-              triggeredAt: now.toISOString(),
-            },
-          },
-        });
-        await enqueueEventDeliveries(event.id, db);
-        createdCount++;
-      } catch {
-        // Safe ignore duplicate
-      }
-    }
-  }
-
-  // 3. Broad / Global Catalog Deals (NO WATCH / FOLLOW NEEDED):
-  // Users who have enabled these preference categories receive notifications for any game across the catalog.
-
-  // 3a. Free game (0 TL claimable) deal
-  if (
-    context.currentPrice === 0 &&
-    (context.discountPercent === 100 || (context.listPrice && context.listPrice > 0))
-  ) {
-    createdCount += await notifyGlobalSubscribers(
-      NotificationEventType.FREE_GAME_DEAL,
-      context,
-      `Tamamen ücretsiz! ${context.gameTitle} şu an 0 TL bedava olarak sunuluyor.`,
-      { currentPrice: 0, discountPercent: 100 },
-      db
-    );
-  }
-
-  // 3b. Historical low match (Game price reached or matched historical low record)
-  if (
-    context.historicalLow > 0 &&
-    context.currentPrice <= context.historicalLow &&
-    context.discountPercent > 0
-  ) {
-    createdCount += await notifyGlobalSubscribers(
-      NotificationEventType.HISTORICAL_LOW_MATCH,
-      context,
-      `Tarihi dip fiyata indi! ${context.gameTitle} en ucuz fiyatı olan ${context.currentPrice} TL seviyesine ulaştı.`,
-      {},
-      db
-    );
-  }
-
-  // 3c. Deep discount (70% and above mega discounts)
-  if (context.discountPercent >= 70) {
-    createdCount += await notifyGlobalSubscribers(
-      NotificationEventType.DEEP_DISCOUNT_DEAL,
-      context,
-      `Mega indirim fırsatı! ${context.gameTitle} %${context.discountPercent} indirimle ${context.currentPrice} TL oldu.`,
-      {},
-      db
-    );
-  }
-
-  // 3d. Bundle / Collection deals
-  if (context.productClass === "BUNDLE" && context.discountPercent > 0) {
-    createdCount += await notifyGlobalSubscribers(
-      NotificationEventType.BUNDLE_DEAL,
-      context,
-      `Koleksiyon paketi indirimi! ${context.gameTitle} paketi %${context.discountPercent} indirimde.`,
-      {},
-      db
-    );
-  }
-
-  // 3e. Deal score threshold (>= 80 excellent deals)
-  if (context.dealScore >= 80 && context.discountPercent > 0) {
-    createdCount += await notifyGlobalSubscribers(
-      NotificationEventType.DEAL_SCORE_THRESHOLD,
-      context,
-      `Kaçırılmayacak fırsat! ${context.gameTitle} yüksek fırsat skoru (${context.dealScore}/100) ile %${context.discountPercent} indirimde.`,
-      {},
-      db
-    );
   }
 
   return createdCount;

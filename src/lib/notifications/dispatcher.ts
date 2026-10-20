@@ -130,8 +130,9 @@ export async function enqueueEventDeliveries(
   // Requires: global switch ON + bot configured + user active telegram connection + user preference enabled
   const telegramConfigured = isTelegramConfigured();
   const telegramConnected = Boolean(user.telegramConnection && user.telegramConnection.isActive);
+  const telegramGlobalEnabled = settings.telegramNotificationsEnabled !== false;
   if (
-    settings.telegramNotificationsEnabled &&
+    telegramGlobalEnabled &&
     telegramConfigured &&
     telegramConnected &&
     isUserPrefEnabled(NotificationChannel.TELEGRAM)
@@ -247,6 +248,7 @@ export async function processNotificationDeliveries(
             eventId: event.id,
             title: rendered.title,
             message: rendered.body,
+            badges: rendered.badges || [],
             linkUrl: rendered.linkUrl,
           },
         });

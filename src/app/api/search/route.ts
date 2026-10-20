@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const results = await prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         // Exclude currency and consumable from live search results
         productClass: {
           notIn: ["CURRENCY", "CONSUMABLE"],

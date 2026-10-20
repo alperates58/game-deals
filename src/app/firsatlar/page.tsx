@@ -65,14 +65,17 @@ export default async function DealsPage({ searchParams }: DealsPageProps) {
 
   const whereClause: any = {
     isActive: true,
+    isPlatformVariant: false,
     productClass: productClassCondition,
   };
 
-  // Platform condition (Xbox Series X|S vs Xbox One)
+  // Platform condition (Xbox Series X|S vs Xbox One vs PC)
   if (platform === "series") {
     whereClause.platforms = { has: "XboxSeriesX" };
   } else if (platform === "one") {
     whereClause.platforms = { has: "XboxOne" };
+  } else if (platform === "pc") {
+    whereClause.platforms = { has: "PC" };
   }
 
   // Release year (Yapım Yılı) condition

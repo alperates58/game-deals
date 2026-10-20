@@ -25,9 +25,9 @@ export interface TelegramConfigStatus {
 export function getTelegramConfigStatus(): TelegramConfigStatus {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || null;
   const username = process.env.TELEGRAM_BOT_USERNAME?.trim() || null;
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || null;
 
-  const configured = Boolean(token && username && secret);
+  // Sending telegram messages only requires the bot token
+  const configured = Boolean(token);
 
   return {
     configured,
@@ -36,7 +36,7 @@ export function getTelegramConfigStatus(): TelegramConfigStatus {
 }
 
 export function isTelegramConfigured(): boolean {
-  return getTelegramConfigStatus().configured;
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim());
 }
 
 /**

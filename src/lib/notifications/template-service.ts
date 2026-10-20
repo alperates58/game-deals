@@ -11,6 +11,7 @@ export interface NotificationPayload {
   currency?: string;
   triggeredAt?: string;
   parentGameTitle?: string;
+  badges?: string[];
 }
 
 export interface RenderedTelegramNotification {
@@ -28,6 +29,7 @@ export interface RenderedInAppNotification {
   title: string;
   body: string;
   linkUrl: string;
+  badges?: string[];
 }
 
 export interface TelegramMessageWithMarkup {
@@ -292,6 +294,10 @@ export class NotificationTemplateService {
       `🎮 <b>${escapeTelegramHtml(payload.gameTitle)}</b>`,
     ];
 
+    if (payload.badges && payload.badges.length > 0) {
+      lines.push(`🏷️ <b>Etiketler:</b> ${payload.badges.map((b) => escapeTelegramHtml(b)).join(" • ")}`);
+    }
+
     if (payload.parentGameTitle) {
       lines.push(`📦 Ana Oyun: ${escapeTelegramHtml(payload.parentGameTitle)}`);
     }
@@ -531,7 +537,7 @@ Bildirim tercihlerinizi yönetmek için: ${settingsUrl}
 
     const linkUrl = payload.gameSlug ? `/oyun/${payload.gameSlug}` : "/";
 
-    return { title, body, linkUrl };
+    return { title, body, linkUrl, badges: payload.badges || [] };
   }
 }
 

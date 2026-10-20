@@ -5,6 +5,7 @@ import { TrendingDown, Award } from "lucide-react";
 import { Prisma } from "@prisma/client";
 import { getOptimizedImageUrl } from "@/lib/xbox/image-utils";
 import { formatPrice } from "@/lib/formatters";
+import { cleanPlatformTitle } from "@/lib/xbox/platform-dedupe";
 
 export interface GameCardProps {
   id: string;
@@ -46,6 +47,7 @@ export function GameCard({
   const lowNum = typeof historicalLow === "number" ? historicalLow : historicalLow.toNumber();
 
   const isAtHistoricalLow = currentNum <= lowNum && discountPercent > 0;
+  const cleanTitle = cleanPlatformTitle(title).baseTitle;
 
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const validYear =
@@ -91,15 +93,21 @@ export function GameCard({
                 Standart
               </span>
             )}
-            {platforms?.includes("XboxSeriesX") ? (
+            {platforms?.includes("PC") && (
+              <span className="rounded-md bg-zinc-950/90 border border-sky-500/40 px-1.5 py-0.5 text-[10px] font-bold text-sky-400 backdrop-blur-sm shadow-sm" title="Windows 10/11 PC">
+                PC
+              </span>
+            )}
+            {platforms?.includes("XboxSeriesX") && (
               <span className="rounded-md bg-zinc-950/90 border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 backdrop-blur-sm shadow-sm" title="Xbox Series X|S">
                 X|S
               </span>
-            ) : platforms?.includes("XboxOne") ? (
-              <span className="rounded-md bg-zinc-950/90 border border-zinc-700/60 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 backdrop-blur-sm shadow-sm" title="Xbox One">
+            )}
+            {platforms?.includes("XboxOne") && (
+              <span className="rounded-md bg-zinc-950/90 border border-zinc-700/60 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300 backdrop-blur-sm shadow-sm" title="Xbox One">
                 One
               </span>
-            ) : null}
+            )}
           </div>
 
           {isAtHistoricalLow && (
@@ -136,7 +144,7 @@ export function GameCard({
             </div>
           )}
           <h3 className="text-sm font-semibold text-zinc-100 line-clamp-1 group-hover:text-emerald-400 transition-colors">
-            {title}
+            {cleanTitle}
           </h3>
         </div>
 

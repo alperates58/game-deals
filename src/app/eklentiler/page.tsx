@@ -49,6 +49,7 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
 
   const whereClause: any = {
     isActive: true,
+    isPlatformVariant: false,
     currentPrice: { gt: 0 },
     productClass: classFilter && allowedAddonClasses.includes(classFilter as any)
       ? (classFilter as ProductClass)
@@ -56,11 +57,13 @@ export default async function AddonsPage({ searchParams }: AddonsPageProps) {
     discountPercent: { gte: minDiscNum },
   };
 
-  // Platform condition (Xbox Series X|S vs Xbox One)
+  // Platform condition (Xbox Series X|S vs Xbox One vs PC)
   if (platform === "series") {
     whereClause.platforms = { has: "XboxSeriesX" };
   } else if (platform === "one") {
     whereClause.platforms = { has: "XboxOne" };
+  } else if (platform === "pc") {
+    whereClause.platforms = { has: "PC" };
   }
 
   // Release year (Yapım Yılı) condition

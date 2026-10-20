@@ -232,6 +232,12 @@ export async function runScheduledJob(
               itemsAdded = res.stats.productsAdded;
               itemsChanged = res.stats.productsUpdated;
             }
+            if (res.success) {
+              const { deduplicateCrossPlatformGames } = await import("../xbox/platform-dedupe");
+              await deduplicateCrossPlatformGames().catch((err) =>
+                console.error("[JobRunner] Error deduplicating cross-platform games:", err)
+              );
+            }
             if (!jobSuccess && res.locked) {
               jobStatus = ScheduledJobStatus.CANCELLED;
             } else if (!jobSuccess) {

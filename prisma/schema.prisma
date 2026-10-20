@@ -129,7 +129,14 @@ model Game {
   languageSupports   GameLanguageSupport[]
   mediaItems         GameMedia[]
 
+  // Cross-Platform Deduplication (Windows PC, Xbox One, Xbox Series X|S variants)
+  canonicalGameId    String?
+  canonicalGame      Game?           @relation("PlatformVariants", fields: [canonicalGameId], references: [id], onDelete: SetNull)
+  platformVariants   Game[]          @relation("PlatformVariants")
+  isPlatformVariant  Boolean         @default(false)
+
   @@index([isCore, isActive])
+  @@index([isPlatformVariant, isActive])
   @@index([productClass, isActive])
   @@index([isSeriesXCompatible, isActive])
   @@index([discoverySource])
@@ -439,6 +446,7 @@ model UserNotification {
   eventId   String?
   title     String
   message   String
+  badges    String[]  @default([])
   linkUrl   String?
   readAt    DateTime?
   createdAt DateTime  @default(now())

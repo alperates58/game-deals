@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import Link from "next/link";
-import { Bell, CheckCheck, ExternalLink, Inbox } from "lucide-react";
+import { Bell } from "lucide-react";
 import { NotificationInboxClient } from "@/components/notifications/notification-inbox-client";
 
 export const metadata: Metadata = {
@@ -11,18 +11,39 @@ export const metadata: Metadata = {
   description: "Fiyat düşüşleri, dip fiyatlar ve kişisel fırsat bildirimleriniz.",
 };
 
-export default async function NotificationsPage() {
+interface NotificationsPageProps {
+  searchParams: Promise<{
+    page?: string;
+    filter?: string;
+  }>;
+}
+
+export default async function NotificationsPage(props: NotificationsPageProps) {
   const user = await getCurrentUser();
 
   if (!user) {
     redirect("/login?redirect=/bildirimler");
   }
 
-  const [notifications, total, unreadCount] = await Promise.all([
+  const searchParams = await props.searchParams;
+  const page = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
+  const filter = searchParams.filter === "unread" ? "unread" : "all";
+  const pageSize = 20;
+
+  const whereCondition: any = { userId: user.userId };
+  if (filter === "unread") {
+    whereCondition.readAt = null;
+  }
+
+  const [notifications, totalFiltered, totalAll, unreadCount] = await Promise.all([
     prisma.userNotification.findMany({
-      where: { userId: user.userId },
+      where: whereCondition,
       orderBy: { createdAt: "desc" },
-      take: 50,
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.userNotification.count({
+      where: whereCondition,
     }),
     prisma.userNotification.count({
       where: { userId: user.userId },
@@ -31,6 +52,8 @@ export default async function NotificationsPage() {
       where: { userId: user.userId, readAt: null },
     }),
   ]);
+
+  const totalPages = Math.ceil(totalFiltered / pageSize);
 
   return (
     <div className="mx-auto max-w-4xl w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -48,7 +71,7 @@ export default async function NotificationsPage() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/ayarlar"
+            href="/ayarlar?tab=channels"
             className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
           >
             Bildirim Tercihleri
@@ -61,11 +84,18 @@ export default async function NotificationsPage() {
           id: n.id,
           title: n.title,
           message: n.message,
+          badges: n.badges || [],
           linkUrl: n.linkUrl,
           readAt: n.readAt ? n.readAt.toISOString() : null,
           createdAt: n.createdAt.toISOString(),
         }))}
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalFiltered}
+        totalAll={totalAll}
         initialUnreadCount={unreadCount}
+        currentFilter={filter}
+        pageSize={pageSize}
       />
     </div>
   );

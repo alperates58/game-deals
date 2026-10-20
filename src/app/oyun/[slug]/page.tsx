@@ -31,6 +31,10 @@ import {
   Sparkles,
   CheckCircle2,
   AlertTriangle,
+  Monitor,
+  Laptop,
+  Cloud,
+  Smartphone,
 } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -79,6 +83,11 @@ export default async function GameDetailPage({ params }: GamePageProps) {
   const game = await prisma.game.findUnique({
     where: { slug },
     include: {
+      canonicalGame: true,
+      platformVariants: {
+        where: { isActive: true },
+        orderBy: { currentPrice: "asc" },
+      },
       dealAnalysis: true,
       priceHistories: {
         orderBy: { observedAt: "desc" },
@@ -233,8 +242,39 @@ export default async function GameDetailPage({ params }: GamePageProps) {
 
   const classBadge = CLASS_LABELS[game.productClass] || CLASS_LABELS.UNKNOWN;
 
+  // Cross-Platform compatibility calculation
+  const variantPlatforms = (game.platformVariants || []).flatMap((v: any) => v.platforms || []);
+  const effectivePlatforms = Array.from(new Set([...game.platforms, ...variantPlatforms]));
+
+  const isPcSupported = effectivePlatforms.includes("PC") || effectivePlatforms.some((p: string) => p.toLowerCase().includes("pc") || p.toLowerCase().includes("windows"));
+  const isSeriesXSupported = effectivePlatforms.includes("XboxSeriesX") || game.isSeriesXCompatible;
+  const isOneSupported = effectivePlatforms.includes("XboxOne") || effectivePlatforms.includes("Xbox");
+  const isCloudSupported = capabilities.some((c: string) =>
+    /cloud|xpa|play anywhere/i.test(c)
+  );
+  const platformVariants = game.platformVariants || [];
+
   return (
     <div className="mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-x-hidden">
+      {/* Platform Variant Notice Banner */}
+      {game.isPlatformVariant && game.canonicalGame && (
+        <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-sky-200">
+            <Info className="h-4 w-4 shrink-0 text-sky-400" />
+            <span>
+              Bu sayfa oyunun platforma özel sürümüdür (<strong>{game.title}</strong>). Tüm uyumlu cihazları ve birleşik mağaza seçeneklerini görmek için ana oyun sayfasına geçebilirsiniz.
+            </span>
+          </div>
+          <Link
+            href={`/oyun/${game.canonicalGame.slug}`}
+            className="shrink-0 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-bold text-black hover:bg-sky-400 transition-colors inline-flex items-center gap-1"
+          >
+            <span>Ana Oyunu Aç</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-zinc-400">
         <Link href="/" className="hover:text-emerald-400">Ana Sayfa</Link>
@@ -462,6 +502,206 @@ export default async function GameDetailPage({ params }: GamePageProps) {
                 </p>
               </div>
             )}
+
+            {/* Compatible Devices & Platforms Section */}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-emerald-500/10 p-1.5 text-emerald-400 border border-emerald-500/20">
+                    <Gamepad2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Uyumlu Cihazlar ve Platformlar</h3>
+                    <p className="text-[11px] text-zinc-400">Bu oyunun resmi olarak desteklendiği cihaz ve ekosistemler</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-0.5 rounded-full">
+                  {effectivePlatforms.length > 0 ? `${effectivePlatforms.length} Platform Destekli` : "Konsol"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* PC */}
+                <div
+                  className={`rounded-lg border p-3 flex items-start gap-3 transition-colors ${
+                    isPcSupported
+                      ? "border-emerald-500/30 bg-emerald-950/10"
+                      : "border-zinc-800/60 bg-zinc-900/20 opacity-40"
+                  }`}
+                >
+                  <div
+                    className={`p-2 rounded-lg shrink-0 ${
+                      isPcSupported
+                        ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
+                        : "bg-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    <Monitor className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">Windows 10/11 PC</span>
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isPcSupported ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        {isPcSupported ? "Uyumlu" : "Destek Yok"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {isPcSupported
+                        ? "Bilgisayar üzerinden klavye/fare veya oyun koluyla oynanabilir."
+                        : "Bu ürün PC mağazasında yer almamaktadır."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Xbox Series X|S */}
+                <div
+                  className={`rounded-lg border p-3 flex items-start gap-3 transition-colors ${
+                    isSeriesXSupported
+                      ? "border-emerald-500/30 bg-emerald-950/10"
+                      : "border-zinc-800/60 bg-zinc-900/20 opacity-40"
+                  }`}
+                >
+                  <div
+                    className={`p-2 rounded-lg shrink-0 ${
+                      isSeriesXSupported
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">Xbox Series X | S</span>
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isSeriesXSupported ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        {isSeriesXSupported ? "Uyumlu" : "Destek Yok"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {isSeriesXSupported
+                        ? "Yeni nesil Series X|S konsollarında yüksek performans ve hızlı yükleme."
+                        : "Series X|S optimizasyonu bulunmuyor."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Xbox One */}
+                <div
+                  className={`rounded-lg border p-3 flex items-start gap-3 transition-colors ${
+                    isOneSupported
+                      ? "border-emerald-500/30 bg-emerald-950/10"
+                      : "border-zinc-800/60 bg-zinc-900/20 opacity-40"
+                  }`}
+                >
+                  <div
+                    className={`p-2 rounded-lg shrink-0 ${
+                      isOneSupported
+                        ? "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                        : "bg-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    <Gamepad2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">Xbox One Ailesi</span>
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isOneSupported ? "bg-emerald-500/20 text-emerald-300" : "bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        {isOneSupported ? "Uyumlu" : "Destek Yok"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {isOneSupported
+                        ? "Xbox One, One S ve One X konsolları ile geriye dönük uyumlu."
+                        : "Xbox One konsollarında çalışmamaktadır."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cloud Gaming */}
+                <div
+                  className={`rounded-lg border p-3 flex items-start gap-3 transition-colors ${
+                    isCloudSupported
+                      ? "border-emerald-500/30 bg-emerald-950/10"
+                      : "border-zinc-800/60 bg-zinc-900/20 opacity-40"
+                  }`}
+                >
+                  <div
+                    className={`p-2 rounded-lg shrink-0 ${
+                      isCloudSupported
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        : "bg-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    <Cloud className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">Xbox Cloud Gaming</span>
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isCloudSupported ? "bg-purple-500/20 text-purple-300" : "bg-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        {isCloudSupported ? "Bulut Destekli" : "Bulut Yok"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                      {isCloudSupported
+                        ? "Telefon, tablet ve tarayıcıdan indirmeden oynama imkanı."
+                        : "Bu oyun bulut üzerinden yayınlanmamaktadır."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Platform Editions / Variants */}
+              {platformVariants.length > 0 && (
+                <div className="pt-3 border-t border-zinc-800/80">
+                  <span className="text-xs font-semibold text-zinc-300 block mb-2">
+                    Mevcut Diğer Platform Sürümleri & Mağaza Fiyatları:
+                  </span>
+                  <div className="space-y-2">
+                    {platformVariants.map((pv: any) => (
+                      <div
+                        key={pv.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-white">{pv.title}</span>
+                          <span className="text-[10px] text-zinc-500">({pv.platforms.join(", ")})</span>
+                        </div>
+                        <div className="flex items-center gap-3 self-end sm:self-center">
+                          <span className="text-xs font-bold text-emerald-400">
+                            {formatPrice(pv.currentPrice.toNumber())} {pv.currency}
+                          </span>
+                          <a
+                            href={pv.storeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded bg-zinc-800 hover:bg-zinc-700 px-2 py-1 text-[11px] font-medium text-zinc-200 transition-colors"
+                          >
+                            <span>Mağazada Aç</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

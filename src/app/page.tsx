@@ -46,6 +46,7 @@ async function getHomePageData() {
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         discountPercent: { gt: 0 },
       },
       include: {
@@ -61,6 +62,7 @@ async function getHomePageData() {
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         discountPercent: { gt: 0 },
       },
       include: {
@@ -76,6 +78,7 @@ async function getHomePageData() {
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         isCore: true,
       },
       include: {
@@ -88,6 +91,7 @@ async function getHomePageData() {
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         discountPercent: { gte: 25 },
         currentPrice: { lte: 150, gt: 0 },
       },
@@ -104,6 +108,7 @@ async function getHomePageData() {
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         discountPercent: { gte: 70 },
       },
       include: {
@@ -145,12 +150,13 @@ async function getHomePageData() {
     // True dynamic count of all games currently at historical low
     prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int as count FROM "Game"
-      WHERE "isActive" = true AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
+      WHERE "isActive" = true AND "isPlatformVariant" = false AND "discountPercent" > 0 AND "currentPrice" <= "historicalLow"
     `.catch(() => [{ count: 0 }]),
     // Discounted Bundles & Collections (Paketler)
     prisma.game.findMany({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         productClass: "BUNDLE",
         discountPercent: { gt: 0 },
       },
@@ -167,6 +173,7 @@ async function getHomePageData() {
     prisma.game.count({
       where: {
         isActive: true,
+        isPlatformVariant: false,
         productClass: "BUNDLE",
         discountPercent: { gt: 0 },
       },
@@ -178,7 +185,7 @@ async function getHomePageData() {
   const recentPriceChanges =
     changedIds.length > 0
       ? await prisma.game.findMany({
-          where: { id: { in: changedIds }, isActive: true, discountPercent: { gt: 0 } },
+          where: { id: { in: changedIds }, isActive: true, isPlatformVariant: false, discountPercent: { gt: 0 } },
           include: { dealAnalysis: true },
         })
       : [];
