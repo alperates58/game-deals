@@ -515,6 +515,9 @@ model SystemSetting {
   emailNotificationsEnabled        Boolean   @default(false)
   telegramNotificationsEnabled     Boolean   @default(false)
 
+  // Dynamic Homepage Vitrin CMS Configuration
+  homepageConfig                   Json?
+
   // SEO Defaults
   defaultTitle                     String    @default("Game Deals | Türkiye Xbox Oyun İndirimleri ve Fırsat Takibi")
   defaultDescription               String    @default("Xbox Series X|S oyun indirimleri, tarihi dip fiyatlar, DLC fırsatları ve yapay zeka destekli fiyat analizi.")

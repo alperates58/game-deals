@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  LayoutGrid,
   Users,
   CreditCard,
   Key,
@@ -102,6 +103,7 @@ const ADMIN_NAVIGATION: NavSection[] = [
   {
     title: "SİTE",
     items: [
+      { href: "/admin/homepage", label: "Anasayfa & Vitrin", icon: LayoutGrid },
       { href: "/admin/site", label: "Genel Ayarlar & Flags", icon: Sliders },
       { href: "/admin/seo", label: "SEO Yönetimi", icon: Search },
     ],
