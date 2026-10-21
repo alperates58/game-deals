@@ -190,7 +190,7 @@ describe("FAZ 1.5 — Admin Control Center, Security & Notifications", () => {
       expect(telegram.text).toContain("Forza Horizon 5");
       expect(telegram.text).toContain("350");
       expect(telegram.text).toContain("50");
-      expect(telegram.text).toContain("forza");
+      expect(telegram.replyMarkup.inline_keyboard[0][0].url).toContain("forza");
     });
 
     it("should format concise title and message for in-app inbox", () => {

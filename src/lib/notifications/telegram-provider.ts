@@ -8,6 +8,7 @@ export interface SendTelegramResult {
 }
 
 export interface SendTelegramOptions {
+  photoUrl?: string;
   parseMode?: "HTML" | "MarkdownV2" | null;
   disableWebPagePreview?: boolean;
   replyMarkup?: any;
@@ -68,15 +69,17 @@ export async function sendTelegramMessage(
     };
   }
 
-  const endpoint = `https://api.telegram.org/bot${token}/sendMessage`;
+  const photoUrl = options.photoUrl?.trim();
+  const usePhoto = Boolean(photoUrl && /^https?:\/\//i.test(photoUrl));
+  const endpoint = `https://api.telegram.org/bot${token}/${usePhoto ? "sendPhoto" : "sendMessage"}`;
 
   const payload: Record<string, any> = {
     chat_id: chatId,
-    text,
-    disable_web_page_preview: options.disableWebPagePreview ?? false,
-    link_preview_options: {
-      is_disabled: Boolean(options.disableWebPagePreview),
-    },
+    ...(usePhoto ? { photo: photoUrl, caption: text } : {
+      text,
+      disable_web_page_preview: options.disableWebPagePreview ?? false,
+      link_preview_options: { is_disabled: Boolean(options.disableWebPagePreview) },
+    }),
   };
 
   // Default to HTML unless explicitly set to null
@@ -114,28 +117,17 @@ export async function sendTelegramMessage(
       description.toLowerCase().includes("can't parse entities") &&
       payload.parse_mode
     ) {
-      try {
-        const plainText = text.replace(/<[^>]*>/g, "");
-        const fallbackResponse = await fetchFn(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...payload,
-            text: plainText,
-            parse_mode: undefined,
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
-        const fallbackData = await fallbackResponse.json().catch(() => null);
-        if (fallbackResponse.ok && fallbackData?.ok) {
-          return {
-            success: true,
-            messageId: String(fallbackData.result?.message_id || Date.now()),
-          };
-        }
-      } catch {
-        // Fall through
-      }
+      const plainText = text.replace(/<[^>]*>/g, "")
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+      return sendTelegramMessage(chatId, plainText, { ...options, parseMode: null }, fetchFn);
+    }
+
+    // Fall back only on a definite media rejection. Ambiguous network failures
+    // and rate limits retain the normal retry policy to avoid duplicate sends.
+    if (usePhoto && statusCode === 400 &&
+      /failed to get http url content|wrong (?:type of the web page content|file identifier|http url)|photo_invalid|photo_content|image_process_failed|file is too big|media_empty/i.test(description)) {
+      return sendTelegramMessage(chatId, text, { ...options, photoUrl: undefined }, fetchFn);
     }
 
     // Rate Limiting (HTTP 429)

@@ -188,7 +188,7 @@ export async function processNotificationDeliveries(
     },
     take: batchSize,
     include: {
-      event: true,
+      event: { include: { game: { select: { imageUrl: true } } } },
       user: {
         include: {
           notificationSettings: true,
@@ -361,7 +361,12 @@ export async function processNotificationDeliveries(
         const rendered = NotificationTemplateService.renderTelegram(event.type, payload);
         const result = await sendTelegramMessage(
           user.telegramConnection.telegramChatId,
-          rendered.text
+          rendered.text,
+          {
+            photoUrl: event.game?.imageUrl || undefined,
+            replyMarkup: rendered.replyMarkup,
+            disableWebPagePreview: true,
+          }
         );
 
         if (result.success) {

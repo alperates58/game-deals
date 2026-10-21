@@ -65,11 +65,11 @@ export function escapeTelegramHtmlAttr(text: string | null | undefined): string 
  */
 export function formatTelegramPrice(price: number | string | any, currency: string = "TL"): string {
   const num = typeof price === "number" ? price : parseFloat(String(price));
-  if (isNaN(num)) return `0 ${currency}`;
+  if (!Number.isFinite(num)) return `0 ${currency}`;
   const formatted =
     num % 1 === 0
       ? num.toString()
-      : num.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      : num.toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   return `${formatted} ${currency}`;
 }
 
@@ -261,80 +261,66 @@ export class NotificationTemplateService {
     const gameUrl = safeSlug ? `${appUrl}/oyun/${safeSlug}` : appUrl;
     const currency = escapeTelegramHtml(payload.currency || "TL");
 
-    let headline = "🔥 <b>Fırsat Bildirimi</b>";
-    switch (eventType) {
-      case NotificationEventType.PRICE_DROP:
-        headline = "📉 <b>Fiyat Düştü!</b>";
-        break;
-      case NotificationEventType.ALERT_MATCHED:
-        headline = "🔔 <b>Fiyat Alarmınız Çaldı!</b>";
-        break;
-      case NotificationEventType.NEW_OBSERVED_LOW:
-        headline = "🌟 <b>Yeni Tarihi Dip Fiyat!</b>";
-        break;
-      case NotificationEventType.HISTORICAL_LOW_MATCH:
-        headline = "🎯 <b>Tarihi Dip Fiyata Düştü!</b>";
-        break;
-      case NotificationEventType.FREE_GAME_DEAL:
-        headline = "🎁 <b>Ücretsiz / 0 TL Fırsatı!</b>";
-        break;
-      case NotificationEventType.DEEP_DISCOUNT_DEAL:
-        headline = "💥 <b>Mega İndirim (%70+)!</b>";
-        break;
-      case NotificationEventType.BUNDLE_DEAL:
-        headline = "📦 <b>Koleksiyon & Paket İndirimi!</b>";
-        break;
-      case NotificationEventType.DEAL_SCORE_THRESHOLD:
-        headline = "🚀 <b>Yüksek Fırsat Skoru!</b>";
-        break;
-      case NotificationEventType.OWNED_GAME_DLC_DEAL:
-        headline = "🎁 <b>Sahip Olduğunuz Oyuna DLC İndirimi!</b>";
-        break;
-      case NotificationEventType.WISHLIST_DEAL:
-        headline = "✨ <b>İstek Listenizdeki Oyun İndirimde!</b>";
-        break;
-      case NotificationEventType.FAVORITE_PRICE_CHANGE:
-        headline = "❤️ <b>Favori Oyununuzda Fiyat Değişimi!</b>";
-        break;
-    }
-
-    const lines = [
-      headline,
-      "",
-      `🎮 <b>${escapeTelegramHtml(payload.gameTitle)}</b>`,
-    ];
-
-    if (payload.badges && payload.badges.length > 0) {
-      lines.push(`🏷️ <b>Etiketler:</b> ${payload.badges.map((b) => escapeTelegramHtml(b)).join(" • ")}`);
-    }
-
-    if (payload.parentGameTitle) {
-      lines.push(`📦 Ana Oyun: ${escapeTelegramHtml(payload.parentGameTitle)}`);
-    }
-
-    if (payload.matchReason) {
-      lines.push(`💡 ${escapeTelegramHtml(payload.matchReason)}`);
-    }
-
-    lines.push(`💰 Güncel Fiyat: <b>${formatTelegramPrice(payload.currentPrice, currency)}</b>`);
-
+    const labels: Partial<Record<NotificationEventType, string>> = {
+      PRICE_DROP: "Fiyat düştü",
+      ALERT_MATCHED: "Fiyat alarmın gerçekleşti",
+      NEW_OBSERVED_LOW: "Takip edilen en düşük fiyat",
+      HISTORICAL_LOW_MATCH: "Takip edilen en düşük fiyatta",
+      FREE_GAME_DEAL: "Ücretsiz oyun",
+      DEEP_DISCOUNT_DEAL: "Büyük indirim",
+      BUNDLE_DEAL: "Paket indirimi",
+      DEAL_SCORE_THRESHOLD: "Yüksek fırsat puanı",
+      OWNED_GAME_DLC_DEAL: "Oyununa ek içerik indirimi",
+      WISHLIST_DEAL: "İstek listende indirim",
+      FAVORITE_PRICE_CHANGE: "Favori oyununda fiyat değişimi",
+    };
+    // Bound variable prose before escaping to preserve entities and leave
+    // room within Telegram's 1024-character photo caption limit.
+    const compact = (value: string, limit: number) => {
+      const normalized = value.replace(/\s+/g, " ").trim();
+      return escapeTelegramHtml(normalized.length > limit ? normalized.slice(0, limit - 1) + "…" : normalized);
+    };
+    const price = Number(payload.currentPrice) === 0
+      ? "Ücretsiz" : formatTelegramPrice(payload.currentPrice, currency);
+    const prices = ["<b>" + price + "</b>"];
     if (payload.listPrice && payload.listPrice > payload.currentPrice) {
-      lines.push(`🏷️ Liste Fiyatı: <s>${formatTelegramPrice(payload.listPrice, currency)}</s>`);
+      prices.push("<s>" + formatTelegramPrice(payload.listPrice, currency) + "</s>");
     }
-
     if (payload.discountPercent && payload.discountPercent > 0) {
-      lines.push(`🎯 İndirim Oranı: <b>%${payload.discountPercent}</b>`);
+      prices.push("%" + payload.discountPercent + " indirim");
     }
-
+    const contextTypes = [
+      NotificationEventType.NEW_OBSERVED_LOW,
+      NotificationEventType.HISTORICAL_LOW_MATCH,
+      NotificationEventType.WISHLIST_DEAL,
+      NotificationEventType.OWNED_GAME_DLC_DEAL,
+    ];
+    const secondaryType = contextTypes.find(type =>
+      type !== eventType && payload.matchingEventTypes?.includes(type) &&
+      !([NotificationEventType.NEW_OBSERVED_LOW, NotificationEventType.HISTORICAL_LOW_MATCH] as NotificationEventType[]).includes(eventType)
+    );
+    const subtitle = [labels[eventType] || "Oyun fırsatı", secondaryType ? labels[secondaryType] : null]
+      .filter(Boolean).join(" · ");
+    const lines = [
+      "<b>" + compact(payload.gameTitle, 160) + "</b>",
+      subtitle,
+      "",
+      prices.join("  ·  "),
+    ];
     if (payload.dealScore !== undefined) {
-      lines.push(`⚡ Fırsat Skoru: <b>${payload.dealScore}/100</b>`);
+      lines.push("Fırsat puanı: " + payload.dealScore + "/100");
     }
-
-    lines.push("");
-    lines.push(`👉 <a href="${escapeTelegramHtmlAttr(gameUrl)}">Oyunu İncele</a>`);
-    lines.push(`⚙️ <a href="${escapeTelegramHtmlAttr(`${appUrl}/ayarlar?tab=channels`)}">Bildirim Ayarları</a>`);
-
-    return { text: lines.join("\n") };
+    if (payload.parentGameTitle) {
+      lines.push("", "Ana oyun: " + compact(payload.parentGameTitle, 100));
+    }
+    // Generic reasons repeat prices; alarm reasons explain personal targets.
+    if (eventType === NotificationEventType.ALERT_MATCHED && payload.matchReason) {
+      lines.push("", compact(payload.matchReason, 200));
+    }
+    return {
+      text: lines.join("\n"),
+      replyMarkup: { inline_keyboard: [[{ text: "Oyunu İncele", url: gameUrl }]] },
+    };
   }
 
   /**

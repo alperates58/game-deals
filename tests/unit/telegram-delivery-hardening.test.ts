@@ -97,20 +97,15 @@ describe("Telegram Delivery Hardening & HTML Formatting", () => {
         payload
       );
 
-      // Verify HTML tags
-      expect(rendered.text).toContain("📉 <b>Fiyat Düştü!</b>");
-      expect(rendered.text).toContain("🎮 <b>Half-Life: Alyx &amp; DLC &lt;VR Exclusive&gt;!</b>");
-      expect(rendered.text).toContain("💡 Tarihi dip seviyesine %20 daha yakın!");
-      expect(rendered.text).toContain("💰 Güncel Fiyat: <b>199,90 TL</b>");
-      expect(rendered.text).toContain("🏷️ Liste Fiyatı: <s>399,90 TL</s>");
-      expect(rendered.text).toContain("🎯 İndirim Oranı: <b>%50</b>");
-      expect(rendered.text).toContain("⚡ Fırsat Skoru: <b>92/100</b>");
-      expect(rendered.text).toContain(
-        '<a href="https://game.alperates.com.tr/oyun/half-life-alyx">Oyunu İncele</a>'
-      );
-      expect(rendered.text).toContain(
-        '<a href="https://game.alperates.com.tr/ayarlar?tab=channels">Bildirim Ayarları</a>'
-      );
+      expect(rendered.text).toContain("Fiyat düştü");
+      expect(rendered.text).toContain("<b>Half-Life: Alyx &amp; DLC &lt;VR Exclusive&gt;!</b>");
+      expect(rendered.text).toContain("<b>199,90 TL</b>  ·  <s>399,90 TL</s>  ·  %50 indirim");
+      expect(rendered.text).toContain("Fırsat puanı: 92/100");
+      expect(rendered.text).not.toContain(payload.matchReason);
+      expect(rendered.text).not.toContain("Bildirim Ayarları");
+      expect(rendered.replyMarkup.inline_keyboard[0][0]).toEqual({
+        text: "Oyunu İncele", url: "https://game.alperates.com.tr/oyun/half-life-alyx",
+      });
 
       // Ensure NO MarkdownV2 backslash escapes were introduced
       expect(rendered.text).not.toContain("\\!");
@@ -324,7 +319,7 @@ describe("Telegram Delivery Hardening & HTML Formatting", () => {
         }
       );
 
-      expect(rendered.text).toContain("ozel%20oyun%202026");
+      expect(rendered.replyMarkup.inline_keyboard[0][0].url).toContain("ozel%20oyun%202026");
     });
   });
 });
